@@ -1,0 +1,201 @@
+/* Forms & Inputs - Glassmorphism & Floating Labels */
+
+:root {
+  --input-bg: rgba(255, 255, 255, 0.05);
+  --input-bg-focus: rgba(255, 255, 255, 0.1);
+  --input-border: 1px solid rgba(255, 255, 255, 0.1);
+  --input-border-focus: 1px solid var(--color-primary);
+  --input-text: var(--color-foreground);
+  --input-label: var(--color-muted);
+  --input-height: 3.5rem;
+  --input-radius: 12px;
+
+  --error-color: #ff4d4d;
+  --success-color: #00e676;
+}
+
+/* Container for Input + Label */
+/* Ensure block stacking to mimic .form-group */
+.input-group {
+  position: relative;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The actual input element */
+.input-group .input-field {
+  width: 100%;
+  height: var(--input-height);
+  padding: 16px;
+  /* Symmetrical padding */
+  background: var(--input-bg);
+  border: var(--input-border);
+  border-radius: var(--input-radius);
+  color: var(--input-text);
+  font-family: inherit;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  outline: none;
+  backdrop-filter: blur(4px);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.input-field:focus {
+  background: var(--input-bg-focus);
+  border: var(--input-border-focus);
+  box-shadow: 0 0 0 4px rgba(0, 240, 255, 0.1);
+  /* Primary glow */
+}
+
+/* Hover effect */
+.input-field:hover:not(:focus) {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Static Label Logic (Below Field) */
+.input-label {
+  position: relative;
+  /* Static flow */
+  margin-top: 8px;
+  /* Space between input and label */
+  left: 4px;
+  /* Slight alignment */
+  color: var(--input-label);
+  font-size: 0.9rem;
+  pointer-events: none;
+  transition: all 0.2s ease;
+}
+
+.input-group.invalid .input-label {
+  color: var(--error-color);
+}
+
+/* 
+   Active State (Focus)
+   Highlight label when input is active
+*/
+.input-field:focus+.input-label,
+.input-field:not(:placeholder-shown)+.input-label {
+  color: var(--color-primary);
+}
+
+/* Textarea specifics */
+textarea.input-field {
+  height: auto;
+  min-height: 120px;
+  padding-top: 28px;
+  /* Room for label */
+}
+
+/* Validation States */
+.input-group.invalid .input-field {
+  border-color: var(--error-color);
+  box-shadow: 0 0 0 2px rgba(255, 77, 77, 0.1);
+}
+
+.input-group.invalid .input-label {
+  color: var(--error-color);
+}
+
+.input-group.valid .input-field {
+  border-color: var(--success-color);
+}
+
+/* Error Message Area - Zero Shift */
+.error-message {
+  color: var(--error-color);
+  font-size: 0.85rem;
+  font-weight: 500;
+
+  /* Absolute positioning to prevent layout shift */
+  position: absolute;
+  top: 100%;
+  left: 4px;
+
+  opacity: 0;
+  /* Start slightly higher to slide down */
+  transform: translateY(-8px);
+  transition: all 0.2s ease-out;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.input-group.invalid .error-message {
+  opacity: 1;
+  /* Slide into place */
+  transform: translateY(2px);
+}
+
+/* Ensure placeholder visibility for static layout */
+input::placeholder,
+textarea::placeholder {
+  color: var(--input-placeholder);
+  opacity: 1;
+}
+
+/* Submit Button Base (Primary) */
+.btn-submit {
+  width: 100%;
+  height: var(--input-height);
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--input-radius);
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.btn-submit:hover {
+  filter: brightness(1.2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 240, 255, 0.3);
+}
+
+.btn-submit:active {
+  transform: translateY(0);
+}
+
+/* Loading State */
+.btn-submit {
+  position: relative;
+  /* Ensure spinner centers */
+}
+
+.btn-submit.loading {
+  color: transparent !important;
+  /* Hide text */
+  pointer-events: none;
+}
+
+.btn-submit.loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 24px;
+  height: 24px;
+  margin-top: -12px;
+  margin-left: -12px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spinner 0.8s linear infinite;
+}
+
+@keyframes spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.btn-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(1);
+}

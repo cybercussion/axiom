@@ -1,0 +1,128 @@
+/* View Transitions Animations */
+
+:root {
+  --transition-easing: cubic-bezier(0.4, 0.0, 0.2, 1);
+  --transition-duration: 300ms;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--transition-duration);
+  animation-timing-function: var(--transition-easing);
+  mix-blend-mode: normal;
+  /* Fix for dark mode artifacts */
+}
+
+/*
+ * Scoping: Only animate the content, not the entire root (which includes Nav)
+ */
+#app-container {
+  view-transition-name: main-content;
+}
+
+/* nav-orchestrator {
+  view-transition-name: navigation;
+} */
+
+/*
+ * 1. SLIDE FORWARD (Navigating deeper/forward)
+ */
+[data-transition="forward"]::view-transition-old(main-content) {
+  animation-name: slide-out-to-left;
+}
+
+[data-transition="forward"]::view-transition-new(main-content) {
+  animation-name: slide-in-from-right;
+}
+
+/*
+ * 2. SLIDE BACKWARD (Navigating back)
+ */
+[data-transition="backward"]::view-transition-old(main-content) {
+  animation-name: slide-out-to-right;
+  z-index: 100;
+}
+
+[data-transition="backward"]::view-transition-new(main-content) {
+  animation-name: slide-in-from-left;
+}
+
+/* Keyframes */
+
+@keyframes slide-out-to-left {
+  to {
+    transform: translateX(-100%);
+    opacity: 0.5;
+  }
+}
+
+@keyframes slide-in-from-right {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes slide-out-to-right {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes slide-in-from-left {
+  from {
+    transform: translateX(-100%);
+    opacity: 0.5;
+  }
+}
+
+/*
+ * 3. FADE (Neutral / Tab switch)
+ */
+[data-transition="fade"]::view-transition-old(main-content) {
+  animation: fade-out 200ms ease both;
+}
+
+[data-transition="fade"]::view-transition-new(main-content) {
+  animation: fade-in 200ms ease both;
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* WCAG: Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+
+  /* Target specific view transition groups to kill motion but allow fades */
+  ::view-transition-group(main-content),
+  ::view-transition-old(main-content),
+  ::view-transition-new(main-content) {
+    animation: none !important;
+  }
+
+  /* Fallback to simple cross-fade */
+  ::view-transition-old(main-content) {
+    animation: fade-out 200ms ease both !important;
+  }
+
+  ::view-transition-new(main-content) {
+    animation: fade-in 200ms ease both !important;
+  }
+
+  /* Ensure the dock and orchestrator are explicitly visible and unaffected */
+  nav-orchestrator,
+  nav-dock {
+    display: flex !important;
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "project-axiom",
+  "version": "1.0.42",
+  "description": "High-performance, zero-build web architecture.",
+  "type": "module",
+  "scripts": {
+    "start": "npx serve -s .",
+    "dev": "browser-sync start --server --files 'src/**/*' --single --no-notify",
+    "build": "node tools/minify.js",
+    "feature": "node tools/create-feature.js",
+    "lint": "npx eslint src/**/*.js"
+  },
+  "devDependencies": {
+    "browser-sync": "^3.0.0",
+    "csso": "^5.0.5",
+    "terser": "^5.46.0"
+  }
+}

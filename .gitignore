@@ -1,0 +1,26 @@
+# --- Axiom: System Junk ---
+.DS_Store
+Thumbs.db
+.cache/
+.tmp/
+*.log
+*.swp
+
+# --- Node & Dependencies ---
+# We use them for tools/dev, but they never touch the repo
+node_modules/
+package-lock.json
+npm-debug.log*
+
+# --- IDEs & Environments ---
+.vscode/
+.idea/
+.env
+.env.local
+
+# --- Build Output ---
+dist/
+
+# --- Project Specific ---
+# If your feature tool generates temp files
+tools/.temp/

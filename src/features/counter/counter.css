@@ -1,0 +1,50 @@
+/* Counter Feature Styles */
+:host {
+  display: block;
+  height: 100%;
+  container-type: inline-size;
+  padding: var(--space-m);
+}
+
+.counter-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: var(--space-l);
+}
+
+h1 {
+  font-family: var(--font-main);
+  font-size: var(--text-xl);
+  margin: 0;
+  color: var(--color-foreground);
+}
+
+.count-display {
+  font-size: clamp(4rem, 15cqw, 12rem);
+  font-weight: 700;
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.controls {
+  display: flex;
+  gap: var(--space-m);
+}
+
+/* Override global button shape for circular controls */
+.controls .btn {
+  width: 4rem;
+  height: 4rem;
+  padding: 0;
+  border-radius: 50%;
+  font-size: var(--text-xl);
+  /* Ensure the ::before effect is also circular */
+}
+
+.controls .btn::before {
+  border-radius: 50%;
+}
