@@ -2,12 +2,14 @@
  * Project Axiom: State Singleton
  * A Proxy-wrapped singleton that broadcasts changes via EventTarget.
  */
+import { config } from './config.js';
+
 const bus = new EventTarget();
 
 export const state = {
   data: new Proxy({
     route: null, // Start at null so 'home' triggers the Proxy
-    navStyle: 'dock',
+    navStyle: config.NAV_STYLE,
     transition: { type: 'fade', direction: 'forward' },
     theme: localStorage.getItem('axiom-theme') || 'dark',
     items: [],

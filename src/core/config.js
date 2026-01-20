@@ -10,5 +10,5 @@ export const config = Object.freeze({
   API_BASE: isLocal ? 'http://localhost:3000' : 'https://api.yourdomain.com',
   BASE_PATH: new URL(document.baseURI).pathname,
   VERSION: '1.0.0-axiom',
-  NAV_STYLE: 'dock'
+  NAV_STYLE: 'dock' // or 'sidebar'
 });
