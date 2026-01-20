@@ -1,5 +1,6 @@
 import { BaseComponent } from '@shared/base-component.js';
 import { state } from '@state';
+import { config } from '@core/config.js';
 
 class NavOrchestrator extends BaseComponent {
   connectedCallback() {
@@ -19,7 +20,7 @@ class NavOrchestrator extends BaseComponent {
       }
     });
 
-    const initialStyle = state.data.navStyle || 'dock';
+    const initialStyle = state.data.navStyle || config.NAV_STYLE;
     this.switchNav(initialStyle);
   }
 
