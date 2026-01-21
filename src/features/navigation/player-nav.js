@@ -5,7 +5,7 @@
  */
 import { BaseComponent } from '@shared/base-component.js';
 import { state } from '@state';
-import { course, courseActions } from '@core/course-state.js';
+import { course, courseActions, resetCourseState } from '@core/course-state.js';
 
 export class PlayerNav extends BaseComponent {
   async connectedCallback() {
@@ -232,26 +232,8 @@ export class PlayerNav extends BaseComponent {
   resetCourse() {
     if (!confirm('Reset all progress and start over?')) return;
     
-    // Clear SCOBot local storage
-    const scorm = course.scorm;
-    if (scorm) {
-      // Reset SCORM data
-      scorm.setvalue('cmi.location', '0');
-      scorm.setvalue('cmi.suspend_data', '');
-      scorm.setvalue('cmi.completion_status', 'incomplete');
-      scorm.setvalue('cmi.success_status', 'unknown');
-      scorm.setvalue('cmi.score.raw', '');
-      scorm.commit();
-    }
-    
-    // Clear local state
-    state.set('coursePosition', 0);
-    state.set('courseProgress', {});
-    state.set('interactions', []);
-    state.set('learnerComments', '');
-    
-    // Clear SCOBot localStorage (for standalone mode)
-    localStorage.removeItem('SCOBot');
+    // Reset all course state (SCORM data + localStorage)
+    resetCourseState();
     
     state.notify('Course reset!', 'success');
     

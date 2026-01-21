@@ -19,6 +19,6 @@
     "terser": "^5.46.0"
   },
   "dependencies": {
-    "@cybercussion/scobot": "^5.1.0"
+    "@cybercussion/scobot": "^5.1.1"
   }
 }

@@ -2,6 +2,8 @@
 
 This document explains how SCORM (Shareable Content Object Reference Model) is integrated into the Axiom e-learning player using [@cybercussion/scobot](https://www.npmjs.com/package/@cybercussion/scobot).
 
+![SCOBot Player 2](docs/scobot-player2.png)
+
 ## What is SCORM?
 
 SCORM is a set of technical standards for e-learning software that enables:

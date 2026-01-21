@@ -1,7 +1,7 @@
 /**
  * Project Axiom: Feedback Drawer
  * Slide-out panel for learner notes and LMS comments.
- * Used within player-nav component.
+ * Displays a chat-like interface for bi-directional feedback.
  */
 import { BaseComponent } from '@shared/base-component.js';
 import { state } from '@state';
@@ -10,33 +10,155 @@ import { course, courseActions } from '@core/course-state.js';
 export class FeedbackDrawer extends BaseComponent {
   async connectedCallback() {
     await this.addExternalStyles(new URL('./player-nav.css', import.meta.url).href);
+    this.addStyles(this.chatStyles());
     super.connectedCallback();
 
     // Subscribe to open state
     this.subscribe('feedbackOpen', (open) => {
       this.toggleAttribute('open', open);
       if (open) {
+        this.loadComments();
+        this.render();
         this.focusTrap();
       }
     });
 
-    // Load any existing comments
+    // Initial load
     this.loadComments();
   }
 
   loadComments() {
-    const scorm = course.scorm;
-    if (scorm && scorm.isConnectionActive()) {
-      const lmsComments = scorm.getvalue('cmi.comments_from_lms.0.comment') || '';
-      const learnerComments = scorm.getvalue('cmi.comments_from_learner.0.comment') || '';
-      state.set('lmsComments', lmsComments);
-      state.set('learnerComments', learnerComments);
-    }
+    // Load all comments (merged LMS + learner, sorted by timestamp)
+    const comments = courseActions.getAllComments();
+    state.set('allComments', comments);
+  }
+
+  chatStyles() {
+    return `
+      .chat-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        padding: 1rem;
+        overflow-y: auto;
+        flex: 1;
+        min-height: 200px;
+        max-height: 60vh;
+      }
+
+      .chat-message {
+        display: flex;
+        flex-direction: column;
+        max-width: 85%;
+        padding: 0.75rem 1rem;
+        border-radius: 1rem;
+        animation: fadeIn 0.2s ease;
+      }
+
+      .chat-message.from-lms {
+        align-self: flex-start;
+        background: var(--glass-bg, rgba(255,255,255,0.1));
+        border-bottom-left-radius: 0.25rem;
+      }
+
+      .chat-message.from-learner {
+        align-self: flex-end;
+        background: var(--accent-primary, #4a90d9);
+        color: white;
+        border-bottom-right-radius: 0.25rem;
+      }
+
+      .chat-message .message-text {
+        font-size: 0.95rem;
+        line-height: 1.4;
+        word-wrap: break-word;
+      }
+
+      .chat-message .message-meta {
+        display: flex;
+        gap: 0.5rem;
+        font-size: 0.75rem;
+        opacity: 0.7;
+        margin-top: 0.25rem;
+      }
+
+      .chat-message.from-learner .message-meta {
+        justify-content: flex-end;
+      }
+
+      .chat-input-area {
+        display: flex;
+        gap: 0.5rem;
+        padding: 1rem;
+        border-top: 1px solid var(--border-color, rgba(255,255,255,0.1));
+      }
+
+      .chat-input-area textarea {
+        flex: 1;
+        min-height: 60px;
+        max-height: 120px;
+        resize: none;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        border: 1px solid var(--border-color, rgba(255,255,255,0.2));
+        background: var(--input-bg, rgba(0,0,0,0.2));
+        color: inherit;
+        font-family: inherit;
+        font-size: 0.95rem;
+      }
+
+      .chat-input-area textarea:focus {
+        outline: none;
+        border-color: var(--accent-primary, #4a90d9);
+      }
+
+      .send-btn {
+        align-self: flex-end;
+        padding: 0.75rem 1.25rem;
+        background: var(--accent-primary, #4a90d9);
+        color: white;
+        border: none;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background 0.2s;
+      }
+
+      .send-btn:hover {
+        background: var(--accent-hover, #5a9fe9);
+      }
+
+      .send-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        opacity: 0.6;
+        text-align: center;
+      }
+
+      .empty-state svg {
+        width: 48px;
+        height: 48px;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+    `;
   }
 
   render() {
-    const lmsComments = state.get('lmsComments') || '';
-    const learnerComments = state.get('learnerComments') || '';
+    const comments = state.get('allComments') || [];
 
     this.shadowRoot.innerHTML = `
       <aside class="feedback-drawer" role="complementary" aria-label="Feedback Panel">
@@ -45,31 +167,81 @@ export class FeedbackDrawer extends BaseComponent {
           <button class="close-btn" aria-label="Close feedback panel">&times;</button>
         </header>
 
-        <div class="drawer-content">
-          ${lmsComments ? `
-            <section class="lms-comments">
-              <h3>Instructor Comments</h3>
-              <p>${this.escapeHtml(lmsComments)}</p>
-            </section>
-          ` : ''}
-
-          <section class="learner-comments">
-            <h3>Your Notes</h3>
-            <textarea 
-              placeholder="Add your notes, questions, or reflections here..."
-              aria-label="Your notes"
-              spellcheck="true"
-            >${this.escapeHtml(learnerComments)}</textarea>
-          </section>
+        <div class="chat-container" role="log" aria-live="polite">
+          ${comments.length === 0 ? this.renderEmptyState() : this.renderMessages(comments)}
         </div>
 
-        <footer class="drawer-footer">
-          <button class="btn btn-primary save-btn">Save Notes</button>
-        </footer>
+        <div class="chat-input-area">
+          <textarea 
+            placeholder="Type your question or note..."
+            aria-label="Your message"
+            rows="2"
+          ></textarea>
+          <button class="send-btn" aria-label="Send message">Send</button>
+        </div>
       </aside>
     `;
 
     this.bindEvents();
+    this.scrollToBottom();
+  }
+
+  renderEmptyState() {
+    return `
+      <div class="empty-state">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <p>No messages yet.</p>
+        <p>Add notes, questions, or feedback below.</p>
+      </div>
+    `;
+  }
+
+  renderMessages(comments) {
+    return comments.map(c => {
+      // SCOBot may return 'false' string for empty values
+      const comment = (c.comment && c.comment !== 'false') ? c.comment : '';
+      const location = (c.location && c.location !== 'false') ? c.location : '';
+      const timestamp = (c.timestamp && c.timestamp !== 'false') ? c.timestamp : '';
+      
+      if (!comment) return ''; // Skip empty comments
+      
+      return `
+        <div class="chat-message from-${c.from}">
+          <div class="message-text">${this.escapeHtml(comment)}</div>
+          <div class="message-meta">
+            ${location ? `<span class="location">${this.escapeHtml(location)}</span>` : ''}
+            ${timestamp ? `<span class="time">${this.formatTimestamp(timestamp)}</span>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  formatTimestamp(isoString) {
+    try {
+      if (!isoString || isoString === 'false') return '';
+      const date = new Date(isoString);
+      if (isNaN(date.getTime())) return ''; // Invalid date
+      return date.toLocaleString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+      });
+    } catch {
+      return '';
+    }
+  }
+
+  scrollToBottom() {
+    requestAnimationFrame(() => {
+      const container = this.shadowRoot.querySelector('.chat-container');
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
+    });
   }
 
   bindEvents() {
@@ -78,18 +250,17 @@ export class FeedbackDrawer extends BaseComponent {
       this.close();
     });
 
-    // Save button
-    this.shadowRoot.querySelector('.save-btn').addEventListener('click', () => {
-      this.saveNotes();
+    // Send button
+    this.shadowRoot.querySelector('.send-btn').addEventListener('click', () => {
+      this.sendMessage();
     });
 
-    // Auto-save on blur (optional UX enhancement)
+    // Textarea: Enter to send (Shift+Enter for newline)
     const textarea = this.shadowRoot.querySelector('textarea');
-    textarea.addEventListener('blur', () => {
-      const text = textarea.value.trim();
-      const current = state.get('learnerComments') || '';
-      if (text !== current) {
-        this.saveNotes(true); // Silent save
+    textarea.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        this.sendMessage();
       }
     });
 
@@ -98,31 +269,26 @@ export class FeedbackDrawer extends BaseComponent {
       if (e.key === 'Escape') {
         this.close();
       }
-      // Ctrl/Cmd + S to save
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        this.saveNotes();
-      }
     });
   }
 
-  saveNotes(silent = false) {
+  sendMessage() {
     const textarea = this.shadowRoot.querySelector('textarea');
     const text = textarea.value.trim();
     
-    courseActions.saveLearnerComments(text);
+    if (!text) return;
+
+    // Get current page as location context
+    const currentPage = course.currentPage;
+    const location = currentPage?.title || '';
+
+    // Add the comment
+    const success = courseActions.addLearnerComment(text, location);
     
-    if (!silent) {
-      // Visual feedback on button
-      const btn = this.shadowRoot.querySelector('.save-btn');
-      const originalText = btn.textContent;
-      btn.textContent = 'Saved!';
-      btn.disabled = true;
-      
-      setTimeout(() => {
-        btn.textContent = originalText;
-        btn.disabled = false;
-      }, 1500);
+    if (success) {
+      textarea.value = '';
+      this.loadComments();
+      this.render();
     }
   }
 
@@ -131,7 +297,6 @@ export class FeedbackDrawer extends BaseComponent {
   }
 
   focusTrap() {
-    // Focus the textarea when drawer opens
     requestAnimationFrame(() => {
       const textarea = this.shadowRoot.querySelector('textarea');
       if (textarea) {

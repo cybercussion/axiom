@@ -34,13 +34,50 @@ export function initCourseState() {
 
 /**
  * Reset course state for a new attempt
+ * Clears progress, interactions, learner comments, and localStorage
+ * @param {boolean} clearStorage - Also clear SCOBot localStorage (standalone mode)
  */
-export function resetCourseState() {
+export function resetCourseState(clearStorage = true) {
+  // Clear in-memory state
   state.set('coursePosition', 0);
   state.set('courseProgress', {});
   state.set('interactions', []);
   state.set('feedbackOpen', false);
   state.set('toolsOpen', false);
+  state.set('allComments', []);
+  state.set('learnerComments', '');
+
+  // Clear SCORM data for fresh attempt
+  const scorm = course.scorm;
+  if (scorm && scorm.isConnectionActive()) {
+    // Clear suspend_data
+    scorm.setvalue('cmi.suspend_data', '');
+    scorm.setvalue('cmi.location', '0');
+    
+    // Clear learner comments by overwriting with empty values
+    // Note: SCORM doesn't support "delete", so we just blank them out
+    const countStr = scorm.getvalue('cmi.comments_from_learner._count');
+    const count = parseInt(countStr, 10) || 0;
+    for (let i = 0; i < count; i++) {
+      scorm.setvalue(`cmi.comments_from_learner.${i}.comment`, '');
+      scorm.setvalue(`cmi.comments_from_learner.${i}.location`, '');
+      scorm.setvalue(`cmi.comments_from_learner.${i}.timestamp`, '');
+    }
+    
+    // Reset completion/success status
+    scorm.setvalue('cmi.completion_status', 'incomplete');
+    scorm.setvalue('cmi.success_status', 'unknown');
+    scorm.setvalue('cmi.score.raw', '0');
+    scorm.setvalue('cmi.score.scaled', '0');
+    scorm.setvalue('cmi.progress_measure', '0');
+    
+    scorm.commit();
+  }
+
+  // Clear SCOBot localStorage (for standalone mode)
+  if (clearStorage) {
+    localStorage.removeItem('SCOBot');
+  }
 }
 
 /**
@@ -363,7 +400,84 @@ export const courseActions = {
   },
 
   /**
-   * Save learner comments
+   * Get all comments from the LMS (instructor feedback)
+   * @returns {Array} Array of comment objects with comment, location, timestamp
+   */
+  getCommentsFromLMS() {
+    const scorm = course.scorm;
+    if (!scorm || !scorm.isConnectionActive()) return [];
+
+    // Use SCOBot's native API
+    const result = scorm.getCommentsFromLMS();
+    if (result === 'false' || !Array.isArray(result)) return [];
+
+    // Add 'from' property for chat UI
+    return result.map(c => ({ ...c, from: 'lms' }));
+  },
+
+  /**
+   * Get all comments from the learner
+   * @returns {Array} Array of comment objects with comment, location, timestamp
+   */
+  getCommentsFromLearner() {
+    const scorm = course.scorm;
+    if (!scorm || !scorm.isConnectionActive()) return [];
+
+    // Use SCOBot's native API
+    const result = scorm.getCommentsFromLearner();
+    if (result === 'false' || !Array.isArray(result)) return [];
+
+    // Add 'from' property for chat UI
+    return result.map(c => ({ ...c, from: 'learner' }));
+  },
+
+  /**
+   * Add a new comment from the learner
+   * @param {string} text - The comment text
+   * @param {string} location - Optional location reference (e.g., page title)
+   * @returns {boolean} Success status
+   */
+  addLearnerComment(text, location = '') {
+    const scorm = course.scorm;
+    if (!scorm || !scorm.isConnectionActive()) {
+      state.notify('Unable to save comment - not connected', 'error');
+      return false;
+    }
+
+    // Use SCOBot's native API
+    const result = scorm.addLearnerComment(text, location);
+    
+    if (result === 'true') {
+      scorm.commit();
+      state.notify('Comment saved!', 'success');
+      return true;
+    }
+    
+    state.notify('Failed to save comment', 'error');
+    return false;
+  },
+
+  /**
+   * Get all comments (from LMS and learner) merged and sorted by timestamp
+   * @returns {Array} Merged array sorted by timestamp
+   */
+  getAllComments() {
+    const lmsComments = this.getCommentsFromLMS();
+    const learnerComments = this.getCommentsFromLearner();
+    
+    const all = [...lmsComments, ...learnerComments];
+    
+    // Sort by timestamp (oldest first for chat order)
+    return all.sort((a, b) => {
+      const dateA = a.timestamp ? new Date(a.timestamp) : new Date(0);
+      const dateB = b.timestamp ? new Date(b.timestamp) : new Date(0);
+      return dateA - dateB;
+    });
+  },
+
+  /**
+   * Save learner comments (legacy single-comment method)
+   * @deprecated Use addLearnerComment for multi-comment support
    */
   saveLearnerComments(text) {
     state.set('learnerComments', text);
@@ -371,6 +485,7 @@ export const courseActions = {
     const scorm = course.scorm;
     if (scorm && scorm.isConnectionActive()) {
       scorm.setvalue('cmi.comments_from_learner.0.comment', text);
+      scorm.setvalue('cmi.comments_from_learner.0.timestamp', new Date().toISOString());
       scorm.commit();
     }
 

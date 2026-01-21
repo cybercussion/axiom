@@ -25,12 +25,22 @@ async function main() {
   }
   fs.mkdirSync(DIST_DIR);
 
-  // 2. Copy Index & Manifest
-  copyFile('index.html');
+  // 2. Copy Index & Manifest (with import map transformation)
+  copyAndTransformIndex('index.html');
   copyFile('manifest.json');
+  copyFile('favicon.png');
   copyDir('assets'); // Assuming assets exist, or fail silently
 
-  // 3. Process Src
+  // 3. Copy SCOBot library from node_modules
+  copySCOBot();
+
+  // 4. Copy data directory (course content)
+  copyDir('data');
+
+  // 5. Copy public directory (media assets)
+  copyDir('public');
+
+  // 6. Process Src
   console.log('Processing src...');
   await processDir(SRC_DIR, DIST_DIR);
 
@@ -52,6 +62,85 @@ function copyDir(name) {
     fs.cpSync(srcPath, destPath, { recursive: true });
     console.log(`Copied ${name}/`);
   }
+}
+
+/**
+ * Copy SCOBot library from node_modules to dist/lib/
+ * Updates import map to point to the new location
+ */
+function copySCOBot() {
+  const scobotSrc = path.join(ROOT_DIR, 'node_modules/@cybercussion/scobot/dist/scobot.js');
+  const scobotDest = path.join(DIST_DIR, 'lib/scobot.js');
+
+  if (fs.existsSync(scobotSrc)) {
+    // Create lib directory
+    const libDir = path.join(DIST_DIR, 'lib');
+    if (!fs.existsSync(libDir)) {
+      fs.mkdirSync(libDir, { recursive: true });
+    }
+    fs.copyFileSync(scobotSrc, scobotDest);
+    console.log('Copied SCOBot library to lib/scobot.js');
+  } else {
+    console.warn('⚠️  SCOBot library not found in node_modules');
+  }
+}
+
+/**
+ * Copy and transform index.html for dist
+ * - Updates import map paths for production
+ * - Adjusts base href for SCORM package compatibility
+ */
+function copyAndTransformIndex(name) {
+  const srcPath = path.join(ROOT_DIR, name);
+  if (!fs.existsSync(srcPath)) return;
+
+  let content = fs.readFileSync(srcPath, 'utf-8');
+
+  // Update import map for dist structure
+  // Change node_modules path to lib/ for SCOBot
+  content = content.replace(
+    '"@scobot": "./node_modules/@cybercussion/scobot/dist/scobot.js"',
+    '"@scobot": "./lib/scobot.js"'
+  );
+
+  // Update base href for relative paths (SCORM compatibility)
+  // SCORM packages run from various locations, so use relative base
+  content = content.replace('<base href="/">', '<base href="./">');
+
+  // Update import map paths: ./src/ becomes ./
+  // Since minify.js puts src/* directly in dist/, not dist/src/
+  content = content.replace('"@state": "./src/core/state.js"', '"@state": "./core/state.js"');
+  content = content.replace('"@core/": "./src/core/"', '"@core/": "./core/"');
+  content = content.replace('"@shared/": "./src/shared/"', '"@shared/": "./shared/"');
+  content = content.replace('"@features/": "./src/features/"', '"@features/": "./features/"');
+
+  // Update modulepreload and script paths
+  content = content.replace(/href="src\//g, 'href="');
+  content = content.replace(/src="src\//g, 'src="');
+
+  fs.writeFileSync(path.join(DIST_DIR, name), content);
+  console.log(`Copied and transformed ${name}`);
+}
+
+/**
+ * Transform JS source code paths for dist
+ * Replaces src/ references with root-relative paths since
+ * dist/ contains src/* contents at root level
+ */
+function transformJsPaths(code) {
+  // fetch("src/...) → fetch("...  (preserving the quote type)
+  code = code.replace(/fetch\("src\//g, 'fetch("');
+  code = code.replace(/fetch\('src\//g, "fetch('");
+  code = code.replace(/fetch\(`src\//g, 'fetch(`');
+  
+  // import("src/...) → import("...  (dynamic imports, preserving quote type)
+  code = code.replace(/import\("src\//g, 'import("');
+  code = code.replace(/import\('src\//g, "import('");
+  code = code.replace(/import\(`src\//g, 'import(`');
+  
+  // new URL("./data/...) paths should work as-is since data/ is copied to dist/data/
+  
+  return code;
 }
 
 async function processDir(currentSrc, currentDist) {
@@ -81,8 +170,12 @@ async function processFile(srcPath, distPath) {
     let minified = 0;
 
     if (ext === '.js') {
-      const code = fs.readFileSync(srcPath, 'utf8');
+      let code = fs.readFileSync(srcPath, 'utf8');
       original = Buffer.byteLength(code, 'utf8');
+      
+      // Transform src/ paths to work in dist (where src/ contents are at root)
+      code = transformJsPaths(code);
+      
       const result = await minify(code, { module: true });
       if (result.code) {
         fs.writeFileSync(distPath, result.code, 'utf8');

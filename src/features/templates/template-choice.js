@@ -110,14 +110,12 @@ class TemplateChoice extends TemplateBase {
     // Check if answer is correct
     const isCorrect = JSON.stringify(selected.sort()) === JSON.stringify(correctIds);
 
-    // Format response for SCORM (comma-separated for multi-select)
-    const response = selected.join(',');
-
-    // Record interaction
+    // Record interaction - pass array for choice type (SCOBot encodes it)
     this.recordInteraction(
-      data.multiSelect ? 'choice' : 'choice',
-      response,
-      isCorrect ? 'correct' : 'incorrect'
+      'choice',
+      selected,  // Array of selected choice IDs
+      isCorrect ? 'correct' : 'incorrect',
+      correctIds  // Correct response pattern
     );
 
     // Visual feedback
@@ -131,7 +129,7 @@ class TemplateChoice extends TemplateBase {
 
     // Mark complete with score and response for review
     const score = isCorrect ? 100 : 0;
-    this.markComplete(score, response);
+    this.markComplete(score, selected.join(','));
   }
 
   highlightAnswers(correctIds, selectedIds) {

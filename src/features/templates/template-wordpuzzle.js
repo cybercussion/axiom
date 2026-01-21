@@ -191,11 +191,17 @@ class TemplateWordpuzzle extends TemplateBase {
     const allCorrect = correctCount === totalBlanks;
     const score = totalBlanks > 0 ? Math.round((correctCount / totalBlanks) * 100) : 0;
 
-    // Format response for SCORM
+    // Format response for SCORM fill-in
     const response = responses.join(',');
 
+    // Build correct response pattern (first accepted answer for each blank)
+    const correctResponse = {
+      case_matters: false,
+      words: data.blanks.map(b => b.answers[0])
+    };
+
     // Record interaction
-    this.recordInteraction('fill-in', response, allCorrect ? 'correct' : 'incorrect');
+    this.recordInteraction('fill-in', response, allCorrect ? 'correct' : 'incorrect', correctResponse);
 
     // Show feedback
     this.showFeedback(allCorrect);

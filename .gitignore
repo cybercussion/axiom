@@ -20,6 +20,7 @@ npm-debug.log*
 
 # --- Build Output ---
 dist/
+scorm-packages/
 
 # --- Project Specific ---
 # If your feature tool generates temp files

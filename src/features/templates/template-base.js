@@ -77,22 +77,32 @@ export class TemplateBase extends BaseComponent {
 
   /**
    * Record an interaction response
-   * @param {object} interaction - Interaction data
+   * @param {string} type - Interaction type (choice, matching, fill-in, etc.)
+   * @param {*} response - Learner response (string or array depending on type)
+   * @param {string} result - 'correct' or 'incorrect'
+   * @param {*} correctResponse - Correct response pattern (optional)
    */
-  recordInteraction(type, response, result) {
+  recordInteraction(type, response, result, correctResponse = null) {
     if (this._submitted) return; // Prevent double submission
     this._submitted = true;
 
-    // SCORM requires strings - use ISO 8601 format for timestamp
+    // SCORM interaction data
+    // Note: learner_response can be array for choice/sequencing/matching types
+    // SCOBot's encodeInteractionType handles the encoding
     const interaction = {
       id: String(this.interactionId),
       type: String(type),
-      learner_response: String(response),
+      learner_response: response,  // Can be string or array depending on type
       result: String(result),
       weight: String(this.weight),
       latency: this.getLatency(),  // Already ISO 8601 duration string (PT#S)
       timestamp: new Date().toISOString()  // ISO 8601 string
     };
+
+    // Add correct_responses if provided
+    if (correctResponse !== null) {
+      interaction.correct_responses = [{ pattern: correctResponse }];
+    }
 
     this.dispatchEvent(new CustomEvent('interaction-submit', {
       bubbles: true,

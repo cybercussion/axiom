@@ -266,13 +266,14 @@ class TemplateMatch extends TemplateBase {
     const allCorrect = correctCount === data.pairs.length;
     const score = Math.round((correctCount / data.pairs.length) * 100);
 
-    // Format response for SCORM: source1.target1,source2.target2,...
-    const response = Array.from(this._matches.entries())
-      .map(([s, t]) => `${s}.${t}`)
-      .join(',');
+    // Format response for SCORM: [[source1, target1], [source2, target2], ...]
+    const response = Array.from(this._matches.entries());
+
+    // Build correct response pattern
+    const correctResponse = data.pairs.map(p => [p.sourceId, p.targetId]);
 
     // Record interaction
-    this.recordInteraction('matching', response, allCorrect ? 'correct' : 'incorrect');
+    this.recordInteraction('matching', response, allCorrect ? 'correct' : 'incorrect', correctResponse);
 
     // Show feedback
     this.showFeedback(allCorrect);
@@ -287,8 +288,9 @@ class TemplateMatch extends TemplateBase {
     const resetBtn = this.shadowRoot.querySelector('.reset-btn');
     if (resetBtn) resetBtn.hidden = true;
 
-    // Mark complete with response for review
-    this.markComplete(score, response);
+    // Mark complete with response for review (string format)
+    const responseStr = response.map(([s, t]) => `${s}.${t}`).join(',');
+    this.markComplete(score, responseStr);
   }
 
   /**

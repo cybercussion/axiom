@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 /**
  * Project Axiom: SCORM Package Generator
- * Creates a SCORM 1.2 or 2004 compliant package from the project.
+ * Creates a SCORM 1.2 or 2004 compliant package from the dist folder.
  * 
- * Usage: node tools/create-scorm-package.js [--version 1.2|2004] [--output dist]
+ * IMPORTANT: Run `npm run build` first to generate the dist folder.
+ * 
+ * Usage: node tools/create-scorm-package.js [--version 1.2|2004]
  */
 
 import fs from 'fs';
@@ -15,9 +17,16 @@ const args = process.argv.slice(2);
 const scormVersion = args.includes('--version') 
   ? args[args.indexOf('--version') + 1] 
   : '2004';
-const outputDir = args.includes('--output')
-  ? args[args.indexOf('--output') + 1]
-  : 'dist';
+
+// Source is always dist folder (minified build)
+const distDir = 'dist';
+
+// Verify dist folder exists
+if (!fs.existsSync(distDir)) {
+  console.error('❌ Error: dist/ folder not found.');
+  console.error('   Run `npm run build` first to generate the production build.');
+  process.exit(1);
+}
 
 // Load course data
 const courseDataPath = './data/scobot.json';
@@ -41,37 +50,20 @@ console.log(`\n📦 SCORM ${scormVersion} Package Generator`);
 console.log(`   Course: ${title}`);
 console.log(`   Version: ${version}\n`);
 
-// Create output directory
+// Create output directory for SCORM package
+const outputDir = 'scorm-packages';
 const packageDir = path.join(outputDir, `${identifier}_scorm${scormVersion}`);
-if (!fs.existsSync(packageDir)) {
-  fs.mkdirSync(packageDir, { recursive: true });
+
+// Clean and create package directory
+if (fs.existsSync(packageDir)) {
+  fs.rmSync(packageDir, { recursive: true, force: true });
 }
+fs.mkdirSync(packageDir, { recursive: true });
 
-// Files to include in the package
-const filesToCopy = [
-  'index.html',
-  'src/',
-  'data/',
-  'public/',
-  'node_modules/@cybercussion/scobot/'
-];
-
-// Copy files
-console.log('📁 Copying files...');
-filesToCopy.forEach(file => {
-  const src = path.resolve(file);
-  const dest = path.join(packageDir, file);
-  
-  if (fs.existsSync(src)) {
-    if (fs.statSync(src).isDirectory()) {
-      copyDir(src, dest);
-    } else {
-      fs.mkdirSync(path.dirname(dest), { recursive: true });
-      fs.copyFileSync(src, dest);
-    }
-    console.log(`   ✓ ${file}`);
-  }
-});
+// Copy entire dist folder contents to package
+console.log('📁 Copying dist/ contents...');
+copyDir(distDir, packageDir);
+console.log('   ✓ All dist files copied');
 
 // Generate imsmanifest.xml
 console.log('\n📄 Generating imsmanifest.xml...');
@@ -123,8 +115,8 @@ function copyDir(src, dest) {
     const srcPath = path.join(src, entry.name);
     const destPath = path.join(dest, entry.name);
     
-    // Skip node_modules except for scobot
-    if (entry.name === 'node_modules' && !src.includes('@cybercussion')) {
+    // Skip .DS_Store and other hidden files
+    if (entry.name.startsWith('.')) {
       continue;
     }
     
