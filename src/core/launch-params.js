@@ -12,6 +12,7 @@
  * - attempt             - Attempt number
  * - debug               - Enable debug mode
  */
+import { log } from '@core/logger.js';
 
 class LaunchParams {
   constructor() {
@@ -185,11 +186,9 @@ class LaunchParams {
    * Log all launch parameters (for debugging)
    */
   log() {
-    console.group('Launch Parameters');
-    console.log('Raw:', window.location.search);
-    console.log('Parsed:', this.all);
-    console.log('SCORM:', this.scormParams);
-    console.groupEnd();
+    log.debug('Launch Parameters - Raw:', window.location.search);
+    log.debug('Launch Parameters - Parsed:', this.all);
+    log.debug('Launch Parameters - SCORM:', this.scormParams);
   }
 }
 
