@@ -6,6 +6,7 @@ import { BaseComponent } from '@shared/base-component.js';
 import { state } from '@state';
 import { log } from '@core/logger.js';
 import { config } from '@core/config.js';
+import { launchParams } from '@core/launch-params.js';
 import { initCourseState, course, courseActions } from '@core/course-state.js';
 import { SCOBot } from '@scobot';
 
@@ -85,8 +86,12 @@ class PlayerUI extends BaseComponent {
     if (SCOBot) {
       try {
         // Enable debug: URL param overrides config.DEBUG
-        const urlParams = new URLSearchParams(window.location.search);
-        const debugEnabled = urlParams.has('debug') ? true : config.DEBUG;
+        const debugEnabled = launchParams.debug || config.DEBUG;
+        
+        // Log launch params in debug mode
+        if (debugEnabled) {
+          launchParams.log();
+        }
         
         // SCOBot options
         const options = {

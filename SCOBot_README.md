@@ -160,6 +160,65 @@ scorm.commit();
 scorm.finish();  // Commits and terminates
 ```
 
+## Launch Parameters
+
+SCORM/AICC LMS systems pass parameters via URL querystring. The `launch-params.js` utility handles these:
+
+### Common Launch Parameters
+
+| Parameter | Aliases | Description |
+|-----------|---------|-------------|
+| `debug` | - | Enable debug mode |
+| `endpoint` | `url` | LMS API endpoint |
+| `auth` | `token` | Authentication token |
+| `learner_id` | `actor`, `student_id` | Learner identifier |
+| `learner_name` | `student_name` | Learner display name |
+| `registration` | `enrollment_id` | Enrollment/registration ID |
+| `activity_id` | `course_id`, `sco_id` | Course identifier |
+| `attempt` | - | Attempt number |
+| `mode` | `launch_mode` | Launch mode (normal/browse/review) |
+| `return_url` | `exit_url` | URL to return to after completion |
+
+### Usage
+
+```javascript
+import { launchParams } from '@core/launch-params.js';
+
+// Check debug mode
+if (launchParams.debug) {
+  console.log('Debug enabled');
+}
+
+// Get specific params
+const learnerId = launchParams.learnerId;
+const mode = launchParams.mode;  // 'normal', 'browse', 'review'
+
+// Get any custom param
+const customValue = launchParams.get('custom_param', 'default');
+
+// Log all params (debug)
+launchParams.log();
+
+// Get SCORM-specific params as object
+console.log(launchParams.scormParams);
+```
+
+### Example Launch URLs
+
+```
+# Debug mode
+http://localhost:3000/player?debug
+
+# LMS launch with learner info
+http://localhost:3000/player?learner_id=user123&learner_name=John%20Doe
+
+# Review mode
+http://localhost:3000/player?mode=review&registration=reg456
+
+# Full AICC-style launch
+http://localhost:3000/player?endpoint=https://lms.example.com/api&auth=token123&learner_id=user123
+```
+
 ## Debug Mode
 
 Enable debug logging to see all SCORM communications:
