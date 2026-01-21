@@ -262,6 +262,21 @@ API_1484_11: Initialized
 API_1484_11: SetValue cmi.location = 3
 ```
 
+## Testing with a Real LMS
+
+To test your SCORM package against a real LMS runtime:
+
+| Platform | URL | Description |
+|----------|-----|-------------|
+| **Cybercussion LMS** | [cybercussion.com](https://cybercussion.com) | Website/Info |
+| **SCOBot Portal** | [angular.scobot.net](https://angular.scobot.net) | Interactive SCORM runtime for testing content and creating sessions |
+
+These platforms allow you to:
+- Upload your SCORM package (ZIP)
+- Launch and test tracking
+- View runtime data model values
+- Debug LMS communication issues
+
 ## File Structure
 
 ```bash
