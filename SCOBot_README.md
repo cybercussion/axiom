@@ -268,7 +268,7 @@ To test your SCORM package against a real LMS runtime:
 
 | Platform | URL | Description |
 |----------|-----|-------------|
-| **Cybercussion LMS** | [cybercussion.com](https://cybercussion.com) | Website/Info |
+| **Cybercussion** | [cybercussion.com](https://cybercussion.com) | Website/Products/Info |
 | **SCOBot Portal** | [angular.scobot.net](https://angular.scobot.net) | Interactive SCORM runtime for testing content and creating sessions |
 
 These platforms allow you to:
