@@ -10,6 +10,7 @@ export const ROUTES = {
     api: () => import('@features/dashboard/dashboard-api.js').then(m => m.fetchDashboardData()),
     dataKey: 'dashboardData'
   },
+  'contact': { path: '@features/contact/contact.js' },
   'navigation': { path: '@features/navigation/navigation.js' },
   'not-found': { path: '@features/not-found/not-found.js' }
 };

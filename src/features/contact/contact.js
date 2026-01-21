@@ -2,6 +2,7 @@ import { BaseComponent } from '@shared/base-component.js';
 import { state } from '@state';
 import { FormValidator } from '@shared/form-validator.js';
 import '@shared/custom-input.js';
+// import L from 'https://esm.sh/leaflet@1.9.4';
 
 class ContactUI extends BaseComponent {
 
@@ -10,6 +11,12 @@ class ContactUI extends BaseComponent {
     const formsCssPath = new URL('../../shared/styles/forms.css', import.meta.url).href;
     await this.addExternalStyles(cssPath);
     await this.addExternalStyles(formsCssPath);
+    // Load Leaflet CSS from CDN
+    // await this.addExternalStyles('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
+  }
+
+  async connectedCallback() {
+    await super.connectedCallback();
   }
 
   async onRendered() {
@@ -26,12 +33,47 @@ class ContactUI extends BaseComponent {
       // Explicitly bind the submit listener to the Shadow form
       this.form.addEventListener('submit', (e) => this.handleSubmit(e));
     }
+
+    // Initialize Leaflet Map - DISABLED due to view transition conflicts with nav dock
+    /*
+    const mapEl = this.shadowRoot.getElementById('map-background');
+    if (mapEl) {
+      // Fix for Leaflet image path in Shadow DOM/Module context if needed
+      // but usually for tiles we specify URL. Markers might need help but we aren't using markers yet.
+
+      this.map = L.map(mapEl, {
+        zoomControl: false,
+        scrollWheelZoom: false,
+        doubleClickZoom: false,
+        boxZoom: false,
+        keyboard: false,
+        dragging: false,
+        attributionControl: false
+      }).setView([47.6062, -122.3321], 12); // Seattle coordinates
+
+      // Dark Matter tiles by CartoDB
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20
+      }).addTo(this.map);
+
+      // Force a redraw to ensure full coverage in fixed container
+      setTimeout(() => this.map?.invalidateSize(), 100);
+    }
+    */
   }
 
   disconnectedCallback() {
     if (this.validator && this.validator._currentController) {
       this.validator._currentController.abort();
     }
+
+    // if (this.map) {
+    //   this.map.remove();
+    //   this.map = null;
+    // }
+
     super.disconnectedCallback();
   }
 
@@ -80,6 +122,9 @@ class ContactUI extends BaseComponent {
 
   render() {
     this.shadowRoot.innerHTML = `
+      <!-- Map disabled due to view transition conflicts with nav dock -->
+      <!-- <div id="map-background"></div> -->
+      <!-- <div class="map-overlay"></div> -->
       <div class="contact-container fade-in">
         <h1>Get in Touch</h1>
         

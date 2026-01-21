@@ -75,8 +75,8 @@ button.nav-link {
   left: 50%;
   transform: translateX(-50%);
   background: var(--dock-bg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   padding: var(--space-s);
   border-radius: var(--space-xl);
   border: 1px solid var(--dock-border);
