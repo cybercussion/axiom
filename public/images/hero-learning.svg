@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400">
+  <defs>
+    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e1b4b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#312e81;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="accent-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#a855f7;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="400" fill="url(#bg-gradient)"/>
+  
+  <!-- Decorative circles -->
+  <circle cx="650" cy="100" r="150" fill="rgba(168,85,247,0.1)"/>
+  <circle cx="150" cy="350" r="100" fill="rgba(236,72,153,0.1)"/>
+  
+  <!-- Main illustration: Abstract learning/knowledge icon -->
+  <g transform="translate(300, 120)">
+    <!-- Book base -->
+    <path d="M0 80 L100 40 L200 80 L100 120 Z" fill="rgba(255,255,255,0.1)" stroke="url(#accent-gradient)" stroke-width="2"/>
+    
+    <!-- Pages -->
+    <path d="M20 75 L100 45 L180 75" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+    <path d="M30 70 L100 50 L170 70" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+    
+    <!-- Light rays / knowledge emanating -->
+    <g opacity="0.6">
+      <line x1="100" y1="30" x2="100" y2="-20" stroke="url(#accent-gradient)" stroke-width="2"/>
+      <line x1="60" y1="40" x2="30" y2="0" stroke="url(#accent-gradient)" stroke-width="2"/>
+      <line x1="140" y1="40" x2="170" y2="0" stroke="url(#accent-gradient)" stroke-width="2"/>
+    </g>
+    
+    <!-- Sparkles -->
+    <circle cx="100" cy="-30" r="4" fill="#a855f7"/>
+    <circle cx="25" cy="-10" r="3" fill="#ec4899"/>
+    <circle cx="175" cy="-10" r="3" fill="#ec4899"/>
+  </g>
+  
+  <!-- Text placeholder area -->
+  <g transform="translate(400, 280)">
+    <text x="0" y="0" text-anchor="middle" fill="white" font-family="system-ui, sans-serif" font-size="24" font-weight="600" opacity="0.9">
+      Interactive Learning
+    </text>
+    <text x="0" y="35" text-anchor="middle" fill="white" font-family="system-ui, sans-serif" font-size="14" opacity="0.6">
+      Engage • Learn • Achieve
+    </text>
+  </g>
+</svg>

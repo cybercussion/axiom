@@ -12,13 +12,25 @@ class NavOrchestrator extends BaseComponent {
     super.connectedCallback();
 
     // CRITICAL: BaseComponent sets 'contain: content' which traps fixed-position children.
-    this.addStyles(':host { contain: none; }');
+    this.addStyles(`
+      :host { contain: none; }
+      :host([hidden]) { display: none !important; }
+    `);
 
     this._cleanup = state.subscribe(({ key, value }) => {
       if (key === 'navStyle') {
         this.switchNav(value);
       }
+      // Hide when course/player is active - player has its own navigation
+      if (key === 'courseActive') {
+        this.hidden = !!value;
+      }
     });
+
+    // Check initial courseActive state
+    if (state.data.courseActive) {
+      this.hidden = true;
+    }
 
     const initialStyle = state.data.navStyle || config.NAV_STYLE;
     this.switchNav(initialStyle);

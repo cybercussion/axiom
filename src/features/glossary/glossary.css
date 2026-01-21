@@ -1,0 +1,113 @@
+/**
+ * Glossary Panel Styles
+ */
+
+:host {
+  display: contents;
+}
+
+.glossary-content {
+  max-height: 400px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Search Box */
+.search-box {
+  position: relative;
+  margin-bottom: var(--space-m);
+  flex-shrink: 0;
+}
+
+.glossary-search {
+  width: 100%;
+  padding: var(--space-s) var(--space-m);
+  padding-left: 40px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--space-s);
+  color: var(--color-foreground);
+  font-family: inherit;
+  font-size: var(--text-base);
+  transition: border-color 0.15s ease;
+}
+
+.glossary-search::placeholder {
+  color: var(--color-muted);
+}
+
+.glossary-search:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.search-icon {
+  position: absolute;
+  left: var(--space-s);
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  color: var(--color-muted);
+  pointer-events: none;
+}
+
+/* Glossary List */
+.glossary-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.glossary-item {
+  padding: var(--space-m);
+  margin-bottom: var(--space-s);
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: var(--space-s);
+  border-left: 3px solid var(--color-primary);
+  transition: background 0.15s ease;
+}
+
+.glossary-item:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.glossary-item[hidden] {
+  display: none;
+}
+
+.term-title {
+  font-weight: 600;
+  font-size: var(--text-base);
+  color: var(--color-foreground);
+  margin-bottom: var(--space-2xs);
+}
+
+.term-definition {
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Empty & No Results States */
+.empty-state,
+.no-results {
+  text-align: center;
+  padding: var(--space-xl);
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+.no-results[hidden] {
+  display: none;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .glossary-content {
+    max-height: 60vh;
+  }
+}

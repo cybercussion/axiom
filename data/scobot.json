@@ -1,0 +1,194 @@
+{
+  "meta": {
+    "title": "SCOBot Demo Player",
+    "description": "A demonstration course showcasing interactive e-learning templates powered by SCOBot",
+    "version": "1.0.0",
+    "author": "Cybercussion",
+    "scormVersion": "2004",
+    "passingScore": 80,
+    "masteryScore": 90,
+    "maxAttempts": 0,
+    "timeLimit": 0
+  },
+  "settings": {
+    "allowReview": true,
+    "showFeedback": true,
+    "shuffleChoices": false,
+    "forceSequential": true,
+    "showProgress": true,
+    "requireAnswerToAdvance": true,
+    "showResetButton": false
+  },
+  "pages": [
+    {
+      "id": "welcome",
+      "type": "title-page",
+      "title": "Welcome to Axiom Learning",
+      "subtitle": "An Interactive Learning Experience",
+      "image": "public/images/hero-learning.svg",
+      "objectives": [
+        "Understand core concepts of modern web architecture",
+        "Apply knowledge through interactive exercises",
+        "Demonstrate mastery through assessments"
+      ],
+      "duration": "15 minutes"
+    },
+    {
+      "id": "q1-web-basics",
+      "type": "choice",
+      "title": "Web Fundamentals",
+      "question": "Which of the following is NOT a core web technology?",
+      "multiSelect": false,
+      "choices": [
+        { "id": "a", "text": "HTML", "correct": false },
+        { "id": "b", "text": "CSS", "correct": false },
+        { "id": "c", "text": "JavaScript", "correct": false },
+        { "id": "d", "text": "Python", "correct": true }
+      ],
+      "feedback": {
+        "correct": "Correct! Python is a server-side language, not a core browser technology.",
+        "incorrect": "Not quite. HTML, CSS, and JavaScript are the three core web technologies that run in browsers. Python is a server-side language."
+      },
+      "weight": 1
+    },
+    {
+      "id": "q2-components",
+      "type": "choice",
+      "title": "Web Components",
+      "question": "Which features are part of the Web Components standard? (Select all that apply)",
+      "multiSelect": true,
+      "choices": [
+        { "id": "a", "text": "Custom Elements", "correct": true },
+        { "id": "b", "text": "Shadow DOM", "correct": true },
+        { "id": "c", "text": "Virtual DOM", "correct": false },
+        { "id": "d", "text": "HTML Templates", "correct": true }
+      ],
+      "feedback": {
+        "correct": "Excellent! Custom Elements, Shadow DOM, and HTML Templates are the three pillars of Web Components.",
+        "incorrect": "Web Components consist of Custom Elements, Shadow DOM, and HTML Templates. Virtual DOM is a React concept, not a web standard."
+      },
+      "weight": 2
+    },
+    {
+      "id": "match1-terms",
+      "type": "match",
+      "title": "Match the Terms",
+      "question": "Match each technology with its primary purpose:",
+      "pairs": [
+        { 
+          "sourceId": "s1", 
+          "sourceText": "Shadow DOM", 
+          "targetId": "t1", 
+          "targetText": "Style encapsulation" 
+        },
+        { 
+          "sourceId": "s2", 
+          "sourceText": "Custom Elements", 
+          "targetId": "t2", 
+          "targetText": "Define new HTML tags" 
+        },
+        { 
+          "sourceId": "s3", 
+          "sourceText": "ES Modules", 
+          "targetId": "t3", 
+          "targetText": "Code organization" 
+        },
+        { 
+          "sourceId": "s4", 
+          "sourceText": "Import Maps", 
+          "targetId": "t4", 
+          "targetText": "Module aliasing" 
+        }
+      ],
+      "feedback": {
+        "correct": "Perfect! You've correctly matched all the technologies.",
+        "incorrect": "Review the connections between these technologies and their purposes."
+      },
+      "weight": 2
+    },
+    {
+      "id": "puzzle1-code",
+      "type": "wordpuzzle",
+      "title": "Complete the Code",
+      "question": "Fill in the blanks to complete this Web Component definition:",
+      "text": "class MyComponent extends {{blank1}} {\n  constructor() {\n    {{blank2}};\n    this.attachShadow({ mode: '{{blank3}}' });\n  }\n}\ncustomElements.{{blank4}}('my-component', MyComponent);",
+      "blanks": [
+        { "id": "blank1", "answers": ["HTMLElement"] },
+        { "id": "blank2", "answers": ["super()", "super"] },
+        { "id": "blank3", "answers": ["open"] },
+        { "id": "blank4", "answers": ["define"] }
+      ],
+      "feedback": {
+        "correct": "Excellent! You understand the Web Component class structure.",
+        "incorrect": "Review the Web Component lifecycle: extend HTMLElement, call super(), attach shadow with 'open' mode, and use customElements.define()."
+      },
+      "weight": 3
+    },
+    {
+      "id": "q3-scorm",
+      "type": "choice",
+      "title": "SCORM Knowledge",
+      "question": "What does SCORM stand for?",
+      "multiSelect": false,
+      "choices": [
+        { "id": "a", "text": "Shareable Content Object Reference Model", "correct": true },
+        { "id": "b", "text": "Standard Course Object Resource Management", "correct": false },
+        { "id": "c", "text": "Simple Content Online Resource Manager", "correct": false },
+        { "id": "d", "text": "Standardized Courseware Object Rendering Method", "correct": false }
+      ],
+      "feedback": {
+        "correct": "Correct! SCORM = Shareable Content Object Reference Model.",
+        "incorrect": "SCORM stands for Shareable Content Object Reference Model - a set of technical standards for e-learning software."
+      },
+      "weight": 1
+    },
+    {
+      "id": "results",
+      "type": "scorecard",
+      "title": "Course Complete",
+      "showDetails": true,
+      "showReview": true,
+      "completionMessage": "Congratulations on completing the Axiom Learning Experience!",
+      "passMessage": "You have successfully demonstrated your understanding.",
+      "failMessage": "Consider reviewing the material and trying again."
+    }
+  ],
+  "glossary": [
+    {
+      "term": "Shadow DOM",
+      "definition": "A web standard that provides encapsulation for DOM and CSS, allowing components to have their own isolated DOM tree."
+    },
+    {
+      "term": "Custom Elements",
+      "definition": "A set of JavaScript APIs that allow you to define custom HTML elements and their behavior."
+    },
+    {
+      "term": "SCORM",
+      "definition": "Shareable Content Object Reference Model - a collection of standards for web-based e-learning content."
+    },
+    {
+      "term": "LMS",
+      "definition": "Learning Management System - software for administration, documentation, tracking, and delivery of educational courses."
+    },
+    {
+      "term": "Web Components",
+      "definition": "A suite of technologies allowing you to create reusable custom elements with encapsulated functionality."
+    },
+    {
+      "term": "Import Maps",
+      "definition": "A web platform feature that allows control over what URLs get fetched by JavaScript import statements."
+    }
+  ],
+  "resources": [
+    {
+      "title": "Web Components Guide",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/Web_Components",
+      "type": "link"
+    },
+    {
+      "title": "SCORM Overview",
+      "url": "https://scorm.com/scorm-explained/",
+      "type": "link"
+    }
+  ]
+}

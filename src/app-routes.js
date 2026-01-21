@@ -1,16 +1,12 @@
-export const ROUTE_DEPTHS = { 'home': 0, 'default': 1 };
-export const ROUTE_ORDER = ['home', 'counter', 'dashboard'];
-export const DEFAULT_ROUTE = 'home';
+export const ROUTE_DEPTHS = { 'player': 0, 'default': 1 };
+export const ROUTE_ORDER = ['player'];
+export const DEFAULT_ROUTE = 'player';
 
 export const ROUTES = {
-  'home': { path: '@features/home/home.js' },
-  'counter': { path: '@features/counter/counter.js' },
-  'dashboard': {
-    path: '@features/dashboard/dashboard.js',
-    api: () => import('@features/dashboard/dashboard-api.js').then(m => m.fetchDashboardData()),
-    dataKey: 'dashboardData'
+  'player': {
+    path: '@features/player/player.js',
+    api: () => import('@features/player/player-api.js').then(m => m.fetchCourseData()),
+    dataKey: 'courseData'
   },
-  'contact': { path: '@features/contact/contact.js' },
-  'navigation': { path: '@features/navigation/navigation.js' },
   'not-found': { path: '@features/not-found/not-found.js' }
 };

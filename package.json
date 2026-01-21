@@ -8,11 +8,17 @@
     "dev": "browser-sync start --server --files 'src/**/*' --single --no-notify",
     "build": "node tools/minify.js",
     "feature": "node tools/create-feature.js",
+    "scorm": "node tools/create-scorm-package.js",
+    "scorm:12": "node tools/create-scorm-package.js --version 1.2",
+    "scorm:2004": "node tools/create-scorm-package.js --version 2004",
     "lint": "npx eslint src/**/*.js"
   },
   "devDependencies": {
     "browser-sync": "^3.0.0",
     "csso": "^5.0.5",
     "terser": "^5.46.0"
+  },
+  "dependencies": {
+    "@cybercussion/scobot": "^5.1.0"
   }
 }
