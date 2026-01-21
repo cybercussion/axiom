@@ -5,11 +5,13 @@ This document explains how SCORM (Shareable Content Object Reference Model) is i
 ## What is SCORM?
 
 SCORM is a set of technical standards for e-learning software that enables:
+
 - **Tracking** - Record learner progress, scores, and completion status
 - **Bookmarking** - Resume where the learner left off
 - **Interoperability** - Content works across different Learning Management Systems (LMS)
 
 ### SCORM Versions
+
 - **SCORM 1.2** - Legacy standard, simpler but limited
 - **SCORM 2004** - Modern standard with sequencing and navigation rules
 
@@ -18,12 +20,15 @@ SCOBot supports both versions automatically.
 ## Project Setup
 
 ### Installation
+
 ```bash
 npm install @cybercussion/scobot
 ```
 
 ### Import Map Configuration
+
 In `index.html`:
+
 ```html
 <script type="importmap">
 {
@@ -35,6 +40,7 @@ In `index.html`:
 ```
 
 ### Usage in Player
+
 ```javascript
 import { SCOBot } from '@scobot';
 
@@ -66,6 +72,7 @@ const success = scorm.initialize();  // Returns 'true' or 'false' (strings!)
 | `cmi.score.max` | Maximum possible | `"100"` |
 
 ### Important: All Values Are Strings!
+
 SCORM requires all values to be strings. Always convert:
 ```javascript
 scorm.setvalue('cmi.score.raw', String(85));  // ✓ Correct
@@ -75,6 +82,7 @@ scorm.setvalue('cmi.score.raw', 85);          // ✗ May fail
 ## SCOBot API Methods
 
 ### Core Methods
+
 ```javascript
 scorm.initialize()              // Start SCORM session
 scorm.terminate()               // End session gracefully
@@ -84,12 +92,14 @@ scorm.isConnectionActive()      // Check if connected
 ```
 
 ### Data Access
+
 ```javascript
 scorm.getvalue('cmi.location')           // Read value
 scorm.setvalue('cmi.location', '5')      // Write value
 ```
 
 ### Interactions (Question Tracking)
+
 ```javascript
 scorm.setInteraction({
   id: 'q1-web-basics',           // Unique question ID
@@ -105,12 +115,14 @@ scorm.setInteraction({
 ## Session Lifecycle
 
 ### 1. Initialize
+
 ```javascript
 const scorm = new SCOBot(options);
 scorm.initialize();
 ```
 
 ### 2. Restore Previous Session
+
 ```javascript
 const suspendData = scorm.getvalue('cmi.suspend_data');
 if (suspendData) {
@@ -120,6 +132,7 @@ if (suspendData) {
 ```
 
 ### 3. Track Progress
+
 ```javascript
 // After each page/interaction
 scorm.setvalue('cmi.location', String(currentPage));
@@ -132,6 +145,7 @@ scorm.commit();
 ```
 
 ### 4. Finalize Course
+
 ```javascript
 scorm.setvalue('cmi.completion_status', 'completed');
 scorm.setvalue('cmi.success_status', isPassing ? 'passed' : 'failed');
@@ -141,6 +155,7 @@ scorm.commit();
 ```
 
 ### 5. Exit
+
 ```javascript
 scorm.finish();  // Commits and terminates
 ```
@@ -150,17 +165,20 @@ scorm.finish();  // Commits and terminates
 Enable debug logging to see all SCORM communications:
 
 ### Via URL Parameter
+
 ```
 http://localhost:3000/player?debug
 ```
 
 ### Via Config
+
 In `src/core/config.js`:
 ```javascript
 DEBUG: true  // Automatically true on localhost
 ```
 
 ### Console Output
+
 With debug enabled, you'll see:
 ```
 SCOBot: initialize()
@@ -172,6 +190,7 @@ SCOBot: commit()
 ## Standalone Mode
 
 When no LMS is detected, SCOBot's `use_standalone: true` option enables a **Mock API** that:
+
 - Stores data in `localStorage`
 - Simulates LMS responses
 - Allows full testing without an LMS
@@ -184,7 +203,7 @@ API_1484_11: SetValue cmi.location = 3
 
 ## File Structure
 
-```
+```bash
 src/
 ├── core/
 │   └── course-state.js      # SCORM sync/restore logic
@@ -238,11 +257,13 @@ The `scobot.json` file defines course structure:
 ## Packaging for LMS
 
 Use the included packaging tool:
+
 ```bash
 node tools/scorm-package.js
 ```
 
 This creates a SCORM-compliant ZIP with:
+
 - `imsmanifest.xml` - Package manifest
 - `adlcp_rootv1p2.xsd` - Schema files
 - Course content files
@@ -250,6 +271,7 @@ This creates a SCORM-compliant ZIP with:
 ## Troubleshooting
 
 ### "scorm.set is not a function"
+
 Use `setvalue()` not `set()`:
 ```javascript
 scorm.setvalue('cmi.location', '5');  // ✓
@@ -257,16 +279,19 @@ scorm.set('cmi.location', '5');       // ✗
 ```
 
 ### Data not persisting
+
 1. Check `scorm.isConnectionActive()` returns true
 2. Call `scorm.commit()` after setting values
 3. Verify `use_standalone: true` for local testing
 
 ### Session not restoring
+
 1. Check `cmi.suspend_data` is being saved
 2. Verify JSON.parse doesn't throw on restore
 3. Ensure restore runs BEFORE first render
 
 ### Score showing 0%
+
 1. Interactions must have `result: 'correct'` or `'incorrect'`
 2. Weight values are parsed with `parseFloat()`
 3. Check interactions array is being restored
