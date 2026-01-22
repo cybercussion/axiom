@@ -88,6 +88,7 @@ export class FeedbackDrawer extends BaseComponent {
 
       .chat-input-area {
         display: flex;
+        align-items: stretch;
         gap: 0.5rem;
         padding: 1rem;
         border-top: 1px solid var(--border-color, rgba(255,255,255,0.1));
@@ -95,16 +96,17 @@ export class FeedbackDrawer extends BaseComponent {
 
       .chat-input-area textarea {
         flex: 1;
-        min-height: 60px;
+        min-height: 44px;
         max-height: 120px;
         resize: none;
-        padding: 0.75rem;
+        padding: 0.625rem 0.75rem;
         border-radius: 0.5rem;
         border: 1px solid var(--border-color, rgba(255,255,255,0.2));
         background: var(--input-bg, rgba(0,0,0,0.2));
         color: inherit;
         font-family: inherit;
         font-size: 0.95rem;
+        line-height: 1.5;
       }
 
       .chat-input-area textarea:focus {
@@ -113,8 +115,8 @@ export class FeedbackDrawer extends BaseComponent {
       }
 
       .send-btn {
-        align-self: flex-end;
-        padding: 0.75rem 1.25rem;
+        padding: 0 1.25rem;
+        min-height: 44px;
         background: var(--accent-primary, #4a90d9);
         color: white;
         border: none;
@@ -204,9 +206,9 @@ export class FeedbackDrawer extends BaseComponent {
       const comment = (c.comment && c.comment !== 'false') ? c.comment : '';
       const location = (c.location && c.location !== 'false') ? c.location : '';
       const timestamp = (c.timestamp && c.timestamp !== 'false') ? c.timestamp : '';
-      
+
       if (!comment) return ''; // Skip empty comments
-      
+
       return `
         <div class="chat-message from-${c.from}">
           <div class="message-text">${this.escapeHtml(comment)}</div>
@@ -275,7 +277,7 @@ export class FeedbackDrawer extends BaseComponent {
   sendMessage() {
     const textarea = this.shadowRoot.querySelector('textarea');
     const text = textarea.value.trim();
-    
+
     if (!text) return;
 
     // Get current page as location context
@@ -284,7 +286,7 @@ export class FeedbackDrawer extends BaseComponent {
 
     // Add the comment
     const success = courseActions.addLearnerComment(text, location);
-    
+
     if (success) {
       textarea.value = '';
       this.loadComments();

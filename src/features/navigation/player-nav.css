@@ -189,14 +189,21 @@
   max-width: calc(100vw - var(--space-l));
   max-height: calc(100vh - 120px);
   transform: translateX(calc(100% + var(--space-m)));
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 0s 0.3s;
+  /* Delay visibility change until transform completes */
   z-index: 99;
   pointer-events: none;
+  visibility: hidden;
 }
 
 :host(feedback-drawer[open]) {
   transform: translateX(0);
   pointer-events: auto;
+  visibility: visible;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 0s 0s;
+  /* Show immediately when opening */
 }
 
 .feedback-drawer {
@@ -350,15 +357,24 @@
     max-width: 100%;
     border-radius: var(--space-m) var(--space-m) 0 0;
     transform: translateY(100%);
+    /* Hide completely when closed to prevent covering navigation */
+    visibility: hidden;
+    pointer-events: none;
   }
 
   :host(feedback-drawer[open]) {
     transform: translateY(0);
+    visibility: visible;
+    pointer-events: auto;
   }
 
   .feedback-drawer {
     border-radius: var(--space-m) var(--space-m) 0 0;
     max-height: 50vh;
+    /* Increase opacity for better readability on small screens */
+    background: rgba(15, 15, 20, 0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
   }
 
   .tools-panel {
