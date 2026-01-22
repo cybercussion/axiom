@@ -34,7 +34,22 @@ export class PlayerNav extends BaseComponent {
     super.disconnectedCallback();
   }
 
+  /**
+   * Check if running in standalone mode (mock API, no real LMS)
+   * Reset is only available in standalone mode
+   */
+  isStandaloneMode() {
+    const scorm = course.scorm;
+    if (!scorm || !scorm.isConnectionActive()) return true;
+
+    // Check if using mock API by looking for 'Local' in cmi._version
+    const version = scorm.getvalue('cmi._version');
+    return version && version.includes('Local');
+  }
+
   render() {
+    const showReset = this.isStandaloneMode();
+
     this.shadowRoot.innerHTML = `
       <nav class="player-nav" role="navigation" aria-label="Course Navigation">
         <!-- Feedback Toggle -->
@@ -109,6 +124,7 @@ export class PlayerNav extends BaseComponent {
           </svg>
           <span>Toggle Theme</span>
         </button>
+        ${showReset ? `
         <hr class="tool-divider">
         <button class="tool-item danger" data-action="reset">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -117,6 +133,7 @@ export class PlayerNav extends BaseComponent {
           </svg>
           <span>Reset Course</span>
         </button>
+        ` : ''}
       </div>
     `;
 
@@ -172,7 +189,7 @@ export class PlayerNav extends BaseComponent {
     if (prevBtn) prevBtn.disabled = !course.canPrev;
     if (nextBtn) {
       nextBtn.disabled = !course.canNext;
-      
+
       // Show hint if locked due to unanswered question
       const settings = course.settings;
       const currentPage = course.currentPage;
@@ -181,7 +198,7 @@ export class PlayerNav extends BaseComponent {
       const interactiveTypes = ['choice', 'match', 'wordpuzzle'];
       const isInteractive = interactiveTypes.includes(currentPage?.type);
       const isAnswered = progress[pos]?.complete;
-      
+
       if (settings.requireAnswerToAdvance !== false && isInteractive && !isAnswered) {
         nextBtn.title = 'Answer the question to continue';
       } else {
@@ -231,12 +248,12 @@ export class PlayerNav extends BaseComponent {
 
   resetCourse() {
     if (!confirm('Reset all progress and start over?')) return;
-    
+
     // Reset all course state (SCORM data + localStorage)
     resetCourseState();
-    
+
     state.notify('Course reset!', 'success');
-    
+
     // Reload to fresh state
     location.reload();
   }
