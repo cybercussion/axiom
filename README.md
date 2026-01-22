@@ -64,6 +64,76 @@ That's it. You're developing.
 
 ---
 
+## 🏗 Visual Architecture
+
+### Shadow DOM Component Encapsulation
+
+Each feature component extends `BaseComponent`, which creates an isolated Shadow DOM boundary. Styles are shared via `adoptedStyleSheets`, preventing leakage while allowing theme inheritance.
+
+```mermaid
+flowchart TD
+    subgraph Document ["Light DOM document"]
+        AppContainer["#app-container"]
+    end
+    
+    subgraph Component ["home-ui Custom Element"]
+        ShadowRoot["Shadow Root open"]
+        subgraph Encapsulated ["Encapsulated Content"]
+            ThemeSheet["adoptedStyleSheets theme.css"]
+            FeatureCSS["Feature Styles home.css"]
+            Template["HTML Template"]
+        end
+    end
+    
+    AppContainer --> Component
+    ShadowRoot --> ThemeSheet
+    ShadowRoot --> FeatureCSS
+    ShadowRoot --> Template
+```
+
+### State → Component Reactive Flow
+
+The Proxy-based state uses `EventTarget` as a pub/sub bus. Components subscribe once; updates are surgical—no virtual DOM diffing.
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Component as feature-ui
+    participant State as state.js Proxy
+    participant Bus as EventTarget bus
+    
+    User->>Component: Interaction (click, input)
+    Component->>State: state.set(key, value)
+    State->>State: Proxy trap fires
+    State->>Bus: dispatchEvent(update)
+    Bus->>Component: Subscribed callback fires
+    Component->>Component: Surgical DOM update
+```
+
+### Router Navigation Lifecycle
+
+Navigation loads modules and data in parallel, uses View Transitions when available, and handles focus/scroll restoration for accessibility.
+
+```mermaid
+flowchart LR
+    A[User clicks link] --> B{handleIntercept}
+    B --> C[navigate]
+    C --> D[Parallel Load]
+    D --> E["Module import()"]
+    D --> F["Data fetch"]
+    E --> G["Create feature-ui"]
+    F --> G
+    G --> H{View Transition?}
+    H -->|Yes| I[startViewTransition]
+    H -->|No| J[Direct swap]
+    I --> K[replaceChildren]
+    J --> K
+    K --> L[Focus management]
+    L --> M[Scroll restoration]
+```
+
+---
+
 ## 🛠 Feature Generator
 
 If you're lazy (and you should be), use the generator to make new distinct features.
