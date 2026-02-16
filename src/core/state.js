@@ -3,15 +3,21 @@
  * A Proxy-wrapped singleton that broadcasts changes via EventTarget.
  */
 import { config } from './config.js';
+import { log } from './logger.js';
 
 const bus = new EventTarget();
 
 export const state = {
   data: new Proxy({
-    route: null, // Start at null so 'home' triggers the Proxy
+    route: null,
+    query: {},
+    params: {},
+    navigation: null,
     navStyle: config.NAV_STYLE,
     transition: { type: 'fade', direction: 'forward' },
     theme: localStorage.getItem('axiom-theme') || 'dark',
+    audioLevel: parseInt(localStorage.getItem('axiom-audioLevel') ?? '80', 10),
+    captionsEnabled: localStorage.getItem('axiom-captionsEnabled') === 'true',
     items: [],
     notifications: []
   }, {
@@ -21,9 +27,15 @@ export const state = {
 
       // Persistence bridge
       if (key === 'theme') localStorage.setItem('axiom-theme', value);
+      if (key === 'audioLevel') localStorage.setItem('axiom-audioLevel', value);
+      if (key === 'captionsEnabled') localStorage.setItem('axiom-captionsEnabled', value);
+      if (key === 'redirectAfterAuth') {
+        if (value) sessionStorage.setItem('axiom_auth_redirect', value);
+        else sessionStorage.removeItem('axiom_auth_redirect');
+      }
 
       if (location.hostname === 'localhost') {
-        console.log(`%c Axiom Delta: ${key}`, 'color: #3b82f6; font-weight: bold;', value);
+
       }
 
       bus.dispatchEvent(new CustomEvent('update', {
@@ -77,7 +89,7 @@ export const state = {
       });
       return data;
     } catch (err) {
-      console.error(`Axiom Query Error [${key}]:`, err);
+      log.error(`Axiom Query Error [${key}]:`, err);
       this.set(key, {
         ...current,
         status: 'error',
@@ -119,7 +131,7 @@ export const state = {
       const safeBackup = { ...backup, status: (backup.status === 'syncing' ? 'success' : backup.status) };
       this.set(key, safeBackup);
       this.notify(`Mutation Failed: Rolling back.`, 'error');
-      console.error(`Axiom Mutation Failed [${key}]: Rolling back.`, err);
+      log.error(`Axiom Mutation Failed [${key}]: Rolling back.`, err);
     }
   },
 

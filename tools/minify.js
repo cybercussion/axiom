@@ -28,7 +28,10 @@ async function main() {
   // 2. Copy Index & Manifest
   copyFile('index.html');
   copyFile('manifest.json');
-  copyDir('assets'); // Assuming assets exist, or fail silently
+  copyDir('assets');
+  copyDir('public'); // Explicitly copy public if it exists
+  copyDir('data');   // Explicitly copy data if it exists
+  copyDir('lib');    // Explicitly copy lib if it exists
 
   // 3. Process Src
   console.log('Processing src...');
@@ -81,8 +84,15 @@ async function processFile(srcPath, distPath) {
     let minified = 0;
 
     if (ext === '.js') {
-      const code = fs.readFileSync(srcPath, 'utf8');
+      let code = fs.readFileSync(srcPath, 'utf8');
       original = Buffer.byteLength(code, 'utf8');
+
+      // BUILD FIX: Rewrite absolute /src/ paths to root paths for distribution
+      // This handles imports like 'src/shared/...' becoming '/shared/...' in dist
+      code = code.replace(/\/src\/shared\//g, '/shared/');
+      code = code.replace(/\/src\/core\//g, '/core/');
+      code = code.replace(/\/src\/features\//g, '/features/');
+
       const result = await minify(code, { module: true });
       if (result.code) {
         fs.writeFileSync(distPath, result.code, 'utf8');
@@ -91,8 +101,12 @@ async function processFile(srcPath, distPath) {
         throw new Error(`Terser failed for ${srcPath}`);
       }
     } else if (ext === '.css') {
-      const code = fs.readFileSync(srcPath, 'utf8');
+      let code = fs.readFileSync(srcPath, 'utf8');
       original = Buffer.byteLength(code, 'utf8');
+
+      // BUILD FIX: Rewrite absolute /src/ paths for CSS too
+      code = code.replace(/\/src\/shared\//g, '/shared/');
+
       const result = cssoMinify(code);
       fs.writeFileSync(distPath, result.css, 'utf8');
       minified = Buffer.byteLength(result.css, 'utf8');

@@ -5,12 +5,15 @@
 import { state } from '@state';
 import { log } from '@core/logger.js';
 import { config } from '@core/config.js';
+import { auth } from '@core/auth.js';
 
 export const router = {
   _activeTransition: null,
   _currentController: null,
   _scrollTimeout: null,
   _lastIndex: 0,
+  _navSeq: 0,
+  _activeNavId: null,
 
   // Configurable state
   routes: {},
@@ -46,7 +49,16 @@ export const router = {
 
     document.addEventListener('click', e => this.handleIntercept(e));
     this._lastIndex = history.state?.index ?? 0;
-    this.navigate(location.pathname, false);
+
+    // Post-Auth Redirect Logic
+    const pendingRedirect = localStorage.getItem('axiom_auth_redirect');
+    if (pendingRedirect && auth.isAuthenticated()) {
+      log.info(`Auth sequence complete. Resuming destination: ${pendingRedirect}`);
+      localStorage.removeItem('axiom_auth_redirect');
+      this.navigate(pendingRedirect, true);
+    } else {
+      this.navigate(location.pathname, false);
+    }
   },
 
   getDepth(slug) {
@@ -56,6 +68,32 @@ export const router = {
   getOrder(slug) {
     const index = this.order.indexOf(slug);
     return index === -1 ? 99 : index;
+  },
+
+  /**
+   * Subscribe to navigation lifecycle events.
+   * Callback receives the latest navigation object:
+   * { phase: 'start' | 'commit', navigationId, path, cleanPath, slug, params?, direction, timestamp }
+   * Returns an unsubscribe function.
+   */
+  onNavigation(callback) {
+    return state.subscribe(({ key, value }) => {
+      if (key === 'navigation') callback(value);
+    });
+  },
+
+  /**
+   * Subscribe to route/params matches at commit time.
+   * This is a convenience wrapper over navigation events for features
+   * that care about the resolved route + params rather than raw paths.
+   */
+  onMatch(callback) {
+    return this.onNavigation((nav) => {
+      if (!nav || nav.phase !== 'commit') return;
+      const params = nav.params || state.get('params') || {};
+      const route = state.get('route') || nav.slug;
+      callback({ route, params, navigation: nav });
+    });
   },
 
   async navigate(path, push = true, customDirection = null) {
@@ -82,24 +120,28 @@ export const router = {
 
 
     // 1. Surgical Sanitization
-    // If the path starts with our base, strip it to find the internal route
-    let cleanPath = path.split('?')[0].replace(/\/+$/, '') || '/';
-    // Normalize cleanPath to ensure it works with the replace logic
-    if (!cleanPath.endsWith('/')) cleanPath += '/';
+    let cleanPath = path;
 
-    // Check if we need to enter "Subdirectory Mode"
-    if (path.startsWith(this.base) || (path + '/').startsWith(this.base)) {
-      cleanPath = path.substring(this.base.length);
-      // Clean up any remaining leading slash
-      if (cleanPath.startsWith('/')) cleanPath = cleanPath.substring(1);
+    // Check if we need to enter "Subdirectory Mode" and strip base
+    if (cleanPath.startsWith(this.base) || (cleanPath + '/').startsWith(this.base)) {
+      cleanPath = cleanPath.substring(this.base.length);
     }
+
+    // Ensure leading slash for internal consistency
+    if (!cleanPath.startsWith('/')) cleanPath = '/' + cleanPath;
+
+    // NOW strip query string and trailing slashes
+    cleanPath = cleanPath.split('?')[0].replace(/\/+$/, '') || '/';
 
     // ensure no trailing slash for the segment split logic, unless it's root
     cleanPath = cleanPath.replace(/\/+$/, '');
 
-    const rawSegment = cleanPath.split('/').pop() || this.defaultRoute;
-    let slug = rawSegment.split('.')[0].replace(/[^a-zA-Z0-9-]/g, '') || this.defaultRoute;
-    if (slug === 'index') slug = this.defaultRoute;
+    // Ensure slug is ONLY the first segment of the internal path
+    const pathSegments = cleanPath.split('/').filter(Boolean);
+    let slug = pathSegments[0] || this.defaultRoute;
+    if (slug === 'index' || !slug) slug = this.defaultRoute;
+
+    log.debug(`[Router] Input: ${path} | cleanPath: ${cleanPath} | Slug: ${slug}`);
 
     // 2. Early Guard (Preventing the 404 loop)
     // NOTE: We allow dynamic routes, so we only force 404 if it's explicitly 'not-found' logic failure
@@ -120,31 +162,83 @@ export const router = {
       }
     }
 
+    // 3b. Early navigation bookkeeping: assign navigation id, push history,
+    // set pendingRoute, and mark transitioning so the UI can react immediately.
+    const navigationId = ++this._navSeq;
+    this._activeNavId = navigationId;
 
+    if (push) {
+      const nextIndex = this._lastIndex + 1;
+      const fullPath = this.base + (cleanPath ? cleanPath : '');
+      const finalUrl = fullPath.replace('//', '/');
+      history.pushState({ index: nextIndex, navigationId }, '', finalUrl);
+      this._lastIndex = nextIndex;
+    }
+
+    try {
+      state.set('pendingRoute', {
+        navigationId,
+        path,
+        cleanPath,
+        slug,
+        direction,
+        timestamp: Date.now()
+      });
+    } catch (e) {
+      log.warn('Failed to set pendingRoute', e);
+    }
+
+    state.set('transitioning', true);
+
+    // Emit a navigation "start" signal so features can react
+    // even when the root route slug remains the same (e.g., sub-routes).
+    try {
+      state.set('navigation', {
+        phase: 'start',
+        navigationId,
+        path,
+        cleanPath,
+        slug,
+        direction,
+        timestamp: Date.now()
+      });
+    } catch (e) {
+      // Non-fatal; navigation should still proceed even if telemetry fails.
+      log.warn('Navigation start signal failed', e);
+    }
 
     const performUpdate = async () => {
       try {
-        let config = this.routes[slug];
+        log.debug(`[Router] performUpdate Slug: ${slug}`);
+
+        let config = null;
         let params = {};
 
-        // Dynamic Route Matching
-        if (!config) {
-          // We look for a pattern match before falling back to the "slug" guess
-          for (const pattern in this.routes) {
-            if (pattern.includes(':')) {
-              const match = this.matchRoute(pattern, cleanPath);
-              if (match) {
-                config = this.routes[pattern];
-                params = match;
-                slug = pattern; // Use the pattern as the stable slug key
-                break;
-              }
+        // 1. Prioritize Dynamic Route Matching (Patterns with :)
+        for (const pattern in this.routes) {
+          if (pattern.includes(':')) {
+            const match = this.matchRoute(pattern, cleanPath);
+            if (match) {
+              config = this.routes[pattern];
+              params = match;
+              // Convention: The feature slug for the tag is the first segment of the pattern
+              slug = pattern.split('/')[0];
+              break;
             }
           }
         }
 
+        // 2. Fallback to Exact Slug Match
+        if (!config) {
+          config = this.routes[slug];
+        }
+
         // Default Fallback
-        if (!config) config = { path: `@features/${slug}/${slug}.js` };
+        if (!config) {
+          // Dynamic Feature Loading (Zero-Build)
+          // We assume the feature structure matches the slug, e.g. features/foo/foo.js
+          config = { path: `@features/${slug}/${slug}.js` };
+        }
 
         // Route Guard Check
         if (config.guard) {
@@ -153,7 +247,7 @@ export const router = {
             log.warn(`Access Denied for [${slug}]. Redirecting to login.`);
 
             // Save the intended destination for a post-login jump
-            state.set('redirectAfterAuth', path);
+            localStorage.setItem('axiom_auth_redirect', path);
             state.notify('Authentication Required', 'warning');
 
             // Redirect to login
@@ -161,12 +255,7 @@ export const router = {
           }
         }
 
-        if (signal.aborted) return; // Guard
-
-        state.set('transitioning', true);
-
-        // Critical: Set params BEFORE loading component so it can read them
-        state.set('params', params);
+        if (signal.aborted || navigationId !== this._activeNavId) return; // Guard
 
         // Parallelize: Load Code + Fetch Data
         const [module] = await Promise.all([
@@ -184,21 +273,35 @@ export const router = {
           }) : null
         ]);
 
-        if (signal.aborted) return;
+        if (signal.aborted || navigationId !== this._activeNavId) return;
 
-        if (push) {
-          const nextIndex = this._lastIndex + 1;
-          // Construct the full URL including base for the browser
-          const fullPath = this.base + (cleanPath ? cleanPath : '');
-          // normalize double slashes if base is '/' and path is empty/root
-          const finalUrl = fullPath.replace('//', '/');
-
-          history.pushState({ index: nextIndex }, '', finalUrl);
-          this._lastIndex = nextIndex;
-        }
+        const queryStr = path.split('?')[1] || '';
+        const queryObject = Object.fromEntries(new URLSearchParams(queryStr));
 
         document.documentElement.setAttribute('data-transition', direction);
+
+        // Update State
         state.set('route', slug);
+        state.set('query', queryObject);
+        state.set('params', params);
+
+        // Emit a navigation "commit" signal after state is updated,
+        // providing a unique event even when slug stays the same.
+        try {
+          state.set('navigation', {
+            phase: 'commit',
+            navigationId,
+            path,
+            cleanPath,
+            slug,
+            params,
+            direction,
+            timestamp: Date.now()
+          });
+          state.set('pendingRoute', null);
+        } catch (e) {
+          log.warn('Navigation commit signal failed', e);
+        }
 
         // Wait for the specific element to finish its internal setup/render
         const container = document.getElementById('app-container');
@@ -206,20 +309,26 @@ export const router = {
 
         if (featureEl) {
           if (featureEl.rendered) await featureEl.rendered;
-        } else {
-          console.warn(`[Router] No feature element found!`);
         }
 
-        // Scroll Restoration (SessionStorage Strategy)
-        // Robust fallback if History API is FLAKY.
-        const storageKey = `scroll_${path}`;
+        // Scroll Restoration
+        const scrollPath = push ? (this.base + (cleanPath || '')).replace('//', '/') : location.pathname;
+        const storageKey = `scroll_${scrollPath}`;
         const rawStored = sessionStorage.getItem(storageKey);
         const savedScroll = parseInt(rawStored || '0', 10);
-
-        // App-Like Behavior: Always restore scroll if we have it.
-        // Whether we pushed (Link) or popped (Back), if we've been here before, 
-        // put us back where we were.
         const targetY = savedScroll;
+
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            window.scrollTo({ top: targetY, behavior: 'instant' });
+            state.set('transitioning', false);
+          });
+        });
+
+        requestAnimationFrame(() => {
+          const feature = document.getElementById('app-container')?.firstElementChild;
+          if (feature) { feature.tabIndex = -1; feature.focus(); }
+        });
 
         // Force a double-frame for layout calculation
         requestAnimationFrame(() => {
@@ -259,7 +368,7 @@ export const router = {
           } catch (panicErr) {
             // If 404 fails, we panic.
             document.body.innerHTML = '<h1>System Panic: 404 Component Failed</h1>';
-            console.error(panicErr);
+            log.error(panicErr);
           }
         } else {
           // If we were TRYING to load 404 and it failed...
@@ -274,8 +383,12 @@ export const router = {
       if (this._activeTransition) this._activeTransition.skipTransition();
       const transition = document.startViewTransition(() => performUpdate());
       this._activeTransition = transition;
-      try { await transition.finished; }
-      finally {
+      try {
+        await transition.finished;
+      } catch (e) {
+        // Silently handle AbortError from skipTransition()
+        if (e.name !== 'AbortError') log.error('ViewTransition error:', e);
+      } finally {
         if (this._activeTransition === transition) {
           document.documentElement.removeAttribute('data-transition');
           this._activeTransition = null;
@@ -307,8 +420,9 @@ export const router = {
   },
 
   matchRoute(pattern, path) {
-    const p = pattern.split('/').filter(Boolean);
-    const u = path.split('/').filter(Boolean);
+    if (!pattern || !path) return null;
+    const p = (pattern || '').split('/').filter(Boolean);
+    const u = (path || '').split('/').filter(Boolean);
 
     if (p.length !== u.length) return null;
 
