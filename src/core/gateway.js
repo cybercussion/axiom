@@ -4,6 +4,7 @@
  */
 import { config } from '@core/config.js';
 import { log } from '@core/logger.js';
+import { auth } from '@core/auth.js';
 
 export const gateway = {
   /**
@@ -18,7 +19,9 @@ export const gateway = {
     const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     const url = `${config.API_BASE}${path}`;
 
+    const token = await auth.getAccessToken();
     const headers = {
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       // Default to JSON but allow override (e.g. for FormData)
       ...(body && !(body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
       'X-App-Version': config.VERSION,
@@ -66,5 +69,56 @@ export const gateway = {
   get(endpoint, headers) { return this.request('GET', endpoint, null, headers); },
   post(endpoint, body, headers) { return this.request('POST', endpoint, body, headers); },
   put(endpoint, body, headers) { return this.request('PUT', endpoint, body, headers); },
-  delete(endpoint, headers) { return this.request('DELETE', endpoint, null, headers); }
+  delete(endpoint, headers) { return this.request('DELETE', endpoint, null, headers); },
+
+  /**
+   * Execute a GraphQL operation
+   * @param {string} operation - The query/mutation string
+   * @param {Object} [variables] - Operation variables
+   * @param {Object} [customHeaders] - Custom headers
+   */
+  async graphql(operation, variables = {}, customHeaders = {}) {
+    const url = config.GRAPHQL_ENDPOINT;
+
+    const token = await auth.getAccessToken();
+    const options = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-App-Version': config.VERSION,
+        // Authentication Priority: User Token > API Key
+        ...(token
+          ? { 'Authorization': `Bearer ${token}` }
+          : (config.GRAPHQL_API_KEY ? { 'x-api-key': config.GRAPHQL_API_KEY } : {})
+        ),
+        ...customHeaders
+      },
+      body: JSON.stringify({
+        query: operation,
+        variables
+      })
+    };
+
+    try {
+      log.debug(`Gateway GraphQL: ${url}`, { variables });
+      const response = await fetch(url, options);
+
+      if (!response.ok) {
+        throw new Error(`Gateway GraphQL Error: ${response.status} ${response.statusText}`);
+      }
+
+      const result = await response.json();
+
+      if (result.errors && result.errors.length > 0) {
+        const msgs = result.errors.map(e => e.message).join(', ');
+        throw new Error(`GraphQL Error: ${msgs}`);
+      }
+
+      return result.data;
+
+    } catch (err) {
+      log.error('Gateway GraphQL Request Failed', err);
+      throw err;
+    }
+  }
 };

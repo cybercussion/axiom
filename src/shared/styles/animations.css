@@ -26,33 +26,50 @@
 
 /*
  * 1. SLIDE FORWARD (Navigating deeper/forward)
+ * Cinematic: Slide + Subtle Scale + Blur
  */
 [data-transition="forward"]::view-transition-old(main-content) {
-  animation-name: slide-out-to-left;
+  animation: slide-out-to-left var(--transition-duration) var(--transition-easing) both,
+    scale-out var(--transition-duration) var(--transition-easing) both;
 }
 
 [data-transition="forward"]::view-transition-new(main-content) {
-  animation-name: slide-in-from-right;
+  animation: slide-in-from-right var(--transition-duration) var(--transition-easing) both,
+    scale-in-from-side var(--transition-duration) var(--transition-easing) both;
 }
 
 /*
  * 2. SLIDE BACKWARD (Navigating back)
  */
 [data-transition="backward"]::view-transition-old(main-content) {
-  animation-name: slide-out-to-right;
+  animation: slide-out-to-right var(--transition-duration) var(--transition-easing) both,
+    scale-out-to-side var(--transition-duration) var(--transition-easing) both;
   z-index: 100;
 }
 
 [data-transition="backward"]::view-transition-new(main-content) {
-  animation-name: slide-in-from-left;
+  animation: slide-in-from-left var(--transition-duration) var(--transition-easing) both,
+    scale-in-back var(--transition-duration) var(--transition-easing) both;
+}
+
+/*
+ * 3. SCALE (Zoom In/Out - Movie Style)
+ */
+[data-transition="scale"]::view-transition-old(main-content) {
+  animation: scale-out-cinematic var(--transition-duration) var(--transition-easing) both,
+    fade-out var(--transition-duration) var(--transition-easing) both;
+}
+
+[data-transition="scale"]::view-transition-new(main-content) {
+  animation: scale-in-cinematic var(--transition-duration) var(--transition-easing) both,
+    fade-in var(--transition-duration) var(--transition-easing) both;
 }
 
 /* Keyframes */
 
 @keyframes slide-out-to-left {
   to {
-    transform: translateX(-100%);
-    opacity: 0.5;
+    transform: translateX(-20%);
   }
 }
 
@@ -70,20 +87,65 @@
 
 @keyframes slide-in-from-left {
   from {
-    transform: translateX(-100%);
-    opacity: 0.5;
+    transform: translateX(-20%);
+  }
+}
+
+@keyframes scale-out {
+  to {
+    transform: scale(0.95);
+    opacity: 0;
+    filter: blur(5px);
+  }
+}
+
+@keyframes scale-in-from-side {
+  from {
+    transform: scale(1.05);
+    opacity: 0;
+  }
+}
+
+@keyframes scale-out-to-side {
+  to {
+    transform: scale(1.05);
+    opacity: 0;
+  }
+}
+
+@keyframes scale-in-back {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+    filter: blur(5px);
+  }
+}
+
+@keyframes scale-in-cinematic {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+    filter: blur(10px);
+  }
+}
+
+@keyframes scale-out-cinematic {
+  to {
+    transform: scale(1.2);
+    opacity: 0;
+    filter: blur(10px);
   }
 }
 
 /*
- * 3. FADE (Neutral / Tab switch)
+ * 4. FADE (Neutral / Tab switch)
  */
 [data-transition="fade"]::view-transition-old(main-content) {
-  animation: fade-out 200ms ease both;
+  animation: fade-out 250ms ease both;
 }
 
 [data-transition="fade"]::view-transition-new(main-content) {
-  animation: fade-in 200ms ease both;
+  animation: fade-in 250ms ease both;
 }
 
 @keyframes fade-out {

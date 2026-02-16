@@ -30,24 +30,21 @@
   :host(nav-dock) {
     gap: var(--space-2xs);
     padding: var(--space-xs);
-    width: fit-content;
-    max-width: 95vw;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    /* Hide scrollbar for aesthetics */
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  :host(nav-dock)::-webkit-scrollbar {
-    display: none;
+    width: auto;
+    max-width: calc(100vw - 2 * var(--space-m));
   }
 
   .nav-link {
-    /* Vertical padding keeps height ~44px, Horizontal padding reduced for space */
     padding: var(--space-s) var(--space-xs);
     font-size: var(--text-sm);
-    white-space: nowrap;
+  }
+
+  .settings-btn {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }
 
@@ -56,16 +53,44 @@
   background: rgba(168, 85, 247, 0.1);
 }
 
-button.nav-link {
+button.nav-link,
+select.nav-link {
   background: transparent;
   border: none;
   font-family: inherit;
   font-size: inherit;
 }
 
+select.nav-link {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: var(--space-l);
+  /* Space for chevron, though hidden */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  /* Ensure options have dark text in light mode */
+  color: var(--color-foreground);
+}
+
+option {
+  background-color: var(--color-bg);
+  color: var(--color-foreground);
+}
+
 .icon {
   width: 20px;
   height: 20px;
+}
+
+.avatar-img {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--color-primary);
+  flex-shrink: 0;
+  min-width: 24px;
 }
 
 /* Dock Specifics */
@@ -85,10 +110,120 @@ button.nav-link {
   gap: var(--space-s);
 }
 
+:host(nav-dock) .nav-link {
+  color: var(--dock-fg);
+}
+
 .dock-wrapper {
   display: flex;
   gap: var(--space-s);
   align-items: center;
+  position: relative;
+}
+
+/* Settings Menu */
+.settings-menu {
+  position: absolute;
+  bottom: calc(100% + var(--space-s));
+  right: 0;
+  min-width: 160px;
+  background: var(--dock-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--dock-border);
+  border-radius: 12px;
+  padding: var(--space-m);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  z-index: 101;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-s);
+  animation: settingsSlideUp 0.2s ease-out;
+}
+
+.settings-menu.hidden {
+  display: none;
+}
+
+@keyframes settingsSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  position: relative;
+  height: 28px;
+  gap: var(--space-s);
+}
+
+.settings-icon {
+  display: block;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  color: var(--color-muted);
+}
+
+.toggle-switch {
+  display: block;
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.toggle-input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.toggle-track {
+  position: absolute;
+  inset: 0;
+  background: var(--dock-border);
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+
+.toggle-input:checked+.toggle-track {
+  background: var(--color-primary);
+}
+
+.toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.toggle-input:checked+.toggle-track .toggle-thumb {
+  transform: translateX(16px);
+}
+
+.settings-row input[type="range"] {
+  flex: 1;
+  height: 4px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
 }
 
 /* Sidebar Specifics */
