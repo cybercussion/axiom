@@ -18,6 +18,8 @@ export const state = {
     theme: localStorage.getItem('axiom-theme') || 'dark',
     audioLevel: parseInt(localStorage.getItem('axiom-audioLevel') ?? '80', 10),
     captionsEnabled: localStorage.getItem('axiom-captionsEnabled') === 'true',
+    autoplayEnabled: localStorage.getItem('axiom-autoplayEnabled') !== 'false',
+    sessionId: localStorage.getItem('axiom-sessionId') || null,
     items: [],
     notifications: []
   }, {
@@ -29,6 +31,11 @@ export const state = {
       if (key === 'theme') localStorage.setItem('axiom-theme', value);
       if (key === 'audioLevel') localStorage.setItem('axiom-audioLevel', value);
       if (key === 'captionsEnabled') localStorage.setItem('axiom-captionsEnabled', value);
+      if (key === 'autoplayEnabled') localStorage.setItem('axiom-autoplayEnabled', value);
+      if (key === 'sessionId') {
+        if (value) localStorage.setItem('axiom-sessionId', value);
+        else localStorage.removeItem('axiom-sessionId');
+      }
       if (key === 'redirectAfterAuth') {
         if (value) sessionStorage.setItem('axiom_auth_redirect', value);
         else sessionStorage.removeItem('axiom_auth_redirect');

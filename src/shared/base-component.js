@@ -3,13 +3,15 @@
  * The immutable blueprint for all feature "limbs."
  */
 import { state } from '@state';
+import { log } from '@core/logger.js';
 
 const themeSheet = new CSSStyleSheet();
 
 // Fetch the shared theme and populate the sheet so it pierces Shadow DOM
 (async () => {
   try {
-    const res = await fetch('src/shared/styles/theme.css');
+    const themeUrl = new URL('./styles/theme.css', import.meta.url).href;
+    const res = await fetch(themeUrl);
     const css = await res.text();
     themeSheet.replaceSync(`
       ${css}
@@ -17,15 +19,18 @@ const themeSheet = new CSSStyleSheet();
       :host { display: block; contain: none; }
     `);
   } catch (e) {
-    console.error('[BaseComponent] Failed to load theme.css', e);
+    log.error('[BaseComponent] Failed to load theme.css', e);
   }
 })();
 
 export class BaseComponent extends HTMLElement {
   constructor() {
     super();
-    // AOM: delegatesFocus ensures keyboard users don't get trapped on the host
-    this.attachShadow({ mode: 'open', delegatesFocus: true });
+    // AOM: delegatesFocus ensures keyboard users don't get trapped on the host.
+    // However, it can cause "snap to top" on click for large components.
+    // We allow opting out via static property.
+    const delegatesFocus = this.constructor.delegatesFocus !== false;
+    this.attachShadow({ mode: 'open', delegatesFocus });
     this._refs = new Map();
     // Adopt the shared theme immediately
     this.shadowRoot.adoptedStyleSheets = [themeSheet];
@@ -38,7 +43,7 @@ export class BaseComponent extends HTMLElement {
 
   /**
    * AOM: ID Bridge Pattern
-   * Generates a unique ID for the internal element and sets 
+   * Generates a unique ID for the internal element and sets
    * aria-labelledby on the host if needed.
    */
   bridgeID(internalRef, suffix = 'label') {
@@ -74,6 +79,10 @@ export class BaseComponent extends HTMLElement {
    * Workaround for lack of import ... with { type: 'css' } support.
    */
   async addExternalStyles(url) {
+    // Dedup: don't re-add the same stylesheet on re-mount
+    if (!this._loadedStyleUrls) this._loadedStyleUrls = new Set();
+    if (this._loadedStyleUrls.has(url)) return;
+
     try {
       const response = await fetch(url);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -84,8 +93,9 @@ export class BaseComponent extends HTMLElement {
       sheet.replaceSync(cssText);
 
       this.shadowRoot.adoptedStyleSheets = [...this.shadowRoot.adoptedStyleSheets, sheet];
+      this._loadedStyleUrls.add(url);
     } catch (err) {
-      console.error(`Style Error: ${url}`, err);
+      log.error(`Style Error: ${url}`, err);
     }
   }
 

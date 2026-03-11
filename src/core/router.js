@@ -7,6 +7,18 @@ import { log } from '@core/logger.js';
 import { config } from '@core/config.js';
 import { auth } from '@core/auth.js';
 
+const ROUTE_TITLES = {
+  home: 'Axiom',
+  login: 'Sign In',
+  dashboard: 'Dashboard',
+  about: 'About',
+  contact: 'Contact',
+  privacy: 'Privacy Policy',
+  terms: 'Terms of Service',
+  profile: 'Profile',
+  'not-found': 'Not Found'
+};
+
 export const router = {
   _activeTransition: null,
   _currentController: null,
@@ -44,7 +56,7 @@ export const router = {
       const currentIndex = e.state?.index ?? 0;
       const direction = currentIndex < this._lastIndex ? 'backward' : 'forward';
       this._lastIndex = currentIndex;
-      this.navigate(location.pathname, false, direction);
+      this.navigate(`${location.pathname}${location.search}${location.hash}`, false, direction);
     });
 
     document.addEventListener('click', e => this.handleIntercept(e));
@@ -57,7 +69,7 @@ export const router = {
       localStorage.removeItem('axiom_auth_redirect');
       this.navigate(pendingRedirect, true);
     } else {
-      this.navigate(location.pathname, false);
+      this.navigate(`${location.pathname}${location.search}${location.hash}`, false);
     }
   },
 
@@ -119,8 +131,16 @@ export const router = {
 
 
 
+    const inputPath = typeof path === 'string' ? path : String(path || '/');
+    const hashIndex = inputPath.indexOf('#');
+    const hashPart = hashIndex >= 0 ? inputPath.slice(hashIndex) : '';
+    const withoutHash = hashIndex >= 0 ? inputPath.slice(0, hashIndex) : inputPath;
+    const queryIndex = withoutHash.indexOf('?');
+    const queryPart = queryIndex >= 0 ? withoutHash.slice(queryIndex) : '';
+    const queryString = queryPart.startsWith('?') ? queryPart.slice(1) : '';
+
     // 1. Surgical Sanitization
-    let cleanPath = path;
+    let cleanPath = queryIndex >= 0 ? withoutHash.slice(0, queryIndex) : withoutHash;
 
     // Check if we need to enter "Subdirectory Mode" and strip base
     if (cleanPath.startsWith(this.base) || (cleanPath + '/').startsWith(this.base)) {
@@ -130,8 +150,8 @@ export const router = {
     // Ensure leading slash for internal consistency
     if (!cleanPath.startsWith('/')) cleanPath = '/' + cleanPath;
 
-    // NOW strip query string and trailing slashes
-    cleanPath = cleanPath.split('?')[0].replace(/\/+$/, '') || '/';
+    // NOW strip trailing slashes
+    cleanPath = cleanPath.replace(/\/+$/, '') || '/';
 
     // ensure no trailing slash for the segment split logic, unless it's root
     cleanPath = cleanPath.replace(/\/+$/, '');
@@ -141,7 +161,7 @@ export const router = {
     let slug = pathSegments[0] || this.defaultRoute;
     if (slug === 'index' || !slug) slug = this.defaultRoute;
 
-    log.debug(`[Router] Input: ${path} | cleanPath: ${cleanPath} | Slug: ${slug}`);
+    log.debug(`[Router] Input: ${inputPath} | cleanPath: ${cleanPath} | Slug: ${slug}`);
 
     // 2. Early Guard (Preventing the 404 loop)
     // NOTE: We allow dynamic routes, so we only force 404 if it's explicitly 'not-found' logic failure
@@ -170,7 +190,8 @@ export const router = {
     if (push) {
       const nextIndex = this._lastIndex + 1;
       const fullPath = this.base + (cleanPath ? cleanPath : '');
-      const finalUrl = fullPath.replace('//', '/');
+      const pathname = fullPath.replace('//', '/');
+      const finalUrl = `${pathname}${queryPart}${hashPart}`;
       history.pushState({ index: nextIndex, navigationId }, '', finalUrl);
       this._lastIndex = nextIndex;
     }
@@ -257,9 +278,14 @@ export const router = {
 
         if (signal.aborted || navigationId !== this._activeNavId) return; // Guard
 
+        // Extract version hash from DOM to bust immutable cache on dynamic imports
+        const vMatch = document.querySelector('script[src*="env-config.js"]')?.src.match(/v=([^&]+)/);
+        const buildHash = vMatch ? `?v=${vMatch[1]}` : '';
+        const importPath = config.path.includes('?') ? config.path : config.path + buildHash;
+
         // Parallelize: Load Code + Fetch Data
         const [module] = await Promise.all([
-          import(config.path),
+          import(importPath),
           config.api ? state.query(config.dataKey, async () => {
             if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
 
@@ -275,8 +301,7 @@ export const router = {
 
         if (signal.aborted || navigationId !== this._activeNavId) return;
 
-        const queryStr = path.split('?')[1] || '';
-        const queryObject = Object.fromEntries(new URLSearchParams(queryStr));
+        const queryObject = Object.fromEntries(new URLSearchParams(queryString));
 
         document.documentElement.setAttribute('data-transition', direction);
 
@@ -284,6 +309,18 @@ export const router = {
         state.set('route', slug);
         state.set('query', queryObject);
         state.set('params', params);
+
+        // Update document title — include subroute for history differentiation
+        const pageTitle = ROUTE_TITLES[slug];
+        const subView = params.view || pathSegments[1] || '';
+        if (subView) {
+          const subLabel = subView.charAt(0).toUpperCase() + subView.slice(1).replace(/-/g, ' ');
+          document.title = `${subLabel} — ${pageTitle || slug} — Axiom`;
+        } else {
+          document.title = pageTitle && slug !== 'home'
+            ? `${pageTitle} — Axiom`
+            : 'Axiom';
+        }
 
         // Emit a navigation "commit" signal after state is updated,
         // providing a unique event even when slug stays the same.
@@ -410,7 +447,7 @@ export const router = {
       // Let's rely on standard navigation which will resolve the relative path
       // Against the current location.
 
-      // Actually, safest is to let the browser resolve the full URL, 
+      // Actually, safest is to let the browser resolve the full URL,
       // then check if it starts with our base URI.
       if (link.href.startsWith(location.origin + this.base) || this.base === '/') {
         e.preventDefault();

@@ -29,6 +29,9 @@ export class FormValidator {
   }
 
   async validateField(input) {
+    // Skip if input doesn't support validation API
+    if (typeof input.setCustomValidity !== 'function') return true;
+
     // 1. Reset custom validity to checking...
     input.setCustomValidity('');
 
