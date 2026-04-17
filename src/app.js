@@ -3,6 +3,7 @@ import { state } from '@state';
 import { log } from '@core/logger.js';
 import { config } from '@core/config.js';
 import { ROUTES, ROUTE_DEPTHS, ROUTE_ORDER, DEFAULT_ROUTE } from './app-routes.js';
+import '@core/focus-walker.js'; // A11y: Shadow DOM tab traversal fix (Safari)
 
 const app = document.querySelector('#app-container');
 

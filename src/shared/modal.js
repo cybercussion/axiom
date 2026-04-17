@@ -5,6 +5,8 @@ import { BaseComponent } from './base-component.js';
  * A native <dialog> wrapper with glassmorphism, focus trapping, and scroll locking.
  */
 export class AxiomModal extends BaseComponent {
+  static delegatesFocus = false;
+
   static get observedAttributes() {
     return ['title', 'open', 'size'];
   }
@@ -61,6 +63,10 @@ export class AxiomModal extends BaseComponent {
         dialog[open] {
           opacity: 1;
           transform: translateY(0) scale(1);
+        }
+
+        dialog:focus {
+          outline: none;
         }
 
         /* Closing State */
@@ -157,7 +163,7 @@ export class AxiomModal extends BaseComponent {
         }
       </style>
 
-      <dialog part="dialog" aria-labelledby="${this._titleId}" aria-modal="true">
+      <dialog part="dialog" aria-labelledby="${this._titleId}" aria-modal="true" tabindex="-1">
         <header>
           <h2 id="${this._titleId}">${this.title}</h2>
           <!-- Native close button still works but we intercept the event -->
@@ -235,6 +241,7 @@ export class AxiomModal extends BaseComponent {
     if (this._dialog && !this._dialog.open) {
       this._dialog.classList.remove('closing');
       this._dialog.showModal();
+      this._dialog.focus(); // Focus dialog itself, not the close button
       document.body.style.overflow = 'hidden'; // Scroll lock
       this.setAttribute('open', '');
     }
