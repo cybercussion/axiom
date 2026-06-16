@@ -2,6 +2,11 @@ import { BaseComponent } from '@shared/base-component.js';
 import '@shared/modal.js';
 
 class HomeUI extends BaseComponent {
+  // A11y: don't delegate the router's post-navigation focus() into the first
+  // focusable child (scrolls it into view → mobile URL bar + focus ring);
+  // focus the host container instead. Parity with daystrom page components.
+  static delegatesFocus = false;
+
   async setup() {
     const cssPath = import.meta.url.replace('.js', '.css');
     await this.addExternalStyles(cssPath);
