@@ -85,6 +85,14 @@ export function resetCourseState(clearStorage = true) {
   // attempt can't survive the reload that follows reset and get restored as stale
   // state. Key must match SCOBot_API_1484_11's _save()/_load() persistence key.
   if (clearStorage) {
+    // Terminate the standalone session BEFORE wiping the store: the mock saves on
+    // terminate, and SCOBot's beforeunload/unload auto-suspend would otherwise
+    // re-persist the still-active session's in-memory CMI (stale interactions/
+    // objectives included) on the reload that follows reset. With the session dead,
+    // the unload handlers no-op. LMS-mode (non-standalone) resets are unchanged.
+    if (scorm && scorm.settings?.standalone && scorm.isConnectionActive()) {
+      scorm.terminate();
+    }
     localStorage.removeItem('SCOBot_Mock_Data');
   }
 }
