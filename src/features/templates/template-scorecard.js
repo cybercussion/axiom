@@ -88,7 +88,7 @@ class TemplateScorecard extends TemplateBase {
     `;
 
     this.bindEvents();
-    this.finalizeCourse(score, isPassing);
+    this.finalizeCourse(score);
   }
 
   bindEvents() {
@@ -118,7 +118,7 @@ class TemplateScorecard extends TemplateBase {
     state.notify('Course completed! You may close this window.', 'success');
   }
 
-  finalizeCourse(score, isPassing) {
+  finalizeCourse(score) {
     const scorm = course.scorm;
     if (!scorm || !scorm.isConnectionActive() || course.isReviewMode) return;
 

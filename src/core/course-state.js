@@ -354,15 +354,22 @@ export const courseActions = {
 
   /**
    * Push the current score through the Content API.
-   * cmi.score.raw is gradeIt()'s input (min/max were declared by setTotals);
-   * gradeIt derives scaled + success, and gates completion on progress_measure.
+   * cmi.score.raw is written on every call (running score, per page);
+   * gradeIt() — which derives scaled + success and stamps completion —
+   * only fires once the course is actually finished (completionPercent 100).
+   * At that point the threshold semantics line up: threshold 0
+   * (non-interactive courses) completes the finished course, and
+   * threshold 1 (interactive) requires all objectives, which 100% page
+   * completion implies.
    */
   finalizeScore() {
     const scorm = course.scorm;
     if (!scorm || !scorm.isConnectionActive() || course.isReviewMode) return;
 
     scorm.setvalue('cmi.score.raw', String(course.score));
-    scorm.gradeIt();
+    if (course.completionPercent === 100) {
+      scorm.gradeIt();
+    }
     scorm.commit();
   },
 
@@ -510,6 +517,8 @@ export const courseActions = {
 
   /**
    * Save learner comments (legacy single-comment method)
+   * Note: appends a new comment record per call (addLearnerComment
+   * semantics) — no longer overwrites cmi.comments_from_learner.0.
    * @deprecated Use addLearnerComment for multi-comment support
    */
   saveLearnerComments(text) {

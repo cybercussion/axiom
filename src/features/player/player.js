@@ -100,6 +100,11 @@ class PlayerUI extends BaseComponent {
         const data = state.get('courseData');
         const passingScore = (data?.meta?.passingScore ?? 80) / 100;
 
+        // Objectives = interactive pages (one objective per question page).
+        // Computed up front: drives both completion_threshold and setTotals.
+        const interactiveTypes = ['choice', 'match', 'wordpuzzle'];
+        const totals = (data?.pages || []).filter(p => interactiveTypes.includes(p.type)).length;
+
         const options = {
           debug: debugEnabled,
           prefix: 'SCOBot',
@@ -108,7 +113,10 @@ class PlayerUI extends BaseComponent {
           exit_type: 'suspend',        // Safety default; finish() overrides at the end
           happyEnding: false,          // gradeIt() is the honest scoring path
           scaled_passing_score: passingScore,
-          completion_threshold: 1      // completed = every objective completed
+          // completed = every objective completed. Only set when objectives
+          // exist: a zero-interaction course never advances progress_measure,
+          // so omit the key and let SCOBot's default threshold (0) apply.
+          ...(totals > 0 ? { completion_threshold: 1 } : {})
         };
 
         const scorm = new SCOBot(options);
@@ -120,9 +128,6 @@ class PlayerUI extends BaseComponent {
           log.info(`SCORM initialized (entry: ${scorm.getEntry() || 'ab-initio'}, mode: ${scorm.getMode()})`);
 
           // Declare totals so SCOBot maintains progress_measure.
-          // Objectives = interactive pages (one objective per question page).
-          const interactiveTypes = ['choice', 'match', 'wordpuzzle'];
-          const totals = (data?.pages || []).filter(p => interactiveTypes.includes(p.type)).length;
           scorm.setTotals({
             totalInteractions: String(totals),
             totalObjectives: String(totals),
