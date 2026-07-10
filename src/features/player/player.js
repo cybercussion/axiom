@@ -54,12 +54,18 @@ class PlayerUI extends BaseComponent {
   disconnectedCallback() {
     // Cleanup course mode
     state.set('courseActive', false);
-    
-    // Terminate SCORM session
+
+    // Close the SCORM session via the Content API lifecycle
     const scorm = course.scorm;
-    if (scorm) {
-      courseActions.syncToScorm();
-      scorm.terminate();
+    if (scorm && scorm.isConnectionActive()) {
+      if (course.isReviewMode) {
+        scorm.suspend();                      // review: never rewrite status
+      } else if (course.completionPercent === 100) {
+        courseActions.finalizeScore();        // cmi.score.raw + gradeIt()
+        scorm.finish();                       // exit normal — the attempt ends
+      } else {
+        scorm.suspend();                      // save-and-resume
+      }
     }
 
     super.disconnectedCallback();
@@ -87,32 +93,43 @@ class PlayerUI extends BaseComponent {
       try {
         // Enable debug: URL param overrides config.DEBUG
         const debugEnabled = launchParams.debug || config.DEBUG;
-        
-        // Log launch params in debug mode
         if (debugEnabled) {
           launchParams.log();
         }
-        
-        // SCOBot options
+
+        const data = state.get('courseData');
+        const passingScore = (data?.meta?.passingScore ?? 80) / 100;
+
         const options = {
           debug: debugEnabled,
           prefix: 'SCOBot',
-          use_standalone: true,   // Failover to Mock API if no LMS found
-          compression: true,      // Compress data to save space
-          exit_type: 'suspend'    // Default exit behavior
+          use_standalone: true,        // Failover to Mock API if no LMS found
+          compression: true,           // Compress suspend_data (lz-string)
+          exit_type: 'suspend',        // Safety default; finish() overrides at the end
+          happyEnding: false,          // gradeIt() is the honest scoring path
+          scaled_passing_score: passingScore,
+          completion_threshold: 1      // completed = every objective completed
         };
-        
-        if (debugEnabled) {
-          log.info('SCOBot debug mode enabled');
-        }
-        
+
         const scorm = new SCOBot(options);
-        const initialized = scorm.initialize();
-        
-        if (initialized === 'true') {
+        // initSCO = initialize() + start(): learner info, entry/mode, suspend restore
+        const connected = scorm.initSCO();
+
+        if (connected === 'true') {
           state.set('scorm', scorm);
-          log.info(`SCORM initialized (SCOBot connected)`);
-          
+          log.info(`SCORM initialized (entry: ${scorm.getEntry() || 'ab-initio'}, mode: ${scorm.getMode()})`);
+
+          // Declare totals so SCOBot maintains progress_measure.
+          // Objectives = interactive pages (one objective per question page).
+          const interactiveTypes = ['choice', 'match', 'wordpuzzle'];
+          const totals = (data?.pages || []).filter(p => interactiveTypes.includes(p.type)).length;
+          scorm.setTotals({
+            totalInteractions: String(totals),
+            totalObjectives: String(totals),
+            scoreMin: '0',
+            scoreMax: '100'
+          });
+
           // Restore previous session if available
           courseActions.restoreFromScorm();
         } else {

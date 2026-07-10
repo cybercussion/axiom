@@ -50,10 +50,8 @@ export function resetCourseState(clearStorage = true) {
   // Clear SCORM data for fresh attempt
   const scorm = course.scorm;
   if (scorm && scorm.isConnectionActive()) {
-    // Clear suspend_data
-    scorm.setvalue('cmi.suspend_data', '');
-    scorm.setvalue('cmi.location', '0');
-    
+    scorm.setBookmark('0');
+
     // Clear learner comments by overwriting with empty values
     // Note: SCORM doesn't support "delete", so we just blank them out
     const countStr = scorm.getvalue('cmi.comments_from_learner._count');
@@ -63,14 +61,21 @@ export function resetCourseState(clearStorage = true) {
       scorm.setvalue(`cmi.comments_from_learner.${i}.location`, '');
       scorm.setvalue(`cmi.comments_from_learner.${i}.timestamp`, '');
     }
-    
+
     // Reset completion/success status
     scorm.setvalue('cmi.completion_status', 'incomplete');
     scorm.setvalue('cmi.success_status', 'unknown');
     scorm.setvalue('cmi.score.raw', '0');
     scorm.setvalue('cmi.score.scaled', '0');
     scorm.setvalue('cmi.progress_measure', '0');
-    
+
+    // Clear SCOBot's in-memory suspend pages, then persist the empty set.
+    // (Reach-in: candidate for an upstream clearSuspendData() in 5.3.)
+    if (scorm.settings?.suspend_data) {
+      scorm.settings.suspend_data.pages = [];
+    }
+    scorm.setSuspendData();
+
     scorm.commit();
   }
 
@@ -166,6 +171,14 @@ export const course = {
   },
 
   /**
+   * True when the LMS launched us in review mode — render restored state, write nothing.
+   */
+  get isReviewMode() {
+    const scorm = this.scorm;
+    return !!scorm && typeof scorm.getMode === 'function' && scorm.getMode() === 'review';
+  },
+
+  /**
    * Get course metadata
    */
   get meta() {
@@ -247,7 +260,12 @@ export const courseActions = {
     const total = course.totalPages;
     if (index >= 0 && index < total) {
       state.set('coursePosition', index);
-      this.syncToScorm();
+
+      const scorm = course.scorm;
+      if (scorm && scorm.isConnectionActive() && !course.isReviewMode) {
+        scorm.setBookmark(String(index));
+        scorm.commit();
+      }
     }
   },
 
@@ -275,6 +293,7 @@ export const courseActions = {
    */
   markPageComplete(score = null, data = {}) {
     const pos = state.get('coursePosition');
+    const page = course.currentPage;
     const progress = { ...state.get('courseProgress') };
     const existing = progress[pos];
 
@@ -290,9 +309,13 @@ export const courseActions = {
       timestamp: Date.now(),
       ...data
     };
-
     state.set('courseProgress', progress);
-    this.syncToScorm();
+
+    const scorm = course.scorm;
+    if (scorm && scorm.isConnectionActive() && !course.isReviewMode && page) {
+      scorm.setSuspendDataByPageID(page.id, page.title || page.type, progress[pos]);
+      this.finalizeScore();
+    }
   },
 
   /**
@@ -320,83 +343,83 @@ export const courseActions = {
   },
 
   /**
-   * Sync current state to SCORM
+   * Push the current score through the Content API.
+   * cmi.score.raw is gradeIt()'s input (min/max were declared by setTotals);
+   * gradeIt derives scaled + success, and gates completion on progress_measure.
    */
-  syncToScorm() {
+  finalizeScore() {
     const scorm = course.scorm;
-    if (!scorm || !scorm.isConnectionActive()) return;
+    if (!scorm || !scorm.isConnectionActive() || course.isReviewMode) return;
 
-    const pos = state.get('coursePosition');
-    const progress = state.get('courseProgress');
-
-    // Location
-    scorm.setvalue('cmi.location', String(pos));
-
-    // Suspend data (full progress state)
-    const suspendObj = {
-      position: pos,
-      progress,
-      interactions: state.get('interactions')
-    };
-    console.log('[CourseState] Saving to suspend_data:', suspendObj);
-    scorm.setvalue('cmi.suspend_data', JSON.stringify(suspendObj));
-
-    // Completion status
-    const completionPercent = course.completionPercent;
-    if (completionPercent === 100) {
-      scorm.setvalue('cmi.completion_status', 'completed');
-    } else {
-      scorm.setvalue('cmi.completion_status', 'incomplete');
-    }
-
-    // Score (if we have interactions)
-    const score = course.score;
-    if (score > 0) {
-      scorm.setvalue('cmi.score.scaled', String(score / 100));
-      scorm.setvalue('cmi.score.raw', String(score));
-      scorm.setvalue('cmi.score.max', '100');
-      scorm.setvalue('cmi.score.min', '0');
-
-      // Success status
-      scorm.setvalue('cmi.success_status', course.isPassing ? 'passed' : 'failed');
-    }
-
+    scorm.setvalue('cmi.score.raw', String(course.score));
+    scorm.gradeIt();
     scorm.commit();
   },
 
   /**
-   * Restore state from SCORM suspend_data
+   * Restore session via the Content API: bookmark for position,
+   * per-page suspend records for progress, interaction read-back for answers.
+   * Legacy/unparseable data → start fresh (never throw).
    */
   restoreFromScorm() {
     const scorm = course.scorm;
     if (!scorm || !scorm.isConnectionActive()) return false;
 
-    const suspendData = scorm.getvalue('cmi.suspend_data');
-    if (!suspendData || suspendData === 'false') {
-      return false;
-    }
+    const pages = state.get('courseData')?.pages || [];
+    let restored = false;
 
+    // 1. Per-page progress
+    // Guarded: legacy cmi.suspend_data (pre-Content-API shape, e.g.
+    // { position, progress, interactions }) has no `.pages` array, and
+    // SCOBot's getSuspendDataByPageID/getInteraction reach into that
+    // structure without a null-check — a legacy record must never crash
+    // the player, so isolate each lookup.
     try {
-      const data = JSON.parse(suspendData);
-      console.log('[CourseState] Restoring from suspend_data:', data);
-      
-      // Restore all state - order doesn't matter since we render AFTER restore
-      if (data.progress) {
-        state.set('courseProgress', data.progress);
-        console.log('[CourseState] Restored progress:', data.progress);
+      const progress = {};
+      pages.forEach((page, i) => {
+        const saved = scorm.getSuspendDataByPageID(page.id);
+        if (saved && saved !== 'false' && typeof saved === 'object') {
+          progress[i] = saved;
+        }
+      });
+      if (Object.keys(progress).length > 0) {
+        state.set('courseProgress', progress);
+        restored = true;
+        console.log('[CourseState] Restored per-page progress:', progress);
       }
-      if (data.interactions) {
-        state.set('interactions', data.interactions);
-      }
-      if (data.position !== undefined) {
-        state.set('coursePosition', data.position);
-      }
-
-      return true;
     } catch (e) {
-      console.warn('[CourseState] Failed to restore suspend_data:', e, suspendData);
-      return false;
+      console.warn('[CourseState] Failed to restore per-page progress (legacy suspend_data?):', e);
     }
+
+    // 2. Interactions (answers) read back from cmi.interactions
+    try {
+      const interactions = [];
+      pages.forEach((page) => {
+        const found = scorm.getInteraction(String(page.id));
+        if (found && found !== 'false') {
+          interactions.push(found);
+        }
+      });
+      if (interactions.length > 0) {
+        state.set('interactions', interactions);
+      }
+    } catch (e) {
+      console.warn('[CourseState] Failed to restore interactions:', e);
+    }
+
+    // 3. Bookmark → position
+    try {
+      const bookmark = scorm.getBookmark();
+      const pos = parseInt(bookmark, 10);
+      if (!Number.isNaN(pos) && pos >= 0 && pos < pages.length) {
+        state.set('coursePosition', pos);
+        restored = true;
+      }
+    } catch (e) {
+      console.warn('[CourseState] Failed to restore bookmark:', e);
+    }
+
+    return restored;
   },
 
   /**
