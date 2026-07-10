@@ -68,3 +68,11 @@ claim = "Constraint Validation API wrapper (custom rules, async), native <dialog
 maturity = "shipped"
 entry_points = ["src/shared/form-validator.js", "src/shared/modal.js", "src/shared/toast-manager.js"]
 pattern_doc = ""
+
+[[capabilities]]
+id = "conversational-page-authoring"
+tags = ["elearning", "testing", "schemas", "authoring", "scorm"]
+claim = "Scrybe-pattern authoring for the SCORM player (branch scobot-player2): JSON Schema per template type (schemas/), Ajv validator with answers-to-confirm no-fabrication gate (tools/validate-course.js, npm run validate), golden examples (examples/), package-time enforcement in create-scorm-package, and a /new-page conversational skill. Lean port of scrybe's authoring layer — data generation only, no code-gen (that is Tier 2)."
+maturity = "working"
+entry_points = ["schemas/", "tools/validate-course.js", "examples/", ".claude/skills/new-page/SKILL.md"]
+pattern_doc = "../scrybe/SCRYBE.md"
