@@ -6,7 +6,21 @@ Welcome to **Axiom**. We mistakenly decided that 500MB `node_modules` folders, 3
 
 We were wrong.
 
-Axiom is a **zero-build**, **zero-dependency**, **vanilla Web Standards** architecture. It runs directly in the browser. It respects your RAM. It respects your time.
+Axiom is a **zero-build**, **zero-framework**, **vanilla Web Standards** architecture. It runs directly in the browser. It respects your RAM. It respects your time.
+
+---
+
+## 🎓 SCOBot Player 2 (this branch)
+
+This branch (`scobot-player2`) is the SCORM-package lane of Axiom: an e-learning SCO player, still built on the same zero-framework core, but packaged to run *inside* an LMS instead of on the open web.
+
+- **Template engine** — `choice`, `match`, `wordpuzzle`, `scorecard`, and `title` page types, each a Web Component driven by `data/scobot.json`.
+- **SCORM tracking** — [`@cybercussion/scobot`](https://www.npmjs.com/package/@cybercussion/scobot) `^5.2.0` via its Content API (bookmarks, per-page suspend data, interactions, objectives, `gradeIt()` scoring). See [`SCOBot_README.md`](SCOBot_README.md) for the full integration guide.
+- **SCORM build profile** — `BUILD_PROFILE='scorm'` in `tools/minify.js` emits relative asset paths and keeps the import map live at runtime, so the built package can be dropped into an LMS content directory at any path.
+- **Packaging** — `npm run scorm` (SCORM 2004 default), `npm run scorm:12`, or `npm run scorm:2004` builds a SCORM-compliant ZIP from `dist/`.
+- **Themed backgrounds** — per-course webp background art driven by course metadata.
+
+This is the one dependency the "zero-dependency" pitch below doesn't apply to on this branch — the SCORM runtime needs an actual CMI client, and `@cybercussion/scobot` is it.
 
 ---
 
@@ -42,7 +56,7 @@ Web Components. Native Shadow DOM.
 
 ## 🚀 Quick Start
 
-You don't need `npm install`. You don't need `npm run build`.
+You don't need `npm run build` to develop. (This branch does need `npm install` once — the SCORM lane's Content API runs on `@cybercussion/scobot`, loaded straight from `node_modules` via the import map.)
 
 1. **Get the code:**
    ```bash
