@@ -1,0 +1,54 @@
+# Cache/security header rules (copied into dist/ by tools/minify.js).
+# Honored by Cloudflare Pages and Workers Assets; a NO-OP on GitHub Pages (axiom's
+# own deploy) — this file is the TEMPLATE the Axiom-based projects inherit.
+#
+# The stale-deploy contract (see docs/patterns/stale-deploy-prevention.md):
+#   1. HTML is never cached (no-store), so a new deploy reaches everyone immediately.
+#   2. tools/minify.js stamps ?v=BUILD_ID onto EVERY module URL — relative imports,
+#      resolved import-map aliases (@state, @core/*, ...), lazy-route paths, entry
+#      <script> tags, and stylesheets. Fresh HTML + per-deploy URLs = no stale window.
+#
+# CF Pages gotcha (verified live 2026-06-08, new.cybercussion.com): Pages
+# CONCATENATES Cache-Control across ALL matching rules — the specific rule does NOT
+# override /* — and no-store wins the merge. So with the /* no-store below, the
+# immutable rules on /core etc. are voided on Pages and modules re-download per full
+# page load. That's the accepted trade for a small module graph with no service
+# worker. Alternatives when the graph gets big: a versioned network-first SW
+# (daystrom) or Workers Assets with max-age=0 + ETag 304s (tender).
+
+# Security headers + no-store for ALL HTML. no-store on /* is REQUIRED: deep
+# SPA-fallback routes (e.g. /dashboard) serve index.html but match only this
+# catch-all — without it they cache a STALE import map while fresh ?v=-busted
+# modules load → intermittent "Failed to resolve module specifier" until a
+# hard refresh.
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Cache-Control: no-store, must-revalidate
+
+/
+  Cache-Control: no-store, must-revalidate
+/index.html
+  Cache-Control: no-store, must-revalidate
+
+# Code — every URL is ?v=-stamped per deploy, so immutable is CORRECT wherever
+# per-path rules actually override the catch-all (e.g. Workers Assets). On CF
+# Pages the /* no-store concatenation wins instead (see header note) — these
+# rules then cost nothing and document intent.
+/app.js
+  Cache-Control: public, max-age=31536000, immutable
+/app-routes.js
+  Cache-Control: public, max-age=31536000, immutable
+/core/*
+  Cache-Control: public, max-age=31536000, immutable
+/shared/*
+  Cache-Control: public, max-age=31536000, immutable
+/features/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Static media (models/textures/audio) — renamed-on-change BY FILENAME (never a
+# query string: queries confuse extension-based loader selection, see STNG's
+# asset-url.js), so cache long.
+/assets/*
+  Cache-Control: public, max-age=604800, must-revalidate

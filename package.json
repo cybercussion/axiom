@@ -10,6 +10,7 @@
     "feature": "node tools/create-feature.js",
     "check-pwa": "node tools/check-pwa.js",
     "verify-dist": "node tools/verify-dist.js",
+    "test:tools": "node --test 'tools/**/*.test.js'",
     "lint": "npx eslint src/**/*.js"
   },
   "devDependencies": {
