@@ -102,3 +102,27 @@ test('course: meta.title is required', () => {
   const r = validateCourse(writeCourse('meta-bad.json', bad));
   assert.ok(r.errors.some(e => e.startsWith('course') && e.includes('title')), r.errors.join('\n'));
 });
+
+test('answersToConfirm lists choice keys, match pairs, blanks, weights, passing scores', () => {
+  const course = {
+    meta: { title: 'T', passingScore: 80 },
+    settings: {},
+    pages: [
+      structuredClone(VALID_CHOICE_PAGE),
+      { id: 'm1', type: 'match', title: 'M', question: 'q', weight: 2,
+        pairs: [
+          { sourceId: 's1', sourceText: 'Shadow DOM', targetId: 't1', targetText: 'Encapsulation' },
+          { sourceId: 's2', sourceText: 'ESM', targetId: 't2', targetText: 'Modules' }
+        ] },
+      { id: 'w1', type: 'wordpuzzle', title: 'W', question: 'q', text: 'x {{b1}}',
+        blanks: [{ id: 'b1', answers: ['HTMLElement'] }] }
+    ]
+  };
+  const r = validateCourse(writeCourse('keys.json', course));
+  const joined = r.answersToConfirm.join('\n');
+  assert.ok(joined.includes('meta.passingScore = 80'));
+  assert.ok(joined.includes('q-sample') && joined.includes('"Right"'));
+  assert.ok(joined.includes('m1') && joined.includes('Shadow DOM → Encapsulation'));
+  assert.ok(joined.includes('w1') && joined.includes('HTMLElement'));
+  assert.ok(joined.includes('weight = 2'));
+});

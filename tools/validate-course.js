@@ -82,9 +82,32 @@ export function validateCourse(filePath) {
   return { valid: errors.length === 0, errors, answersToConfirm: collectAnswerKeys(course) };
 }
 
-// Task 3 fills this in (the no-fabrication gate). Empty until then.
+/**
+ * The no-fabrication gate (scrybe factsToConfirm, re-aimed at correctness):
+ * list every answer-key fact so a HUMAN confirms them — the authoring skill
+ * may draft distractors/prose but never silently invents these.
+ */
 function collectAnswerKeys(course) {
-  return [];
+  const out = [];
+  const meta = course?.meta || {};
+  if (meta.passingScore !== undefined) out.push(`meta.passingScore = ${meta.passingScore}`);
+  if (meta.masteryScore !== undefined) out.push(`meta.masteryScore = ${meta.masteryScore}`);
+
+  for (const page of (Array.isArray(course?.pages) ? course.pages : [])) {
+    const tag = `${page?.id} (${page?.type})`;
+    if (page?.weight !== undefined) out.push(`${tag}: weight = ${page.weight}`);
+    if (page?.type === 'choice' && Array.isArray(page.choices)) {
+      const correct = page.choices.filter(c => c?.correct).map(c => `${c.id} "${c.text}"`);
+      out.push(`${tag}: correct = ${correct.join(', ') || '(none marked!)'}`);
+    }
+    if (page?.type === 'match' && Array.isArray(page.pairs)) {
+      page.pairs.forEach(p => out.push(`${tag}: ${p.sourceText} → ${p.targetText}`));
+    }
+    if (page?.type === 'wordpuzzle' && Array.isArray(page.blanks)) {
+      page.blanks.forEach(b => out.push(`${tag}: {{${b.id}}} = ${(b.answers || []).join(' | ')}`));
+    }
+  }
+  return out;
 }
 
 // CLI: node tools/validate-course.js [path]
