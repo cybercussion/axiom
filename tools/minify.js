@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 import { minify } from 'terser';
 import { minify as cssoMinify } from 'csso';
 
@@ -19,6 +19,24 @@ const BUILD_ID = Date.now().toString(36);
 const TEXT_SCAN_EXTENSIONS = new Set(['.html', '.js', '.css', '.json', '.txt', '.svg', '.xml', '.webmanifest']);
 const TEXT_REWRITE_EXTENSIONS = new Set(['.html', '.json', '.txt', '.svg', '.xml', '.webmanifest']);
 
+// Import-map namespace aliases → their absolute dist target ({ "@core/": "/core/", ... }).
+// Aliased module URLs are otherwise STABLE across deploys, so they must be cache-busted or a
+// returning visitor pairs fresh entry code with stale deps. We CANNOT just append ?v= to the
+// alias and lean on the import map: prefix maps with RELATIVE address values do not resolve a
+// specifier that already carries a ?query — "Failed to resolve module specifier" broke prod on
+// new.cybercussion.com (docs/handoff-2026-06-07.md there). So the build resolves the alias to
+// its absolute path AND versions it: "@core/router.js" → "/core/router.js?v=ID" — the same form
+// as relative imports, which always worked, and zero runtime import-map dependency.
+const NAMESPACE_MAP = readNamespaceMap(path.join(ROOT_DIR, 'index.html'));
+
+// Exact (non-slash) import-map aliases → their absolute dist target ({ "@state": "/core/state.js" }).
+// Unlike the prefix aliases above, these carry no ".js" suffix, so stampImports' path regexes never
+// catch them. Left bare, an exact alias is the ONLY kind of specifier in the built bundle that still
+// depends on the runtime import map — and that map intermittently fails to apply on a cold load,
+// throwing "Failed to resolve module specifier @state". Resolving exact aliases to absolute versioned
+// paths (same form as the prefix aliases) removes the last import-map dependency from production JS.
+const EXACT_ALIAS_MAP = readExactAliasMap(path.join(ROOT_DIR, 'index.html'));
+
 function rewriteDistPathPrefix(value) {
   return String(value || '').replace(/\/src\//g, '/');
 }
@@ -34,7 +52,14 @@ function normalizeDistIndexHtml() {
       const parsed = JSON.parse(jsonText);
       const imports = parsed?.imports || {};
       for (const [key, specifier] of Object.entries(imports)) {
-        imports[key] = rewriteDistPathPrefix(specifier);
+        let v = rewriteDistPathPrefix(specifier);
+        // Cache-bust exact-file APP aliases (e.g. "@state" → "/core/state.js"): the query rides
+        // in the VALUE, which the import-map spec allows. The built JS no longer needs these
+        // entries (stampImports resolves them), but the map stays correct as a fallback for any
+        // unstamped consumer (inline scripts, console). Skip vendor (/lib/) + prefix entries —
+        // trailing-slash values MUST keep their bare trailing slash per the import-map spec.
+        if (/\.js$/.test(v) && !v.includes('/lib/')) v += `?v=${BUILD_ID}`;
+        imports[key] = v;
       }
       return `${open}${JSON.stringify(parsed, null, 2)}${close}`;
     } catch {
@@ -44,22 +69,127 @@ function normalizeDistIndexHtml() {
 
   html = html.replace(/((?:href|src)="?)\/?src\//gi, '$1/');
 
+  // Cache-bust the ENTRY module scripts (`<script type="module" src="/app.js">`).
+  // stampImports only versions ES-module *import specifiers*, not these tags, so without this
+  // an entry is served stale from a long browser cache after a deploy → an old module graph.
+  html = html.replace(/(<script\s+type="module"\s+src=")(\/[^"?]+\.js)(")/gi, `$1$2?v=${BUILD_ID}$3`);
+
+  // Cache-bust stylesheets the same way — their URLs are also stable across deploys.
+  html = html.replace(/(<link\s+rel="stylesheet"\s+href=")(\/[^"?]+)(")/gi, `$1$2?v=${BUILD_ID}$3`);
+
   fs.writeFileSync(indexPath, html, 'utf8');
 }
 
-function withVersion(specifier) {
+// Read the trailing-slash namespace aliases from the source import map and map each to its
+// absolute dist path (source "/src/core/" → "/core/"). Explicit aliases like "@state" are
+// excluded — they exact-match in the import map and never carry a ".js" suffix.
+export function readNamespaceMap(indexHtmlPath) {
+  if (!fs.existsSync(indexHtmlPath)) return {};
+  const html = fs.readFileSync(indexHtmlPath, 'utf8');
+  const mapMatch = html.match(/<script\s+type="importmap">\s*([\s\S]*?)\s*<\/script>/i);
+  if (!mapMatch) return {};
+  try {
+    const imports = JSON.parse(mapMatch[1]).imports || {};
+    const map = {};
+    for (const [key, value] of Object.entries(imports)) {
+      if (key.endsWith('/') && !key.startsWith('.') && !key.startsWith('/')) {
+        // "/src/core/" → "/core/" (absolute dist path)
+        map[key] = rewriteDistPathPrefix(String(value)).replace(/^\.?\//, '/');
+      }
+    }
+    return map;
+  } catch {
+    return {};
+  }
+}
+
+// Read the EXACT (non-slash) import-map aliases like "@state" and map each to its absolute dist
+// path (source "/src/core/state.js" → "/core/state.js"). Trailing-slash prefix aliases are
+// excluded — those belong to readNamespaceMap. Any ?query in the source value is dropped; the
+// build re-applies a fresh ?v= when it resolves the specifier.
+export function readExactAliasMap(indexHtmlPath) {
+  if (!fs.existsSync(indexHtmlPath)) return {};
+  const html = fs.readFileSync(indexHtmlPath, 'utf8');
+  const mapMatch = html.match(/<script\s+type="importmap">\s*([\s\S]*?)\s*<\/script>/i);
+  if (!mapMatch) return {};
+  try {
+    const imports = JSON.parse(mapMatch[1]).imports || {};
+    const map = {};
+    for (const [key, value] of Object.entries(imports)) {
+      if (!key.endsWith('/') && !key.startsWith('.') && !key.startsWith('/')) {
+        map[key] = rewriteDistPathPrefix(String(value)).replace(/^\.?\//, '/').replace(/\?.*$/, '');
+      }
+    }
+    return map;
+  } catch {
+    return {};
+  }
+}
+
+export function withVersion(specifier, buildId = BUILD_ID, namespaceMap = NAMESPACE_MAP, exactAliasMap = EXACT_ALIAS_MAP) {
   const value = String(specifier || '').trim();
   if (!value) return value;
-
-  // Do not touch bare specifiers/import-map aliases (e.g. @core/router.js, @state)
-  // Only version relative or absolute paths that map to real files.
-  const isPathLike = value.startsWith('./') || value.startsWith('../') || value.startsWith('/');
-  if (!isPathLike) return value;
 
   // Avoid duplicating cache-buster when query already exists.
   if (value.includes('?')) return value;
 
-  return `${value}?v=${BUILD_ID}`;
+  // Relative/absolute path imports: version in place — these resolve without the import map.
+  if (value.startsWith('./') || value.startsWith('../') || value.startsWith('/')) {
+    return `${value}?v=${buildId}`;
+  }
+
+  // Exact import-map alias (e.g. @state): resolve to its absolute dist path AND version it, so
+  // the built JS never depends on the runtime import map. Checked before the prefix loop because
+  // an exact key like "@state" must win over any (hypothetical) overlapping prefix.
+  if (Object.prototype.hasOwnProperty.call(exactAliasMap, value)) {
+    return `${exactAliasMap[value]}?v=${buildId}`;
+  }
+
+  // Import-map namespace alias (e.g. @core/router.js): resolve to its absolute dist path AND
+  // version it. We can't keep the alias and append ?v= — prefix maps with relative address
+  // values won't resolve a query-bearing specifier, so "@core/x.js?v=ID" can fail to resolve.
+  for (const [prefix, target] of Object.entries(namespaceMap)) {
+    if (value.startsWith(prefix)) {
+      return `${target}${value.slice(prefix.length)}?v=${buildId}`;
+    }
+  }
+
+  // True bare specifier (external package): leave as-is.
+  return value;
+}
+
+// Cache-bust every ES module specifier in a chunk of JS — static `from "x.js"`, bare
+// side-effect `import "x.js"`, and dynamic `import("x.js")` — resolving namespace aliases
+// to absolute versioned paths via withVersion.
+export function stampImports(code, buildId = BUILD_ID, namespaceMap = NAMESPACE_MAP, exactAliasMap = EXACT_ALIAS_MAP) {
+  const v = (specifier) => withVersion(specifier, buildId, namespaceMap, exactAliasMap);
+  let out = code
+    .replace(/from\s+(['"])([^'"]+\.js)\1/g, (match, quote, specifier) => `from ${quote}${v(specifier)}${quote}`)
+    .replace(/import\s+(['"])([^'"]+\.js)\1/g, (match, quote, specifier) => `import ${quote}${v(specifier)}${quote}`)
+    .replace(/import\s*\(\s*(['"`])([^'"`]+\.js)\1\s*\)/g, (match, quote, specifier) => `import(${quote}${v(specifier)}${quote})`);
+
+  // Exact aliases (e.g. @state) carry no ".js", so the regexes above never match them. Rewrite the
+  // bare `from "@state"` and `import("@state")` forms to the resolved absolute versioned path so no
+  // shipped specifier depends on the runtime import map.
+  for (const alias of Object.keys(exactAliasMap)) {
+    const a = alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const target = v(alias);
+    out = out
+      .replace(new RegExp(`from\\s+(['"])${a}\\1`, 'g'), (match, quote) => `from ${quote}${target}${quote}`)
+      .replace(new RegExp(`import\\s*\\(\\s*(['"\`])${a}\\1\\s*\\)`, 'g'), (match, quote) => `import(${quote}${target}${quote})`);
+  }
+  return out;
+}
+
+// Cache-bust the lazy-route module paths stored as data: `path: "@features/x/x.js"` in ROUTES
+// (src/app-routes.js). The router dynamically import()s config.path, so these resolve through
+// the same path as literal imports — resolve the alias to an absolute versioned URL. Targets
+// the `path:` object key specifically, so it never touches import/from statements.
+export function stampRoutePaths(code, buildId = BUILD_ID, namespaceMap = NAMESPACE_MAP) {
+  return code.replace(
+    /(\bpath\s*:\s*)(['"])([^'"]+\.js)\2/g,
+    (match, prefix, quote, specifier) => `${prefix}${quote}${withVersion(specifier, buildId, namespaceMap)}${quote}`
+  );
 }
 
 async function main() {
@@ -76,6 +206,7 @@ async function main() {
   copyFile('index.html');
   copyFile('manifest.json');
   copyFile('sw.js');
+  copyFile('_headers'); // Cloudflare Pages/Workers Assets cache policy (no-op on GitHub Pages)
   copyDir('assets');
   copyDir('public');
   copyDir('data');
@@ -87,6 +218,7 @@ async function main() {
   await processDir(SRC_DIR, DIST_DIR);
   assertNoSrcReferencesInDist();
   assertNoAliasConflicts();
+  assertSingleCacheBustId();
 
   printNutritionFacts();
 }
@@ -129,8 +261,12 @@ function findLineNumber(lineStartIndex, position) {
 function assertNoSrcReferencesInDist() {
   const violations = [];
   const files = collectFilesRecursive(DIST_DIR);
+  const libPrefix = path.join(DIST_DIR, 'lib') + path.sep;
 
   for (const filePath of files) {
+    // Vendor libraries (three.js etc.) legitimately contain "/src/" in doc URLs — skip them.
+    if (filePath.startsWith(libPrefix)) continue;
+
     const ext = path.extname(filePath).toLowerCase();
     if (!TEXT_SCAN_EXTENSIONS.has(ext)) continue;
 
@@ -247,6 +383,46 @@ function assertNoAliasConflicts() {
   throw new Error('Hard-fail guard blocked build. Fix aliased imports before deploy.');
 }
 
+/**
+ * Build guard: cache-busting has ONE owner — this file's BUILD_ID. If a second
+ * stamping pass exists anywhere (a deploy script, a post-build step), module
+ * preloads/imports can carry MISMATCHED ids: the preload is wasted and the module
+ * downloads twice, and prerendered pages ship unversioned heads. Scoped to .js/.css
+ * URLs so intentional hand-bumped IMAGE busters (e.g. tile.jpg?v=4) are exempt.
+ */
+function assertSingleCacheBustId() {
+  const ids = new Map(); // id → first "file:line" seen
+  const files = collectFilesRecursive(DIST_DIR);
+  const libPrefix = path.join(DIST_DIR, 'lib') + path.sep;
+  const pattern = /\.(?:js|css)\?v=([A-Za-z0-9.-]+)/g;
+
+  for (const filePath of files) {
+    if (filePath.startsWith(libPrefix)) continue;
+    const ext = path.extname(filePath).toLowerCase();
+    if (!TEXT_SCAN_EXTENSIONS.has(ext)) continue;
+
+    const content = fs.readFileSync(filePath, 'utf8');
+    let match;
+    pattern.lastIndex = 0;
+    while ((match = pattern.exec(content)) !== null) {
+      if (!ids.has(match[1])) {
+        const line = findLineNumber(buildLineNumberIndex(content), match.index);
+        ids.set(match[1], `${path.relative(ROOT_DIR, filePath)}:${line}`);
+      }
+    }
+  }
+
+  if (ids.size <= 1) return;
+
+  console.error('\n❌ Build guard failed: multiple cache-bust ids found in dist output.');
+  console.error('   Cache-busting has ONE owner (minify.js BUILD_ID). A second ?v= pass causes');
+  console.error('   preload/import id mismatches → wasted preloads and double downloads.\n');
+  for (const [id, where] of ids) {
+    console.error(` - ?v=${id}  (first seen ${where})`);
+  }
+  throw new Error('Hard-fail guard blocked build. Remove the second cache-bust pass.');
+}
+
 function copyFile(name) {
   const srcPath = path.join(ROOT_DIR, name);
   if (fs.existsSync(srcPath)) {
@@ -297,21 +473,11 @@ async function processFile(srcPath, distPath) {
       // BUILD FIX: Rewrite absolute /src/ paths to root paths for distribution
       code = rewriteDistPathPrefix(code);
 
-      // CACHE BUSTING: Append ?v=BUILD_ID only to path-like ES module imports
-      // (relative/absolute). Do NOT mutate import-map aliases like @core/*.
-      // 1) Static imports: import {x} from "path.js" / import "path.js"
-      code = code.replace(/from\s+(['"])([^'"]+\.js)\1/g, (match, quote, specifier) => {
-        return `from ${quote}${withVersion(specifier)}${quote}`;
-      });
-
-      code = code.replace(/import\s+(['"])([^'"]+\.js)\1/g, (match, quote, specifier) => {
-        return `import ${quote}${withVersion(specifier)}${quote}`;
-      });
-
-      // 2) Dynamic imports: import("path.js") / import(`path.js`)
-      code = code.replace(/import\s*\(\s*(['"`])([^'"`]+\.js)\1\s*\)/g, (match, quote, specifier) => {
-        return `import(${quote}${withVersion(specifier)}${quote})`;
-      });
+      // CACHE BUSTING: version relative/absolute imports in place, and resolve import-map
+      // aliases (@state, @core/*, @shared/*, @features/*) to absolute versioned paths.
+      code = stampImports(code);
+      // Also bust the lazy-route data paths (ROUTES `path:` values) that the router import()s.
+      code = stampRoutePaths(code);
 
       const result = await minify(code, { module: true });
       if (result.code) {
@@ -376,4 +542,8 @@ function printNutritionFacts() {
   console.log('\x1b[32m✅ Build Complete.\x1b[0m Dist is ready.');
 }
 
-main();
+// Run the build only when invoked directly (node tools/minify.js), not when imported
+// by tests — importing must not trigger a full dist rebuild.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main();
+}

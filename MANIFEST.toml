@@ -3,7 +3,7 @@ name = "axiom"
 vcs = "git"
 toolchain = ["es6"]
 description = "High-performance, zero-build, vanilla Web Standards frontend architecture with Proxy-based state management and native Web Components."
-updated = "2026-06-10"
+updated = "2026-07-10"
 
 [[capabilities]]
 id = "zero-build-architecture"
@@ -55,11 +55,11 @@ pattern_doc = ""
 
 [[capabilities]]
 id = "production-minification-pipeline"
-tags = ["release"]
-claim = "Non-destructive build (src → dist) using Terser + CSSO, rewrites import paths, BUILD_ID versioning, GitHub Pages SPA routing injection"
+tags = ["release", "testing"]
+claim = "CANONICAL fleet copy (2026-07-10, consolidated from tender/daystrom/new.cybercussion/STNG). Non-destructive build (src → dist): Terser + CSSO, ?v=BUILD_ID stamping of ALL six module surfaces (static/side-effect/dynamic imports, exact aliases like @state resolved to absolute paths, lazy-route path: values, index.html entry scripts + stylesheets + import-map values), two hard-fail guards (no-/src/-in-dist, alias-conflict/split-singleton), 13 unit tests (npm run test:tools). Borrow from HERE; do not fork-and-drift."
 maturity = "shipped"
-entry_points = ["tools/minify.js", "tools/prepare-deploy.js", ".github/workflows/deploy.yml"]
-pattern_doc = ""
+entry_points = ["tools/minify.js", "tools/minify.test.js", "_headers", ".github/workflows/deploy.yml"]
+pattern_doc = "docs/patterns/stale-deploy-prevention.md"
 
 [[capabilities]]
 id = "form-validation-modal-toast-kit"

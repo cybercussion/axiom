@@ -9,20 +9,25 @@
   <script type="importmap">
     {
       "imports": {
-        "@state": "./src/core/state.js",
-        "@core/": "./src/core/",
-        "@shared/": "./src/shared/",
-        "@features/": "./src/features/"
+        "@state": "/src/core/state.js",
+        "@core/": "/src/core/",
+        "@shared/": "/src/shared/",
+        "@features/": "/src/features/"
       }
     }
   </script>
 
   <link rel="icon" type="image/png" href="favicon.png">
 
-  <!-- Critical Module Preloads -->
-  <link rel="modulepreload" href="src/app.js">
-  <link rel="modulepreload" href="src/core/state.js">
-  <link rel="modulepreload" href="src/core/router.js">
+  <!-- Import-map addresses MUST be absolute (leading slash), never relative
+       ("./…"): relative addresses resolve against the current route URL and
+       break the module graph on deploy — and the build resolves aliases to
+       absolute paths anyway. Module-preload hints are intentionally omitted — preloading the
+       app entry makes the browser resolve its aliased (bare-specifier) imports
+       BEFORE the inline import map registers, an intermittent "Failed to resolve
+       module specifier" race. The app loads via its module <script> below, after
+       the map is registered. Only add preload hints if the build first resolves
+       aliases to absolute paths. -->
 
   <link rel="stylesheet" href="src/shared/styles/theme.css">
   <link rel="stylesheet" href="src/shared/styles/animations.css">
