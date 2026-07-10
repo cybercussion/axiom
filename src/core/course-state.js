@@ -47,9 +47,9 @@ export function resetCourseState(clearStorage = true) {
   state.set('allComments', []);
   state.set('learnerComments', '');
 
-  // Clear SCORM data for fresh attempt
+  // Clear SCORM data for fresh attempt (never in review mode — restored state is read-only)
   const scorm = course.scorm;
-  if (scorm && scorm.isConnectionActive()) {
+  if (scorm && scorm.isConnectionActive() && !course.isReviewMode) {
     scorm.setBookmark('0');
 
     // Clear learner comments by overwriting with empty values
@@ -334,7 +334,9 @@ export const courseActions = {
 
     const scorm = course.scorm;
     if (scorm && scorm.isConnectionActive() && !course.isReviewMode) {
-      scorm.setInteraction(interaction);
+      // SCOBot's setInteraction persists `data.weighting`, not `data.weight` —
+      // pass both so templates' `weight` field actually reaches the CMI.
+      scorm.setInteraction({ ...interaction, weighting: interaction.weight });
 
       // One objective per interactive page — LMS gradebooks show per-question mastery.
       const correct = interaction.result === 'correct';
@@ -515,8 +517,7 @@ export const courseActions = {
     
     const scorm = course.scorm;
     if (scorm && scorm.isConnectionActive()) {
-      scorm.setvalue('cmi.comments_from_learner.0.comment', text);
-      scorm.setvalue('cmi.comments_from_learner.0.timestamp', new Date().toISOString());
+      scorm.addLearnerComment(text);
       scorm.commit();
     }
 

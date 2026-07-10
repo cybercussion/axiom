@@ -120,20 +120,12 @@ class TemplateScorecard extends TemplateBase {
 
   finalizeCourse(score, isPassing) {
     const scorm = course.scorm;
-    if (!scorm || !scorm.isConnectionActive()) return;
+    if (!scorm || !scorm.isConnectionActive() || course.isReviewMode) return;
 
-    // Set final score (all values must be strings)
-    scorm.setvalue('cmi.score.scaled', String(score / 100));
-    scorm.setvalue('cmi.score.raw', String(score));
-    scorm.setvalue('cmi.score.max', '100');
-    scorm.setvalue('cmi.score.min', '0');
-
-    // Set completion and success status
-    scorm.setvalue('cmi.completion_status', 'completed');
-    scorm.setvalue('cmi.success_status', isPassing ? 'passed' : 'failed');
-
-    // Commit to LMS
-    scorm.commit();
+    // Push the final score through the Content API — cmi.score.raw is
+    // gradeIt()'s input; gradeIt derives scaled + completion/success status
+    // (score.min/max were already declared via setTotals in player.js).
+    courseActions.finalizeScore();
 
     // Mark scorecard as complete
     this.markComplete(score);

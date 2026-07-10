@@ -42,9 +42,9 @@ export class PlayerNav extends BaseComponent {
     const scorm = course.scorm;
     if (!scorm || !scorm.isConnectionActive()) return true;
 
-    // Check if using mock API by looking for 'Local' in cmi._version
-    const version = scorm.getvalue('cmi._version');
-    return version && version.includes('Local');
+    // SCOBot flags this on its settings when it fell back to the Mock API
+    // (no raw cmi.* read needed).
+    return !!scorm.settings?.standalone;
   }
 
   render() {
