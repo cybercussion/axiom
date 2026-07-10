@@ -11,6 +11,7 @@
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
+import { validateCourse } from './validate-course.js';
 
 // Parse CLI arguments
 const args = process.argv.slice(2);
@@ -27,6 +28,16 @@ if (!fs.existsSync(distDir)) {
   console.error('   Run `npm run build` first to generate the production build.');
   process.exit(1);
 }
+
+// Schema gate: an invalid course must never become an LMS package.
+const validation = validateCourse('./data/scobot.json');
+if (!validation.valid) {
+  console.error('❌ data/scobot.json failed schema validation — refusing to package.');
+  validation.errors.forEach(e => console.error(` - ${e}`));
+  console.error('   Fix the errors (see `npm run validate`) and re-run.');
+  process.exit(1);
+}
+console.log('✅ Course schema validation passed');
 
 // Load course data
 const courseDataPath = './data/scobot.json';
