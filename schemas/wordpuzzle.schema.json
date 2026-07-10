@@ -4,6 +4,7 @@
   "allOf": [{ "$ref": "page-base" }],
   "type": "object",
   "description": "Fill-in-the-blanks. Rendered by src/features/templates/template-wordpuzzle.js. text contains {{blankId}} tokens matching blanks[].id.",
+  "unevaluatedProperties": false,
   "properties": {
     "type": {
       "const": "wordpuzzle",

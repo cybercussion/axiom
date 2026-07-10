@@ -138,3 +138,57 @@ test('every golden example page validates under its schema; examples/course.json
   const r = validateCourse(path.join(root, 'examples', 'course.json'));
   assert.deepEqual(r.errors, []);
 });
+
+// --- Final-review fix wave ---
+
+test('a typo\'d property on a choice page fails validation (unevaluatedProperties closes the escape)', () => {
+  const bad = structuredClone(MINIMAL_COURSE);
+  bad.pages[0].wieght = 5; // typo for "weight" — should NOT silently pass through
+  const r = validateCourse(writeCourse('typo.json', bad));
+  assert.equal(r.valid, false);
+  assert.ok(
+    r.errors.some(e => e.includes('pages[0]') && e.includes('wieght')),
+    r.errors.join('\n')
+  );
+});
+
+test('a choice page where every choice is correct:false fails (at least one correct answer required)', () => {
+  const bad = structuredClone(MINIMAL_COURSE);
+  bad.pages[0].choices = [
+    { id: 'a', text: 'Wrong A', correct: false },
+    { id: 'b', text: 'Wrong B', correct: false }
+  ];
+  const r = validateCourse(writeCourse('zero-correct.json', bad));
+  assert.equal(r.valid, false);
+  assert.ok(
+    r.errors.some(e => e.includes('pages[0]') && e.includes('choices')),
+    r.errors.join('\n')
+  );
+});
+
+test('answersToConfirm still reports "(none marked!)" for an (invalid) zero-correct choice page — the walk runs even on invalid courses', () => {
+  const bad = structuredClone(MINIMAL_COURSE);
+  bad.pages[0].choices = [
+    { id: 'a', text: 'Wrong A', correct: false },
+    { id: 'b', text: 'Wrong B', correct: false }
+  ];
+  const r = validateCourse(writeCourse('zero-correct-keys.json', bad));
+  assert.equal(r.valid, false);
+  assert.ok(
+    r.answersToConfirm.some(a => a.includes('(none marked!)')),
+    r.answersToConfirm.join('\n')
+  );
+});
+
+test('schema PAGE_TYPES stay in sync with TEMPLATE_REGISTRY in src/features/player/player.js', () => {
+  // WHY: a schema without a matching component entry would validate and
+  // package a course whose page renders "Unknown Page Type" at runtime
+  // (see PlayerUI.loadTemplate in player.js) — this test makes that drift
+  // a build-time failure instead of a runtime surprise.
+  const root = path.join(path.dirname(new URL(import.meta.url).pathname), '..');
+  const playerSrc = fs.readFileSync(path.join(root, 'src', 'features', 'player', 'player.js'), 'utf8');
+  const match = playerSrc.match(/TEMPLATE_REGISTRY\s*=\s*\{([\s\S]*?)\}/);
+  assert.ok(match, 'could not locate TEMPLATE_REGISTRY object literal in player.js');
+  const keys = [...match[1].matchAll(/['"]([\w-]+)['"]\s*:/g)].map(m => m[1]).sort();
+  assert.deepEqual(keys, [...PAGE_TYPES].sort());
+});

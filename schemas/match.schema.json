@@ -4,6 +4,7 @@
   "allOf": [{ "$ref": "page-base" }],
   "type": "object",
   "description": "Matching interaction. Rendered by src/features/templates/template-match.js (this.pageData.pairs).",
+  "unevaluatedProperties": false,
   "properties": {
     "type": {
       "const": "match",

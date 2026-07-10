@@ -29,8 +29,11 @@ if (!fs.existsSync(distDir)) {
   process.exit(1);
 }
 
+// Load course data
+const courseDataPath = './data/scobot.json';
+
 // Schema gate: an invalid course must never become an LMS package.
-const validation = validateCourse('./data/scobot.json');
+const validation = validateCourse(courseDataPath);
 if (!validation.valid) {
   console.error('❌ data/scobot.json failed schema validation — refusing to package.');
   validation.errors.forEach(e => console.error(` - ${e}`));
@@ -39,8 +42,6 @@ if (!validation.valid) {
 }
 console.log('✅ Course schema validation passed');
 
-// Load course data
-const courseDataPath = './data/scobot.json';
 let courseData = {};
 
 try {

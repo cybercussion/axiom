@@ -4,10 +4,15 @@
   "allOf": [{ "$ref": "page-base" }],
   "type": "object",
   "description": "Informational/cover page (auto-completes). Rendered by src/features/templates/template-title.js.",
+  "unevaluatedProperties": false,
   "properties": {
     "type": {
       "const": "title-page",
       "description": "Template discriminator — routes to src/features/templates/template-title.js via TEMPLATE_REGISTRY in src/features/player/player.js."
+    },
+    "content": {
+      "type": "string",
+      "description": "Optional body copy — rendered into .content-body by src/features/templates/template-title.js."
     },
     "subtitle": {
       "type": "string",

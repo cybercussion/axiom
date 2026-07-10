@@ -39,7 +39,14 @@ if (fs.existsSync(path.join(SCHEMA_DIR, 'course.schema.json'))) {
 }
 
 function formatErrors(prefix, ajvErrors) {
-  return (ajvErrors || []).map(e => `${prefix}${e.instancePath || ''} ${e.message}`.trim());
+  return (ajvErrors || []).map(e => {
+    // unevaluatedProperties/additionalProperties errors don't name the
+    // offending key in e.message — surface it from e.params so a typo'd
+    // field (e.g. "wieght") is actually identifiable in the output.
+    const badProp = e.params?.unevaluatedProperty ?? e.params?.additionalProperty;
+    const suffix = badProp ? ` (property: "${badProp}")` : '';
+    return `${prefix}${e.instancePath || ''} ${e.message}${suffix}`.trim();
+  });
 }
 
 /**

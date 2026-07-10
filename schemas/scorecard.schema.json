@@ -4,6 +4,7 @@
   "allOf": [{ "$ref": "page-base" }],
   "type": "object",
   "description": "Results page (usually last; triggers final grading). Rendered by src/features/templates/template-scorecard.js.",
+  "unevaluatedProperties": false,
   "properties": {
     "type": {
       "const": "scorecard",
@@ -15,7 +16,7 @@
     },
     "showReview": {
       "type": "boolean",
-      "description": "Show a review-answers link — src/features/templates/template-scorecard.js."
+      "description": "Reserved — declared by the live course but not currently read by template-scorecard.js."
     },
     "completionMessage": {
       "type": "string",
