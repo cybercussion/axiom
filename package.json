@@ -11,6 +11,8 @@
     "scorm": "node tools/create-scorm-package.js",
     "scorm:12": "node tools/create-scorm-package.js --version 1.2",
     "scorm:2004": "node tools/create-scorm-package.js --version 2004",
+    "verify-dist": "node tools/verify-dist.js",
+    "test:tools": "node --test 'tools/**/*.test.js'",
     "lint": "npx eslint src/**/*.js"
   },
   "devDependencies": {

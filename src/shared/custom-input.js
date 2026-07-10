@@ -90,6 +90,7 @@ export class CustomInput extends BaseComponent {
     errorDisplay.className = 'error-message';
     errorDisplay.id = errorId;
     errorDisplay.setAttribute('aria-live', 'polite');
+    errorDisplay.setAttribute('aria-atomic', 'true');
     errorDisplay.setAttribute('aria-hidden', 'true');
 
     // Find input and link it

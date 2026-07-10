@@ -1,0 +1,70 @@
+[project]
+name = "axiom"
+vcs = "git"
+toolchain = ["es6"]
+description = "High-performance, zero-build, vanilla Web Standards frontend architecture with Proxy-based state management and native Web Components."
+updated = "2026-07-10"
+
+[[capabilities]]
+id = "zero-build-architecture"
+tags = ["es6", "web-components", "testing"]
+claim = "Vanilla ES6 modules with zero build step, Shadow DOM encapsulation via BaseComponent, Proxy-based state singleton with optimistic mutations and EventTarget pub/sub, surgical DOM updates"
+maturity = "shipped"
+entry_points = ["src/core/state.js", "src/core/router.js", "src/shared/base-component.js", "README.md"]
+pattern_doc = ""
+
+[[capabilities]]
+id = "parallel-loading-router"
+tags = ["es6", "testing"]
+claim = "200-line router that loads JS modules and data in parallel, supports View Transitions API for smooth navigation, handles focus/scroll restoration"
+maturity = "shipped"
+entry_points = ["src/core/router.js", "docs/router-readme.md"]
+pattern_doc = ""
+
+[[capabilities]]
+id = "oauth-auth-gateway"
+tags = ["auth", "aws"]
+claim = "Dual OAuth2 + PKCE support (Google direct + legacy AWS Cognito), token refresh, JWT parsing, admin role detection, Turnstile CAPTCHA integration"
+maturity = "shipped"
+entry_points = ["src/core/auth.js", "src/core/gateway.js"]
+pattern_doc = ""
+
+[[capabilities]]
+id = "content-agnostic-api-gateway"
+tags = ["es6"]
+claim = "Unified fetch wrapper handling JSON, XML, text, Blob content types; auto-injects auth tokens and version headers; GraphQL support"
+maturity = "shipped"
+entry_points = ["src/core/gateway.js"]
+pattern_doc = ""
+
+[[capabilities]]
+id = "feature-generator"
+tags = ["testing", "install"]
+claim = "CLI scaffold tool (npm run feature NAME) generates component, stylesheet, and API handler boilerplate matching Axiom patterns"
+maturity = "shipped"
+entry_points = ["tools/create-feature.js", "README.md"]
+pattern_doc = ""
+
+[[capabilities]]
+id = "accessible-web-components"
+tags = ["testing"]
+claim = "BaseComponent library with Shadow DOM focus delegation, ARIA live regions, focus registry for semantic ID persistence, keyboard policy routing"
+maturity = "shipped"
+entry_points = ["src/shared/base-component.js", "src/shared/focus-registry.js", "src/shared/announce-bus.js", "src/shared/keyboard-policy.js"]
+pattern_doc = ""
+
+[[capabilities]]
+id = "production-minification-pipeline"
+tags = ["release", "testing"]
+claim = "CANONICAL fleet copy (2026-07-10, consolidated from tender/daystrom/new.cybercussion/STNG). Non-destructive build (src → dist): Terser + CSSO, ?v=BUILD_ID stamping of ALL six module surfaces (static/side-effect/dynamic imports, exact aliases like @state resolved to absolute paths, lazy-route path: values, index.html entry scripts + stylesheets + import-map values), two hard-fail guards (no-/src/-in-dist, alias-conflict/split-singleton), 13 unit tests (npm run test:tools). Borrow from HERE; do not fork-and-drift."
+maturity = "shipped"
+entry_points = ["tools/minify.js", "tools/minify.test.js", "_headers", ".github/workflows/deploy.yml"]
+pattern_doc = "docs/patterns/stale-deploy-prevention.md"
+
+[[capabilities]]
+id = "form-validation-modal-toast-kit"
+tags = ["es6"]
+claim = "Constraint Validation API wrapper (custom rules, async), native <dialog> modal with focus trap and animations, toast manager with auto-dismiss"
+maturity = "shipped"
+entry_points = ["src/shared/form-validator.js", "src/shared/modal.js", "src/shared/toast-manager.js"]
+pattern_doc = ""

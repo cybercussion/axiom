@@ -20,10 +20,18 @@
 
   <link rel="icon" type="image/png" href="favicon.png">
 
-  <!-- Critical Module Preloads -->
-  <link rel="modulepreload" href="src/app.js">
-  <link rel="modulepreload" href="src/core/state.js">
-  <link rel="modulepreload" href="src/core/router.js">
+  <!-- SCORM LANE: import-map addresses are RELATIVE ("./…") on purpose — a SCO is
+       served from an arbitrary LMS content path, so absolute ("/…") addresses
+       break in the package. Relative map values resolve against the DOCUMENT URL
+       (not the current route), and the build rewrites them for dist under
+       <base href="./">. This deliberately diverges from the website lane
+       (see docs/patterns/stale-deploy-prevention.md). The import map stays LIVE
+       at runtime here — aliases are NOT resolved away by the build.
+       Module-preload hints are intentionally omitted — preloading the app entry
+       makes the browser resolve its aliased (bare-specifier) imports BEFORE the
+       inline import map registers, an intermittent "Failed to resolve module
+       specifier" race. The app loads via its module <script> below, after the
+       map is registered. -->
 
   <link rel="stylesheet" href="src/shared/styles/theme.css">
   <link rel="stylesheet" href="src/shared/styles/animations.css">

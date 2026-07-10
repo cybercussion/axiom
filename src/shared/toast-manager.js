@@ -43,6 +43,8 @@ class ToastManager extends BaseComponent {
     if (!container) {
       container = document.createElement('div');
       container.className = 'toast-container';
+      container.setAttribute('role', 'status');
+      container.setAttribute('aria-live', 'polite');
       this.shadowRoot.appendChild(container);
     }
 

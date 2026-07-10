@@ -5,6 +5,8 @@ import { BaseComponent } from './base-component.js';
  * A native <dialog> wrapper with glassmorphism, focus trapping, and scroll locking.
  */
 export class AxiomModal extends BaseComponent {
+  static delegatesFocus = false;
+
   static get observedAttributes() {
     return ['title', 'open', 'size'];
   }
@@ -44,14 +46,14 @@ export class AxiomModal extends BaseComponent {
           border: 1px solid var(--modal-border);
           border-radius: 16px;
           padding: 0;
-          
+
           /* Dynamic Sizing */
           width: var(--modal-width);
           max-width: 95vw; /* Safety rail for mobile */
-          
+
           color: var(--modal-text);
           box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-          
+
           /* Native dialog override for animation entry */
           opacity: 0;
           transform: translateY(20px) scale(0.95);
@@ -61,6 +63,10 @@ export class AxiomModal extends BaseComponent {
         dialog[open] {
           opacity: 1;
           transform: translateY(0) scale(1);
+        }
+
+        dialog:focus {
+          outline: none;
         }
 
         /* Closing State */
@@ -96,7 +102,7 @@ export class AxiomModal extends BaseComponent {
 
         h2 {
           /* Using theme variable for font size */
-          font-size: var(--text-2xl); 
+          font-size: var(--text-2xl);
           font-weight: 700;
           color: var(--modal-text);
           /* Remove fixed gradient for better light/dark adaptability */
@@ -157,13 +163,13 @@ export class AxiomModal extends BaseComponent {
         }
       </style>
 
-      <dialog part="dialog" aria-labelledby="${this._titleId}" aria-modal="true">
+      <dialog part="dialog" aria-labelledby="${this._titleId}" aria-modal="true" tabindex="-1">
         <header>
           <h2 id="${this._titleId}">${this.title}</h2>
           <!-- Native close button still works but we intercept the event -->
           <button class="close-btn" aria-label="Close">&times;</button>
         </header>
-        
+
         <div class="content">
           <slot></slot>
         </div>
@@ -197,10 +203,13 @@ export class AxiomModal extends BaseComponent {
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
-    if (name === 'title' && this._dialog) {
-      const h2 = this.shadowRoot.getElementById(this._titleId);
+    if (oldValue === newValue) return;
+
+    if (name === 'title') {
+      this._title = newValue;
+      // Update UI if already rendered
+      const h2 = this.shadowRoot?.getElementById(this._titleId);
       if (h2) h2.textContent = newValue;
-      this.title = newValue; // Update Internal property
     }
     // Size is handled via CSS selectors on :host
   }
@@ -210,8 +219,11 @@ export class AxiomModal extends BaseComponent {
   }
 
   set title(val) {
+    if (this._title === val) return;
     this._title = val;
-    this.setAttribute('title', val);
+    if (this.getAttribute('title') !== val) {
+      this.setAttribute('title', val);
+    }
   }
 
   get size() {
@@ -229,6 +241,7 @@ export class AxiomModal extends BaseComponent {
     if (this._dialog && !this._dialog.open) {
       this._dialog.classList.remove('closing');
       this._dialog.showModal();
+      this._dialog.focus(); // Focus dialog itself, not the close button
       document.body.style.overflow = 'hidden'; // Scroll lock
       this.setAttribute('open', '');
     }

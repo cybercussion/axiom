@@ -2,6 +2,11 @@ import { BaseComponent } from '@shared/base-component.js';
 import { state } from '@state';
 
 class DashboardUI extends BaseComponent {
+  // A11y: don't delegate the router's post-navigation focus() into the first
+  // focusable child (scrolls it into view → mobile URL bar + focus ring);
+  // focus the host container instead. Parity with daystrom page components.
+  static delegatesFocus = false;
+
   async setup() {
     // Robust path resolution for the CSS sibling
     const cssPath = new URL('./dashboard.css', import.meta.url).href;
