@@ -1,0 +1,39 @@
+{
+  "id": "puzzle1-code",
+  "type": "wordpuzzle",
+  "title": "Complete the Code",
+  "question": "Fill in the blanks to complete this Web Component definition:",
+  "text": "class MyComponent extends {{blank1}} {\n  constructor() {\n    {{blank2}};\n    this.attachShadow({ mode: '{{blank3}}' });\n  }\n}\ncustomElements.{{blank4}}('my-component', MyComponent);",
+  "blanks": [
+    {
+      "id": "blank1",
+      "answers": [
+        "HTMLElement"
+      ]
+    },
+    {
+      "id": "blank2",
+      "answers": [
+        "super()",
+        "super"
+      ]
+    },
+    {
+      "id": "blank3",
+      "answers": [
+        "open"
+      ]
+    },
+    {
+      "id": "blank4",
+      "answers": [
+        "define"
+      ]
+    }
+  ],
+  "feedback": {
+    "correct": "Excellent! You understand the Web Component class structure.",
+    "incorrect": "Review the Web Component lifecycle: extend HTMLElement, call super(), attach shadow with 'open' mode, and use customElements.define()."
+  },
+  "weight": 3
+}

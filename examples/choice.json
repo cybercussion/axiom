@@ -1,0 +1,34 @@
+{
+  "id": "q2-components",
+  "type": "choice",
+  "title": "Web Components",
+  "question": "Which features are part of the Web Components standard? (Select all that apply)",
+  "multiSelect": true,
+  "choices": [
+    {
+      "id": "a",
+      "text": "Custom Elements",
+      "correct": true
+    },
+    {
+      "id": "b",
+      "text": "Shadow DOM",
+      "correct": true
+    },
+    {
+      "id": "c",
+      "text": "Virtual DOM",
+      "correct": false
+    },
+    {
+      "id": "d",
+      "text": "HTML Templates",
+      "correct": true
+    }
+  ],
+  "feedback": {
+    "correct": "Excellent! Custom Elements, Shadow DOM, and HTML Templates are the three pillars of Web Components.",
+    "incorrect": "Web Components consist of Custom Elements, Shadow DOM, and HTML Templates. Virtual DOM is a React concept, not a web standard."
+  },
+  "weight": 2
+}

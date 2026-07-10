@@ -1,0 +1,37 @@
+{
+  "id": "match1-terms",
+  "type": "match",
+  "title": "Match the Terms",
+  "question": "Match each technology with its primary purpose:",
+  "pairs": [
+    {
+      "sourceId": "s1",
+      "sourceText": "Shadow DOM",
+      "targetId": "t1",
+      "targetText": "Style encapsulation"
+    },
+    {
+      "sourceId": "s2",
+      "sourceText": "Custom Elements",
+      "targetId": "t2",
+      "targetText": "Define new HTML tags"
+    },
+    {
+      "sourceId": "s3",
+      "sourceText": "ES Modules",
+      "targetId": "t3",
+      "targetText": "Code organization"
+    },
+    {
+      "sourceId": "s4",
+      "sourceText": "Import Maps",
+      "targetId": "t4",
+      "targetText": "Module aliasing"
+    }
+  ],
+  "feedback": {
+    "correct": "Perfect! You've correctly matched all the technologies.",
+    "incorrect": "Review the connections between these technologies and their purposes."
+  },
+  "weight": 2
+}

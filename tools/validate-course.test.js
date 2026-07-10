@@ -126,3 +126,15 @@ test('answersToConfirm lists choice keys, match pairs, blanks, weights, passing 
   assert.ok(joined.includes('w1') && joined.includes('HTMLElement'));
   assert.ok(joined.includes('weight = 2'));
 });
+
+test('every golden example page validates under its schema; examples/course.json validates whole', () => {
+  const root = path.join(path.dirname(new URL(import.meta.url).pathname), '..');
+  for (const type of PAGE_TYPES) {
+    const page = JSON.parse(fs.readFileSync(path.join(root, 'examples', `${type}.json`), 'utf8'));
+    const course = { meta: { title: 'X' }, settings: {}, pages: [page] };
+    const r = validateCourse(writeCourse(`example-${type}.json`, course));
+    assert.deepEqual(r.errors, [], `${type} example invalid`);
+  }
+  const r = validateCourse(path.join(root, 'examples', 'course.json'));
+  assert.deepEqual(r.errors, []);
+});

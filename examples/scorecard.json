@@ -1,0 +1,10 @@
+{
+  "id": "results",
+  "type": "scorecard",
+  "title": "Course Complete",
+  "showDetails": true,
+  "showReview": true,
+  "completionMessage": "Congratulations on completing the Axiom Learning Experience!",
+  "passMessage": "You have successfully demonstrated your understanding.",
+  "failMessage": "Consider reviewing the material and trying again."
+}

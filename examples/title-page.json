@@ -1,0 +1,13 @@
+{
+  "id": "welcome",
+  "type": "title-page",
+  "title": "Welcome to Axiom Learning",
+  "subtitle": "An Interactive Learning Experience",
+  "image": "public/images/hero-learning.svg",
+  "objectives": [
+    "Understand core concepts of modern web architecture",
+    "Apply knowledge through interactive exercises",
+    "Demonstrate mastery through assessments"
+  ],
+  "duration": "15 minutes"
+}

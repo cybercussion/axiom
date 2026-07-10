@@ -1,0 +1,82 @@
+{
+  "meta": {
+    "title": "Example Course",
+    "passingScore": 80
+  },
+  "settings": {
+    "requireAnswerToAdvance": true,
+    "forceSequential": true
+  },
+  "pages": [
+    {
+      "id": "welcome",
+      "type": "title-page",
+      "title": "Welcome to Axiom Learning",
+      "subtitle": "An Interactive Learning Experience",
+      "image": "public/images/hero-learning.svg",
+      "objectives": [
+        "Understand core concepts of modern web architecture",
+        "Apply knowledge through interactive exercises",
+        "Demonstrate mastery through assessments"
+      ],
+      "duration": "15 minutes"
+    },
+    {
+      "id": "q1-web-basics",
+      "type": "choice",
+      "title": "Web Fundamentals",
+      "question": "Which of the following is NOT a core web technology?",
+      "multiSelect": false,
+      "choices": [
+        {
+          "id": "a",
+          "text": "HTML",
+          "correct": false
+        },
+        {
+          "id": "b",
+          "text": "CSS",
+          "correct": false
+        },
+        {
+          "id": "c",
+          "text": "JavaScript",
+          "correct": false
+        },
+        {
+          "id": "d",
+          "text": "Python",
+          "correct": true
+        }
+      ],
+      "feedback": {
+        "correct": "Correct! Python is a server-side language, not a core browser technology.",
+        "incorrect": "Not quite. HTML, CSS, and JavaScript are the three core web technologies that run in browsers. Python is a server-side language."
+      },
+      "weight": 1
+    },
+    {
+      "id": "results",
+      "type": "scorecard",
+      "title": "Course Complete",
+      "showDetails": true,
+      "showReview": true,
+      "completionMessage": "Congratulations on completing the Axiom Learning Experience!",
+      "passMessage": "You have successfully demonstrated your understanding.",
+      "failMessage": "Consider reviewing the material and trying again."
+    }
+  ],
+  "glossary": [
+    {
+      "term": "Shadow DOM",
+      "definition": "A web standard that provides encapsulation for DOM and CSS, allowing components to have their own isolated DOM tree."
+    }
+  ],
+  "resources": [
+    {
+      "title": "Web Components Guide",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/Web_Components",
+      "type": "link"
+    }
+  ]
+}
