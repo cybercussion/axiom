@@ -5,7 +5,10 @@
   "type": "object",
   "description": "Multiple-choice question. Rendered by src/features/templates/template-choice.js.",
   "properties": {
-    "type": { "const": "choice" },
+    "type": {
+      "const": "choice",
+      "description": "Template discriminator — routes to src/features/templates/template-choice.js via TEMPLATE_REGISTRY in src/features/player/player.js."
+    },
     "question": {
       "type": "string",
       "minLength": 1,

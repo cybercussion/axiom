@@ -5,7 +5,10 @@
   "type": "object",
   "description": "Informational/cover page (auto-completes). Rendered by src/features/templates/template-title.js.",
   "properties": {
-    "type": { "const": "title-page" },
+    "type": {
+      "const": "title-page",
+      "description": "Template discriminator — routes to src/features/templates/template-title.js via TEMPLATE_REGISTRY in src/features/player/player.js."
+    },
     "subtitle": {
       "type": "string",
       "description": "Secondary heading text — rendered by src/features/templates/template-title.js."

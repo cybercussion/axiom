@@ -5,7 +5,10 @@
   "type": "object",
   "description": "Fill-in-the-blanks. Rendered by src/features/templates/template-wordpuzzle.js. text contains {{blankId}} tokens matching blanks[].id.",
   "properties": {
-    "type": { "const": "wordpuzzle" },
+    "type": {
+      "const": "wordpuzzle",
+      "description": "Template discriminator — routes to src/features/templates/template-wordpuzzle.js via TEMPLATE_REGISTRY in src/features/player/player.js."
+    },
     "question": {
       "type": "string",
       "minLength": 1,

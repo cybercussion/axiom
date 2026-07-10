@@ -5,7 +5,10 @@
   "type": "object",
   "description": "Results page (usually last; triggers final grading). Rendered by src/features/templates/template-scorecard.js.",
   "properties": {
-    "type": { "const": "scorecard" },
+    "type": {
+      "const": "scorecard",
+      "description": "Template discriminator — routes to src/features/templates/template-scorecard.js via TEMPLATE_REGISTRY in src/features/player/player.js."
+    },
     "showDetails": {
       "type": "boolean",
       "description": "Show per-page score breakdown — src/features/templates/template-scorecard.js."

@@ -5,7 +5,10 @@
   "type": "object",
   "description": "Matching interaction. Rendered by src/features/templates/template-match.js (this.pageData.pairs).",
   "properties": {
-    "type": { "const": "match" },
+    "type": {
+      "const": "match",
+      "description": "Template discriminator — routes to src/features/templates/template-match.js via TEMPLATE_REGISTRY in src/features/player/player.js."
+    },
     "question": {
       "type": "string",
       "minLength": 1,
