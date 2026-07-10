@@ -12,10 +12,12 @@
     "scorm:12": "node tools/create-scorm-package.js --version 1.2",
     "scorm:2004": "node tools/create-scorm-package.js --version 2004",
     "verify-dist": "node tools/verify-dist.js",
+    "validate": "node tools/validate-course.js",
     "test:tools": "node --test 'tools/**/*.test.js'",
     "lint": "npx eslint src/**/*.js"
   },
   "devDependencies": {
+    "ajv": "^8.20.0",
     "browser-sync": "^3.0.0",
     "csso": "^5.0.5",
     "terser": "^5.46.0"

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "choice",
+  "allOf": [{ "$ref": "page-base" }],
+  "type": "object",
+  "description": "Multiple-choice question. Rendered by src/features/templates/template-choice.js.",
+  "properties": {
+    "type": { "const": "choice" },
+    "question": { "type": "string", "minLength": 1 },
+    "multiSelect": {
+      "type": "boolean",
+      "description": "true = select-all-that-apply (checkboxes); false = single answer (radios)."
+    },
+    "choices": {
+      "type": "array",
+      "minItems": 2,
+      "description": "Read by template-choice.js (this.pageData.choices).",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "text": { "type": "string", "minLength": 1 },
+          "correct": { "type": "boolean", "description": "ANSWER-KEY FIELD — never fabricated by the authoring skill." }
+        },
+        "required": ["id", "text", "correct"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["question", "multiSelect", "choices"]
+}

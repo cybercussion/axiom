@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "page-base",
+  "type": "object",
+  "description": "Shared page envelope. Consumed by src/features/player/player.js (TEMPLATE_REGISTRY routing) and src/features/templates/template-base.js.",
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "description": "Unique kebab-case page id. Becomes the SCORM interaction id (template-base.js interactionId) and default objective id."
+    },
+    "type": {
+      "type": "string",
+      "description": "Template discriminator — routes via TEMPLATE_REGISTRY in src/features/player/player.js."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Page heading; also the SCORM objective description (course-state.js recordInteraction)."
+    },
+    "objectiveId": {
+      "type": "string",
+      "description": "Optional SCORM objective id override; defaults to page id (template-base.js)."
+    },
+    "weight": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Scoring weight (template-base.js get weight; course.score in course-state.js). ANSWER-KEY FIELD."
+    },
+    "feedback": {
+      "type": "object",
+      "description": "Shown by template-base.js showFeedback.",
+      "properties": {
+        "correct": { "type": "string" },
+        "incorrect": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["id", "type", "title"]
+}
