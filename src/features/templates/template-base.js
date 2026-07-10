@@ -91,6 +91,7 @@ export class TemplateBase extends BaseComponent {
     // SCOBot's encodeInteractionType handles the encoding
     const interaction = {
       id: String(this.interactionId),
+      objective: String(this.pageData?.objectiveId || this.interactionId),
       type: String(type),
       learner_response: response,  // Can be string or array depending on type
       result: String(result),

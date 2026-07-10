@@ -319,26 +319,34 @@ export const courseActions = {
   },
 
   /**
-   * Record an interaction (question response)
+   * Record an interaction (question response) and its per-page objective.
    */
   recordInteraction(interaction) {
     const interactions = [...(state.get('interactions') || [])];
-    
-    // Check if this interaction already exists (for retries)
     const existingIndex = interactions.findIndex(i => i.id === interaction.id);
-    
+
     if (existingIndex >= 0) {
       interactions[existingIndex] = interaction;
     } else {
       interactions.push(interaction);
     }
-
     state.set('interactions', interactions);
 
-    // Send to SCOBot if connected
     const scorm = course.scorm;
-    if (scorm && scorm.isConnectionActive()) {
+    if (scorm && scorm.isConnectionActive() && !course.isReviewMode) {
       scorm.setInteraction(interaction);
+
+      // One objective per interactive page — LMS gradebooks show per-question mastery.
+      const correct = interaction.result === 'correct';
+      scorm.setObjective({
+        id: interaction.objective || interaction.id,
+        score: { scaled: correct ? '1' : '0', raw: correct ? '1' : '0', min: '0', max: '1' },
+        success_status: correct ? 'passed' : 'failed',
+        completion_status: 'completed',
+        progress_measure: '1',
+        description: course.currentPage?.title || ''
+      });
+      scorm.commit();
     }
   },
 
