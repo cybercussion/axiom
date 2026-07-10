@@ -6,7 +6,11 @@
   "description": "Multiple-choice question. Rendered by src/features/templates/template-choice.js.",
   "properties": {
     "type": { "const": "choice" },
-    "question": { "type": "string", "minLength": 1 },
+    "question": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Question prompt — rendered by src/features/templates/template-choice.js."
+    },
     "multiSelect": {
       "type": "boolean",
       "description": "true = select-all-that-apply (checkboxes); false = single answer (radios)."
@@ -18,8 +22,16 @@
       "items": {
         "type": "object",
         "properties": {
-          "id": { "type": "string", "minLength": 1 },
-          "text": { "type": "string", "minLength": 1 },
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Choice option id — rendered by src/features/templates/template-choice.js."
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Choice option label — rendered by src/features/templates/template-choice.js."
+          },
           "correct": { "type": "boolean", "description": "ANSWER-KEY FIELD — never fabricated by the authoring skill." }
         },
         "required": ["id", "text", "correct"],

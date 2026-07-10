@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "title-page",
+  "allOf": [{ "$ref": "page-base" }],
+  "type": "object",
+  "description": "Informational/cover page (auto-completes). Rendered by src/features/templates/template-title.js.",
+  "properties": {
+    "type": { "const": "title-page" },
+    "subtitle": {
+      "type": "string",
+      "description": "Secondary heading text — rendered by src/features/templates/template-title.js."
+    },
+    "image": { "type": "string", "description": "Path under public/ or assets/." },
+    "objectives": {
+      "type": "array",
+      "description": "Learning objectives list — rendered by src/features/templates/template-title.js.",
+      "items": { "type": "string" }
+    },
+    "duration": { "type": "string", "description": "Human-readable, e.g. \"15 minutes\"." }
+  }
+}

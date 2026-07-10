@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "course",
+  "type": "object",
+  "description": "data/scobot.json envelope. meta/settings read by src/core/course-state.js and src/features/player/player.js; glossary by src/features/glossary/glossary.js; resources by player-nav.",
+  "properties": {
+    "meta": {
+      "type": "object",
+      "description": "Course metadata — read by src/core/course-state.js and src/features/player/player.js.",
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Course title — src/core/course-state.js + src/features/player/player.js."
+        },
+        "description": {
+          "type": "string",
+          "description": "Course description — src/core/course-state.js + src/features/player/player.js."
+        },
+        "version": {
+          "type": "string",
+          "description": "Course content version — src/core/course-state.js + src/features/player/player.js."
+        },
+        "author": {
+          "type": "string",
+          "description": "Course author — src/core/course-state.js + src/features/player/player.js."
+        },
+        "scormVersion": {
+          "enum": ["1.2", "2004"],
+          "description": "SCORM API version to target — src/core/course-state.js + src/features/player/player.js."
+        },
+        "passingScore": { "type": "number", "minimum": 0, "maximum": 100, "description": "ANSWER-KEY FIELD — drives scaled_passing_score (player.js initScorm)." },
+        "masteryScore": { "type": "number", "minimum": 0, "maximum": 100, "description": "ANSWER-KEY FIELD." },
+        "maxAttempts": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Max allowed attempts (0 = unlimited) — src/core/course-state.js + src/features/player/player.js."
+        },
+        "timeLimit": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Time limit in minutes (0 = none) — src/core/course-state.js + src/features/player/player.js."
+        }
+      },
+      "required": ["title"]
+    },
+    "settings": {
+      "type": "object",
+      "description": "Player behavior toggles — read by src/core/course-state.js and src/features/player/player.js.",
+      "properties": {
+        "allowReview": {
+          "type": "boolean",
+          "description": "Allow reviewing answered pages — src/core/course-state.js + src/features/player/player.js."
+        },
+        "showFeedback": {
+          "type": "boolean",
+          "description": "Show per-page feedback — src/core/course-state.js + src/features/player/player.js."
+        },
+        "shuffleChoices": {
+          "type": "boolean",
+          "description": "Shuffle choice order — src/core/course-state.js + src/features/player/player.js."
+        },
+        "forceSequential": { "type": "boolean", "description": "course-state.js canPrev" },
+        "showProgress": {
+          "type": "boolean",
+          "description": "Show a progress indicator — src/core/course-state.js + src/features/player/player.js."
+        },
+        "requireAnswerToAdvance": { "type": "boolean", "description": "course-state.js canNext" },
+        "showResetButton": {
+          "type": "boolean",
+          "description": "Show a course-reset button — src/core/course-state.js + src/features/player/player.js."
+        }
+      }
+    },
+    "pages": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Ordered page list, each validated per-type by the page-type router in tools/validate-course.js; consumed by src/features/player/player.js."
+    },
+    "glossary": {
+      "type": "array",
+      "description": "Term/definition list — read by src/features/glossary/glossary.js.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "term": {
+            "type": "string",
+            "description": "Glossary term — src/features/glossary/glossary.js."
+          },
+          "definition": {
+            "type": "string",
+            "description": "Glossary definition — src/features/glossary/glossary.js."
+          }
+        },
+        "required": ["term", "definition"],
+        "additionalProperties": false
+      }
+    },
+    "resources": {
+      "type": "array",
+      "description": "Supplementary links list — read by player-nav.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Resource link title — player-nav."
+          },
+          "url": {
+            "type": "string",
+            "description": "Resource link URL — player-nav."
+          },
+          "type": {
+            "type": "string",
+            "description": "Resource kind, e.g. \"link\" — player-nav."
+          }
+        },
+        "required": ["title", "url"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["meta", "pages"]
+}

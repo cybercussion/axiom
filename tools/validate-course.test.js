@@ -59,3 +59,46 @@ test('unreadable file is a clean error, not a throw', () => {
   assert.equal(r.valid, false);
   assert.equal(r.errors.length, 1);
 });
+
+test('the REAL data/scobot.json validates (schemas describe reality)', () => {
+  const real = path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'data', 'scobot.json');
+  const r = validateCourse(real);
+  assert.deepEqual(r.errors, []);
+});
+
+test('match: pair missing targetText fails with a path', () => {
+  const bad = structuredClone(MINIMAL_COURSE);
+  bad.pages = [{
+    id: 'm1', type: 'match', title: 'M', question: 'Match:',
+    pairs: [
+      { sourceId: 's1', sourceText: 'A', targetId: 't1', targetText: 'B' },
+      { sourceId: 's2', sourceText: 'C', targetId: 't2' }
+    ]
+  }];
+  const r = validateCourse(writeCourse('match-bad.json', bad));
+  assert.ok(r.errors.some(e => e.includes('pages[0]') && e.includes('targetText')), r.errors.join('\n'));
+});
+
+test('wordpuzzle: blank with empty answers fails', () => {
+  const bad = structuredClone(MINIMAL_COURSE);
+  bad.pages = [{
+    id: 'w1', type: 'wordpuzzle', title: 'W', question: 'Fill:',
+    text: 'x {{b1}}', blanks: [{ id: 'b1', answers: [] }]
+  }];
+  const r = validateCourse(writeCourse('wp-bad.json', bad));
+  assert.ok(r.errors.some(e => e.includes('answers')), r.errors.join('\n'));
+});
+
+test('duplicate page ids fail', () => {
+  const bad = structuredClone(MINIMAL_COURSE);
+  bad.pages = [structuredClone(VALID_CHOICE_PAGE), structuredClone(VALID_CHOICE_PAGE)];
+  const r = validateCourse(writeCourse('dupe.json', bad));
+  assert.ok(r.errors.some(e => e.includes('duplicates')), r.errors.join('\n'));
+});
+
+test('course: meta.title is required', () => {
+  const bad = structuredClone(MINIMAL_COURSE);
+  delete bad.meta.title;
+  const r = validateCourse(writeCourse('meta-bad.json', bad));
+  assert.ok(r.errors.some(e => e.startsWith('course') && e.includes('title')), r.errors.join('\n'));
+});

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "scorecard",
+  "allOf": [{ "$ref": "page-base" }],
+  "type": "object",
+  "description": "Results page (usually last; triggers final grading). Rendered by src/features/templates/template-scorecard.js.",
+  "properties": {
+    "type": { "const": "scorecard" },
+    "showDetails": {
+      "type": "boolean",
+      "description": "Show per-page score breakdown — src/features/templates/template-scorecard.js."
+    },
+    "showReview": {
+      "type": "boolean",
+      "description": "Show a review-answers link — src/features/templates/template-scorecard.js."
+    },
+    "completionMessage": {
+      "type": "string",
+      "description": "Message shown on course completion — src/features/templates/template-scorecard.js."
+    },
+    "passMessage": {
+      "type": "string",
+      "description": "Message shown when the learner passes — src/features/templates/template-scorecard.js."
+    },
+    "failMessage": {
+      "type": "string",
+      "description": "Message shown when the learner fails — src/features/templates/template-scorecard.js."
+    }
+  }
+}

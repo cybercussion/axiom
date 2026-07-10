@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "match",
+  "allOf": [{ "$ref": "page-base" }],
+  "type": "object",
+  "description": "Matching interaction. Rendered by src/features/templates/template-match.js (this.pageData.pairs).",
+  "properties": {
+    "type": { "const": "match" },
+    "question": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Question prompt — rendered by src/features/templates/template-match.js."
+    },
+    "pairs": {
+      "type": "array",
+      "minItems": 2,
+      "description": "The pairing IS the answer key (ANSWER-KEY FIELD).",
+      "items": {
+        "type": "object",
+        "properties": {
+          "sourceId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Source item id — rendered by src/features/templates/template-match.js."
+          },
+          "sourceText": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Source item label — rendered by src/features/templates/template-match.js."
+          },
+          "targetId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Target item id — rendered by src/features/templates/template-match.js."
+          },
+          "targetText": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Target item label — rendered by src/features/templates/template-match.js."
+          }
+        },
+        "required": ["sourceId", "sourceText", "targetId", "targetText"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["question", "pairs"]
+}
