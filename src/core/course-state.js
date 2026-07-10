@@ -79,9 +79,13 @@ export function resetCourseState(clearStorage = true) {
     scorm.commit();
   }
 
-  // Clear SCOBot localStorage (for standalone mode)
+  // Clear SCOBot's real localStorage store (standalone/mock mode only — this reset
+  // control doesn't exist in LMS mode). This wipes the ENTIRE mock CMI, including
+  // cmi.interactions and cmi.objectives, so old answers/objectives from the prior
+  // attempt can't survive the reload that follows reset and get restored as stale
+  // state. Key must match SCOBot_API_1484_11's _save()/_load() persistence key.
   if (clearStorage) {
-    localStorage.removeItem('SCOBot');
+    localStorage.removeItem('SCOBot_Mock_Data');
   }
 }
 
