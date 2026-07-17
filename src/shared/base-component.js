@@ -53,6 +53,14 @@ export class BaseComponent extends HTMLElement {
   }
 
   /**
+   * Escape text for interpolation into innerHTML templates.
+   */
+  _esc(str) {
+    return String(str ?? '').replace(/[&<>"']/g,
+      c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  /**
    * Surgical Ref: Returns a cached node or finds it once.
    */
   ref(name, selector) {
