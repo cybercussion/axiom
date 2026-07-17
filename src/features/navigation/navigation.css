@@ -14,7 +14,9 @@
   color: var(--color-muted);
   text-decoration: none;
   border-radius: var(--space-s);
-  transition: all 0.2s ease;
+  transition:
+    color var(--duration-fast) var(--ease-out-soft),
+    background var(--duration-fast) var(--ease-out-soft);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -138,7 +140,7 @@ option {
   display: flex;
   flex-direction: column;
   gap: var(--space-s);
-  animation: settingsSlideUp 0.2s ease-out;
+  animation: settingsSlideUp var(--duration-fast) var(--ease-out-soft);
 }
 
 .settings-menu.hidden {
@@ -196,7 +198,7 @@ option {
   inset: 0;
   background: var(--dock-border);
   border-radius: 10px;
-  transition: background 0.2s ease;
+  transition: background var(--duration-fast) var(--ease-out-soft);
 }
 
 .toggle-input:checked+.toggle-track {
@@ -211,7 +213,7 @@ option {
   height: 16px;
   background: #fff;
   border-radius: 50%;
-  transition: transform 0.2s ease;
+  transition: transform var(--duration-fast) var(--ease-out-soft);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 

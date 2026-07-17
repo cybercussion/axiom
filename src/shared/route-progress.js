@@ -18,7 +18,7 @@ class RouteProgress extends BaseComponent {
           z-index: 10000; /* Increment to stay above EVERYTHING */
           pointer-events: none;
           opacity: 0;
-          transition: opacity 0.3s ease;
+          transition: opacity var(--duration-base) var(--ease-out-soft);
           overflow: hidden;
           line-height: 0; /* Kill any mysterious inline-block whitespace */
         }
@@ -33,9 +33,9 @@ class RouteProgress extends BaseComponent {
           background: linear-gradient(90deg, 
             #ef4444, #f59e0b, #10b981, #3b82f6, #8b5cf6, #ec4899, #ef4444);
           background-size: 200% 100%;
-          animation: spectrum 1.5s linear infinite;
+          animation: spectrum 1.5s linear infinite; /* motion-gate: allow */
           transform: translateX(-100%);
-          transition: transform 0.2s ease-out;
+          transition: transform var(--duration-fast) var(--ease-out-soft);
         }
 
         :host([active]) .bar {
@@ -77,12 +77,12 @@ class RouteProgress extends BaseComponent {
     this.setAttribute('active', '');
 
     // 2. Initial Jump: Use a sharper bezier for that "kickstart" feel
-    bar.style.transition = 'transform 0.4s cubic-bezier(0.23, 1, 0.32, 1)';
+    bar.style.transition = 'transform var(--duration-base) var(--ease-out-soft)';
     bar.style.transform = 'translateX(-70%)';
 
     // 3. The "Infinite" Crawl: A very long transition to mimic loading
     this._timer = setTimeout(() => {
-      bar.style.transition = 'transform 10s cubic-bezier(0, 0.5, 0.5, 1)';
+      bar.style.transition = 'transform 10s cubic-bezier(0, 0.5, 0.5, 1)'; // motion-gate: allow
       bar.style.transform = 'translateX(-5%)';
     }, 400);
   }
@@ -92,7 +92,7 @@ class RouteProgress extends BaseComponent {
     clearTimeout(this._timer);
 
     // 4. Final Snap: Quick move to 100%
-    bar.style.transition = 'transform 0.3s ease-out';
+    bar.style.transition = 'transform var(--duration-base) var(--ease-out-soft)';
     bar.style.transform = 'translateX(0%)';
 
     this._timer = setTimeout(() => {

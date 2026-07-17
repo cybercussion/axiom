@@ -35,7 +35,10 @@
   color: var(--input-text);
   font-family: inherit;
   font-size: 1rem;
-  transition: all 0.2s ease;
+  transition:
+    background var(--duration-fast) var(--ease-out-soft),
+    border var(--duration-fast) var(--ease-out-soft),
+    box-shadow var(--duration-fast) var(--ease-out-soft);
   outline: none;
   backdrop-filter: blur(4px);
   appearance: none;
@@ -65,7 +68,7 @@
   color: var(--input-label);
   font-size: 0.9rem;
   pointer-events: none;
-  transition: all 0.2s ease;
+  transition: color var(--duration-fast) var(--ease-out-soft);
 }
 
 .input-group.invalid .input-label {
@@ -117,7 +120,9 @@ textarea.input-field {
   opacity: 0;
   /* Start slightly higher to slide down */
   transform: translateY(-8px);
-  transition: all 0.2s ease-out;
+  transition:
+    opacity var(--duration-fast) var(--ease-out-soft),
+    transform var(--duration-fast) var(--ease-out-soft);
   pointer-events: none;
   z-index: 10;
 }
@@ -146,7 +151,10 @@ textarea::placeholder {
   font-size: 1.1rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    filter var(--duration-fast) var(--ease-out-soft),
+    transform var(--duration-fast) var(--ease-out-soft),
+    box-shadow var(--duration-fast) var(--ease-out-soft);
   text-transform: uppercase;
   letter-spacing: 1px;
 }
@@ -185,7 +193,7 @@ textarea::placeholder {
   border: 2px solid rgba(255, 255, 255, 0.3);
   border-top-color: #fff;
   border-radius: 50%;
-  animation: spinner 0.8s linear infinite;
+  animation: spinner 0.8s linear infinite; /* motion-gate: allow */
 }
 
 @keyframes spinner {

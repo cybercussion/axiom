@@ -1,5 +1,8 @@
 import { BaseComponent } from './base-component.js';
 
+// Must match --duration-base in theme.css (motion token layer)
+const MODAL_ANIM_MS = 300;
+
 /**
  * AxiomModal
  * A native <dialog> wrapper with glassmorphism, focus trapping, and scroll locking.
@@ -57,7 +60,7 @@ export class AxiomModal extends BaseComponent {
           /* Native dialog override for animation entry */
           opacity: 0;
           transform: translateY(20px) scale(0.95);
-          transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+          transition: opacity var(--duration-base) var(--ease-out-soft), transform var(--duration-base) var(--ease-spring);
         }
 
         dialog[open] {
@@ -81,7 +84,7 @@ export class AxiomModal extends BaseComponent {
           backdrop-filter: blur(4px);
           -webkit-backdrop-filter: blur(4px);
           opacity: 0;
-          transition: opacity 0.3s ease;
+          transition: opacity var(--duration-base) var(--ease-out-soft);
         }
 
         dialog[open]::backdrop {
@@ -118,7 +121,7 @@ export class AxiomModal extends BaseComponent {
           padding: 0.25rem 0.5rem;
           border-radius: 8px;
           line-height: 1;
-          transition: all 0.2s ease;
+          transition: background var(--duration-fast) var(--ease-out-soft), color var(--duration-fast) var(--ease-out-soft);
         }
 
         .close-btn:hover {
@@ -263,8 +266,8 @@ export class AxiomModal extends BaseComponent {
         this._onClose();
       };
 
-      // Match CSS transition duration (0.3s)
-      setTimeout(cleanup, 300);
+      // Wait for the CSS close transition (MODAL_ANIM_MS, kept in sync with --duration-base)
+      setTimeout(cleanup, MODAL_ANIM_MS);
     }
   }
 

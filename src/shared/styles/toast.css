@@ -32,8 +32,10 @@
   justify-content: space-between;
   gap: 1rem;
 
-  animation: slideIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-  transition: transform 0.2s, opacity 0.2s;
+  animation: slideIn var(--duration-base) var(--ease-spring-gentle) forwards;
+  transition:
+    transform var(--duration-fast) var(--ease-out-soft),
+    opacity var(--duration-fast) var(--ease-out-soft);
 }
 
 /* Variants */
@@ -79,7 +81,7 @@
 
 /* Add an exiting class for the JS to toggle */
 .toast.exiting {
-  animation: fadeOut 0.3s cubic-bezier(0.4, 0, 1, 1) forwards;
+  animation: fadeOut var(--duration-base) var(--ease-cinematic) forwards;
   pointer-events: none;
 }
 

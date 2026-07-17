@@ -225,10 +225,10 @@ body {
 
   /* Smooth Theme & Layout Transitions */
   transition:
-    padding 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-    background-color 0.3s ease,
-    background-image 0.3s ease,
-    color 0.3s ease;
+    padding var(--duration-base) var(--ease-spring),
+    background-color var(--duration-base) var(--ease-out-soft),
+    background-image var(--duration-base) var(--ease-out-soft),
+    color var(--duration-base) var(--ease-out-soft);
 }
 
 /* Framework-style Heading Resets */
@@ -381,7 +381,12 @@ select {
   border-radius: 12px;
   cursor: pointer;
   isolation: isolate;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    background var(--duration-base) var(--ease-out-soft),
+    color var(--duration-base) var(--ease-out-soft),
+    transform var(--duration-base) var(--ease-out-soft),
+    box-shadow var(--duration-base) var(--ease-out-soft),
+    filter var(--duration-base) var(--ease-out-soft);
 
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 2px 4px rgba(0, 0, 0, 0.1);
 }
@@ -424,7 +429,7 @@ select {
   mask-composite: exclude;
   -webkit-mask-composite: destination-out;
   opacity: 0.6;
-  transition: opacity 0.4s;
+  transition: opacity var(--duration-base);
 }
 
 .btn-outline:hover {
@@ -435,7 +440,7 @@ select {
 
 .btn-outline:hover::before {
   opacity: 1;
-  animation: spin 3s linear infinite;
+  animation: spin 3s linear infinite; /* motion-gate: allow */
 }
 
 /* Modifier: Ghost */
@@ -491,7 +496,10 @@ select {
   /* Use token vars */
   box-shadow: 0 0 0 1px var(--glass-border) inset, var(--glass-shadow);
 
-  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    transform var(--duration-slow) var(--ease-out-soft),
+    background var(--duration-slow) var(--ease-out-soft),
+    box-shadow var(--duration-slow) var(--ease-out-soft);
 }
 
 .glass-card::after {
@@ -539,7 +547,10 @@ textarea {
 
   border-radius: 12px;
   padding: var(--space-m);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    background var(--duration-base) var(--ease-out-soft),
+    border-color var(--duration-base) var(--ease-out-soft),
+    box-shadow var(--duration-base) var(--ease-out-soft);
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
