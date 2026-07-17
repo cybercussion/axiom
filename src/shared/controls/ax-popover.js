@@ -59,9 +59,11 @@ export class AxPopover extends BaseComponent {
     document.addEventListener('pointerdown', this._onDocPointerDown, true);
     document.addEventListener('keydown', this._onDocKeydown, true);
     requestAnimationFrame(() => {
-      // Viewport flip: if the panel's top is clipped, reopen below the anchor.
-      const rect = this.getBoundingClientRect();
-      if (rect.top < 8) this.dataset.placement = 'below';
+      // offset* metrics ignore transforms — measure final layout, not the
+      // mid-entrance animated geometry.
+      const parent = this.offsetParent;
+      const parentTop = parent ? parent.getBoundingClientRect().top : 0;
+      if (parentTop + this.offsetTop < 8) this.dataset.placement = 'below';
       const first = this.querySelector(
         'ax-toggle, ax-slider, ax-button, button, [href], input, select, [tabindex]');
       first?.focus();
@@ -85,6 +87,7 @@ export class AxPopover extends BaseComponent {
 
   disconnectedCallback() {
     super.disconnectedCallback();
+    if (this.open) this.hide();
     document.removeEventListener('pointerdown', this._onDocPointerDown, true);
     document.removeEventListener('keydown', this._onDocKeydown, true);
   }
