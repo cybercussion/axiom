@@ -97,6 +97,9 @@
   --input-border: rgba(255, 255, 255, 0.1);
   --input-placeholder: rgba(255, 255, 255, 0.3);
 
+  /* Control tracks (toggle/slider/progress rails) — must stay visible on glass panels */
+  --control-track: rgba(255, 255, 255, 0.22);
+
   /* Buttons */
   --btn-text: white;
   --btn-outline-bg: rgba(255, 255, 255, 0.02);
@@ -146,6 +149,9 @@
   --input-bg: rgba(0, 0, 0, 0.03);
   --input-border: rgba(0, 0, 0, 0.1);
   --input-placeholder: rgba(0, 0, 0, 0.5);
+
+  /* Control tracks (toggle/slider/progress rails) — must stay visible on glass panels */
+  --control-track: rgba(0, 0, 0, 0.15);
 
   /* Buttons */
   --btn-text: #0f172a;

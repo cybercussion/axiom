@@ -7,7 +7,7 @@ const CSS = `
   :host { display: block; width: 100%; }
   .track {
     height: 6px; border-radius: 3px; overflow: hidden;
-    background: var(--input-border);
+    background: var(--control-track);
   }
   .fill {
     height: 100%; border-radius: 3px; background: var(--color-primary);

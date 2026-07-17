@@ -17,7 +17,7 @@ const CSS = `
   input::-webkit-slider-runnable-track {
     height: 4px; border-radius: 2px;
     background: linear-gradient(to right,
-      var(--color-primary) var(--fill, 0%), var(--input-border) var(--fill, 0%));
+      var(--color-primary) var(--fill, 0%), var(--control-track) var(--fill, 0%));
   }
   input::-webkit-slider-thumb {
     -webkit-appearance: none; width: 16px; height: 16px; margin-top: -6px;
@@ -26,7 +26,7 @@ const CSS = `
     transition: transform var(--duration-fast) var(--ease-spring);
   }
   input:active::-webkit-slider-thumb { transform: scale(1.4); }
-  input::-moz-range-track { height: 4px; border-radius: 2px; background: var(--input-border); }
+  input::-moz-range-track { height: 4px; border-radius: 2px; background: var(--control-track); }
   input::-moz-range-progress { height: 4px; border-radius: 2px; background: var(--color-primary); }
   input::-moz-range-thumb {
     width: 16px; height: 16px; border: none; border-radius: 50%; background: #fff;

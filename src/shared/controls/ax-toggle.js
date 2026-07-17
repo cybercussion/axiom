@@ -16,7 +16,7 @@ const CSS = `
   button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; border-radius: 12px; }
   .track {
     width: 36px; height: 20px; border-radius: 10px;
-    background: var(--input-border);
+    background: var(--control-track);
     transition: background var(--duration-fast) var(--ease-out-soft);
   }
   .thumb {
