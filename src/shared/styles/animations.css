@@ -1,8 +1,9 @@
 /* View Transitions Animations */
 
 :root {
-  --transition-easing: cubic-bezier(0.4, 0.0, 0.2, 1);
-  --transition-duration: 300ms;
+  /* Route-transition aliases — consume the shared motion tokens */
+  --transition-easing: var(--ease-cinematic);
+  --transition-duration: var(--duration-base);
 }
 
 ::view-transition-old(root),
@@ -141,11 +142,11 @@
  * 4. FADE (Neutral / Tab switch)
  */
 [data-transition="fade"]::view-transition-old(main-content) {
-  animation: fade-out 250ms ease both;
+  animation: fade-out var(--duration-fast) var(--ease-out-soft) both;
 }
 
 [data-transition="fade"]::view-transition-new(main-content) {
-  animation: fade-in 250ms ease both;
+  animation: fade-in var(--duration-fast) var(--ease-out-soft) both;
 }
 
 @keyframes fade-out {
@@ -172,11 +173,11 @@
 
   /* Fallback to simple cross-fade */
   ::view-transition-old(main-content) {
-    animation: fade-out 200ms ease both !important;
+    animation: fade-out var(--duration-fast) var(--ease-out-soft) both !important;
   }
 
   ::view-transition-new(main-content) {
-    animation: fade-in 200ms ease both !important;
+    animation: fade-in var(--duration-fast) var(--ease-out-soft) both !important;
   }
 
   /* Ensure the dock and orchestrator are explicitly visible and unaffected */

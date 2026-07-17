@@ -55,8 +55,25 @@
   --space-l: clamp(1.5rem, 0.28vi + 1.43rem, 1.66rem);
   --space-xl: clamp(2rem, 0.38vi + 1.91rem, 2.21rem);
 
-  /* Animation */
-  --ease-elastic: cubic-bezier(0.68, -0.55, 0.27, 1.55);
+  /* ============ MOTION TOKENS ============
+     The ONLY place literal easings/durations may appear.
+     Rule: every transition/animation in src/ consumes these vars.
+     Exceptions (infinite ambient loops, route-progress 10s crawl)
+     are marked "motion-gate: allow" at their use site. */
+
+  --duration-instant: 100ms;
+  --duration-fast: 200ms;
+  --duration-base: 300ms;
+  --duration-slow: 500ms;
+
+  /* snappy, ~8% overshoot — toggles, buttons, dock pill */
+  --ease-spring: var(--ease-out-soft);
+  /* softer settle, minimal overshoot — menus, popovers */
+  --ease-spring-gentle: var(--ease-out-soft);
+  /* decelerating glide — hovers, color/opacity changes */
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+  /* route transitions / large surface moves */
+  --ease-cinematic: cubic-bezier(0.4, 0, 0.2, 1);
 
   /* --- COMPONENT TOKENS (DARK DEFAULT) --- */
 
@@ -89,6 +106,17 @@
   --success-color: #10b981;
   --warning-color: #f59e0b;
   --danger-color: #ef4444;
+}
+
+/* After the :root block — real springs where linear() is supported */
+@supports (transition-timing-function: linear(0, 1)) {
+  :root {
+    --ease-spring: linear(0, 0.006, 0.025 2.8%, 0.101 6.1%, 0.539 18.9%, 0.721 25.3%,
+        0.849 31.5%, 0.937 38.1%, 0.968 41.8%, 0.991 45.7%, 1.006 50.1%, 1.015 55%,
+        1.017 63.9%, 1.001);
+    --ease-spring-gentle: linear(0, 0.013, 0.054 3.9%, 0.219 8.7%, 0.42 13.3%, 0.596 17.9%,
+        0.744 22.6%, 0.863 27.8%, 0.945 33.4%, 0.997 40%, 1.021 48.3%, 1.016 61.4%, 1.003);
+  }
 }
 
 :root[data-theme="light"] {
@@ -537,4 +565,28 @@ input::placeholder,
 textarea::placeholder {
   color: var(--input-placeholder);
   opacity: 1;
+}
+
+/* ============ REDUCED MOTION ============
+   Because ALL motion consumes the tokens above, collapsing the tokens
+   collapses every spring/slide in the app to a near-instant change.
+   [data-motion="reduced"] is the showcase page's preview hook. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-instant: 1ms;
+    --duration-fast: 1ms;
+    --duration-base: 1ms;
+    --duration-slow: 1ms;
+    --ease-spring: linear;
+    --ease-spring-gentle: linear;
+  }
+}
+
+:root[data-motion="reduced"] {
+  --duration-instant: 1ms;
+  --duration-fast: 1ms;
+  --duration-base: 1ms;
+  --duration-slow: 1ms;
+  --ease-spring: linear;
+  --ease-spring-gentle: linear;
 }
