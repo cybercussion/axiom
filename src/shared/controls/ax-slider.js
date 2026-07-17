@@ -67,6 +67,7 @@ export class AxSlider extends BaseComponent {
     if (!this._input) return;
     if (name === 'value') this._input.value = this.getAttribute('value');
     if (name === 'disabled') this._input.disabled = this.hasAttribute('disabled');
+    if (name === 'label') this._input.setAttribute('aria-label', this.getAttribute('label') || 'Slider');
     this._sync();
   }
 
