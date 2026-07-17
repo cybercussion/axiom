@@ -32,6 +32,16 @@ export class AxDipswitch extends BaseComponent {
     super();
     this._internals = this.attachInternals();
     this.addStyles(CSS);
+    this.shadowRoot.addEventListener('change', e => {
+      const toggle = e.target.closest?.('ax-toggle') || e.target;
+      if (toggle.tagName !== 'AX-TOGGLE') return;
+      e.stopPropagation();
+      this._internals.setFormValue(JSON.stringify(this.value));
+      this.dispatchEvent(new CustomEvent('change', {
+        bubbles: true, composed: true,
+        detail: { label: toggle.dataset.label, checked: toggle.checked, value: this.value }
+      }));
+    });
   }
 
   get value() {
@@ -42,6 +52,7 @@ export class AxDipswitch extends BaseComponent {
     return map;
   }
 
+  // Programmatic set — intentionally silent (no change event), matching native input semantics.
   setAll(map, { stagger = 40 } = {}) {
     let i = 0;
     this.shadowRoot.querySelectorAll('ax-toggle').forEach(t => {
@@ -62,17 +73,6 @@ export class AxDipswitch extends BaseComponent {
             <span class="dip-label">${this._esc(l)}</span>
           </div>`).join('')}
       </div>`;
-
-    this.shadowRoot.addEventListener('change', e => {
-      const toggle = e.target.closest?.('ax-toggle') || e.target;
-      if (toggle.tagName !== 'AX-TOGGLE') return;
-      e.stopPropagation();
-      this._internals.setFormValue(JSON.stringify(this.value));
-      this.dispatchEvent(new CustomEvent('change', {
-        bubbles: true, composed: true,
-        detail: { label: toggle.dataset.label, checked: toggle.checked, value: this.value }
-      }));
-    });
     this._internals.setFormValue(JSON.stringify(this.value));
   }
 }
