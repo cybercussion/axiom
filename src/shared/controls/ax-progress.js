@@ -1,0 +1,70 @@
+/**
+ * <ax-progress> — determinate (tweened, never jumps) + indeterminate bar.
+ */
+import { BaseComponent } from '@shared/base-component.js';
+
+const CSS = `
+  :host { display: block; width: 100%; }
+  .track {
+    height: 6px; border-radius: 3px; overflow: hidden;
+    background: var(--input-border);
+  }
+  .fill {
+    height: 100%; border-radius: 3px; background: var(--color-primary);
+    transform-origin: left; transform: scaleX(var(--p, 0));
+    transition: transform var(--duration-slow) var(--ease-out-soft);
+  }
+  :host([indeterminate]) .fill {
+    transform: none; width: 40%;
+    animation: ax-indeterminate 1.4s var(--ease-cinematic) infinite; /* motion-gate: allow */
+  }
+  @keyframes ax-indeterminate {
+    from { translate: -100% 0; }
+    to { translate: 250% 0; }
+  }
+`;
+
+export class AxProgress extends BaseComponent {
+  static observedAttributes = ['value', 'indeterminate', 'label'];
+
+  constructor() {
+    super();
+    this._internals = this.attachInternals();
+    this._internals.role = 'progressbar';
+    this.addStyles(CSS);
+  }
+
+  get value() { return this._value ?? 0; }
+  set value(v) { this.setAttribute('value', v); }
+
+  attributeChangedCallback() {
+    if (this._fill) this._sync();
+  }
+
+  render() {
+    this.shadowRoot.innerHTML = `
+      <div class="track" part="track"><div class="fill" part="fill"></div></div>`;
+    this._fill = this.shadowRoot.querySelector('.fill');
+    this._sync();
+  }
+
+  _sync() {
+    const max = Number(this.getAttribute('max')) || 100;
+    const raw = Number(this.getAttribute('value'));
+    const indeterminate = this.hasAttribute('indeterminate') || Number.isNaN(raw);
+    this._internals.ariaLabel = this.getAttribute('label') || 'Progress';
+    if (indeterminate) {
+      this.toggleAttribute('indeterminate', true);
+      this._internals.ariaValueNow = null;
+      return;
+    }
+    this._value = Math.min(max, Math.max(0, raw));
+    const pct = this._value / max;
+    this._fill.style.setProperty('--p', String(pct));
+    this._internals.ariaValueMin = '0';
+    this._internals.ariaValueMax = String(max);
+    this._internals.ariaValueNow = String(this._value);
+  }
+}
+
+customElements.define('ax-progress', AxProgress);
