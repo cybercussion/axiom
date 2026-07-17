@@ -1,0 +1,65 @@
+/**
+ * <ax-button variant="fill|outline|ghost" tone="primary|..." loading>
+ * Wraps the house .btn styles (adopted theme.css) + press physics + loading state.
+ */
+import { BaseComponent } from '@shared/base-component.js';
+
+const CSS = `
+  :host { display: inline-flex; }
+  :host([disabled]), :host([loading]) { pointer-events: none; }
+  :host([disabled]) { opacity: 0.5; }
+  .btn { position: relative; min-height: 44px; }
+  .btn:active { transform: scale(0.96); }
+  .label {
+    display: inline-flex; align-items: center; gap: 0.6em;
+    transition: opacity var(--duration-fast) var(--ease-out-soft);
+  }
+  .spinner {
+    position: absolute; inset: 0; display: flex;
+    align-items: center; justify-content: center;
+    opacity: 0;
+    transition: opacity var(--duration-fast) var(--ease-out-soft);
+  }
+  .spinner::after {
+    content: ''; width: 1.1em; height: 1.1em; border-radius: 50%;
+    border: 2px solid currentColor; border-right-color: transparent;
+    animation: ax-spin 0.8s linear infinite; /* motion-gate: allow */
+  }
+  @keyframes ax-spin { to { rotate: 360deg; } }
+  :host([loading]) .label { opacity: 0; }
+  :host([loading]) .spinner { opacity: 1; }
+`;
+
+export class AxButton extends BaseComponent {
+  static formAssociated = true;
+  static observedAttributes = ['loading', 'disabled'];
+
+  constructor() {
+    super();
+    this._internals = this.attachInternals();
+    this.addStyles(CSS);
+  }
+
+  attributeChangedCallback() {
+    if (this._btn) this._btn.disabled = this.hasAttribute('disabled') || this.hasAttribute('loading');
+  }
+
+  render() {
+    const variant = this.getAttribute('variant') || 'fill';
+    const tone = this.getAttribute('tone') || 'primary';
+    this.shadowRoot.innerHTML = `
+      <button class="btn btn-${this._esc(variant)} btn-${this._esc(tone)}" part="button">
+        <span class="label" part="label"><slot></slot></span>
+        <span class="spinner" aria-hidden="true"></span>
+      </button>`;
+    this._btn = this.shadowRoot.querySelector('button');
+    this._btn.disabled = this.hasAttribute('disabled') || this.hasAttribute('loading');
+    this._btn.addEventListener('click', () => {
+      if ((this.getAttribute('type') || 'button') === 'submit') {
+        this._internals.form?.requestSubmit();
+      }
+    });
+  }
+}
+
+customElements.define('ax-button', AxButton);

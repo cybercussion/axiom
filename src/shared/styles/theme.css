@@ -381,12 +381,11 @@ select {
   border-radius: 12px;
   cursor: pointer;
   isolation: isolate;
-  transition:
-    background var(--duration-base) var(--ease-out-soft),
-    color var(--duration-base) var(--ease-out-soft),
-    transform var(--duration-base) var(--ease-out-soft),
+  transition: transform var(--duration-fast) var(--ease-spring),
     box-shadow var(--duration-base) var(--ease-out-soft),
-    filter var(--duration-base) var(--ease-out-soft);
+    filter var(--duration-base) var(--ease-out-soft),
+    background var(--duration-base) var(--ease-out-soft),
+    color var(--duration-base) var(--ease-out-soft);
 
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 2px 4px rgba(0, 0, 0, 0.1);
 }
