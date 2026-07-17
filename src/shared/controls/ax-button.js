@@ -40,25 +40,31 @@ export class AxButton extends BaseComponent {
     this.addStyles(CSS);
   }
 
+  _syncState() {
+    const loading = this.hasAttribute('loading');
+    this._btn.disabled = this.hasAttribute('disabled') || loading;
+    this._btn.setAttribute('aria-busy', String(loading));
+  }
+
   attributeChangedCallback() {
-    if (this._btn) this._btn.disabled = this.hasAttribute('disabled') || this.hasAttribute('loading');
+    if (this._btn) this._syncState();
   }
 
   render() {
     const variant = this.getAttribute('variant') || 'fill';
     const tone = this.getAttribute('tone') || 'primary';
     this.shadowRoot.innerHTML = `
-      <button class="btn btn-${this._esc(variant)} btn-${this._esc(tone)}" part="button">
+      <button type="button" class="btn btn-${this._esc(variant)} btn-${this._esc(tone)}" part="button">
         <span class="label" part="label"><slot></slot></span>
         <span class="spinner" aria-hidden="true"></span>
       </button>`;
     this._btn = this.shadowRoot.querySelector('button');
-    this._btn.disabled = this.hasAttribute('disabled') || this.hasAttribute('loading');
     this._btn.addEventListener('click', () => {
       if ((this.getAttribute('type') || 'button') === 'submit') {
         this._internals.form?.requestSubmit();
       }
     });
+    this._syncState();
   }
 }
 
