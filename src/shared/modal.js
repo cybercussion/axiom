@@ -68,6 +68,19 @@ export class AxiomModal extends BaseComponent {
           transform: translateY(0) scale(1);
         }
 
+        /* Entry animation: showModal() flips display and [open] in one style
+           update, so without a starting style the transition has nothing to
+           interpolate from and the modal pops in. */
+        @starting-style {
+          dialog[open] {
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+          }
+          dialog[open]::backdrop {
+            opacity: 0;
+          }
+        }
+
         dialog:focus {
           outline: none;
         }

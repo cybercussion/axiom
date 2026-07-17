@@ -91,16 +91,17 @@ export class ComponentsUI extends BaseComponent {
 
         <section class="glass-card">
           <h2>Motion tokens</h2>
+          <p class="token-note">Lanes replay at 4&times; the real duration so the curves are visible.</p>
           <div class="token-grid">
             ${DURATIONS.map(d => `
               <div class="token-row">
                 <code>--duration-${d}</code>
-                <div class="lane"><div class="ball dur" style="transition-duration: var(--duration-${d})"></div></div>
+                <div class="lane"><div class="ball dur" style="transition-duration: calc(var(--duration-${d}) * 4)"></div></div>
               </div>`).join('')}
             ${EASINGS.map(e => `
               <div class="token-row">
                 <code>--${e}</code>
-                <div class="lane"><div class="ball" style="transition-timing-function: var(--${e}); transition-duration: var(--duration-slow)"></div></div>
+                <div class="lane"><div class="ball" style="transition-timing-function: var(--${e}); transition-duration: calc(var(--duration-slow) * 4)"></div></div>
               </div>`).join('')}
           </div>
           <ax-button variant="ghost" class="replay-tokens">Replay</ax-button>
@@ -157,10 +158,16 @@ export class ComponentsUI extends BaseComponent {
     });
 
     const replayTokens = () => {
-      this.shadowRoot.querySelectorAll('.ball').forEach(b => b.classList.remove('go'));
-      requestAnimationFrame(() =>
-        requestAnimationFrame(() =>
-          this.shadowRoot.querySelectorAll('.ball').forEach(b => b.classList.add('go'))));
+      // Snap balls back to the start with transitions suppressed — without
+      // this, re-adding .go two frames after removal restarts the forward
+      // transition from near the end and the run looks instant.
+      const grid = $('.token-grid');
+      const balls = this.shadowRoot.querySelectorAll('.ball');
+      grid.classList.add('resetting');
+      balls.forEach(b => b.classList.remove('go'));
+      void grid.offsetWidth; // commit the snap-back before re-enabling transitions
+      grid.classList.remove('resetting');
+      requestAnimationFrame(() => balls.forEach(b => b.classList.add('go')));
     };
     $('.replay-tokens').addEventListener('click', replayTokens);
     replayTokens();

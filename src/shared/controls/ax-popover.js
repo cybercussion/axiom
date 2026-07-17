@@ -64,6 +64,9 @@ export class AxPopover extends BaseComponent {
       const parent = this.offsetParent;
       const parentTop = parent ? parent.getBoundingClientRect().top : 0;
       if (parentTop + this.offsetTop < 8) this.dataset.placement = 'below';
+      // Move focus into the panel only on keyboard-driven opens — pointer
+      // users keep focus on the invoker (ARIA menu pattern), no stray ring.
+      if (this._invoker && !this._invoker.matches(':focus-visible')) return;
       const first = this.querySelector(
         'ax-toggle, ax-slider, ax-button, button, [href], input, select, [tabindex]');
       first?.focus();

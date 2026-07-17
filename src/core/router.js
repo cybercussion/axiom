@@ -437,7 +437,10 @@ export const router = {
   },
 
   handleIntercept(e) {
-    const link = e.target.closest('a');
+    // composedPath, not closest: clicks inside Shadow DOM are retargeted to the
+    // shadow host, so e.target.closest('a') misses anchors rendered in a
+    // component's shadow root → full page reload instead of a view transition.
+    const link = e.composedPath().find(el => el && el.tagName === 'A' && el.href);
     if (link && link.origin === location.origin && !e.metaKey && !e.ctrlKey) {
       // Must start with our base to be an internal link
       const href = link.getAttribute('href');
