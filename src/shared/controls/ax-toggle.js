@@ -33,7 +33,7 @@ const CSS = `
 
 export class AxToggle extends BaseComponent {
   static formAssociated = true;
-  static observedAttributes = ['checked', 'disabled', 'label'];
+  static observedAttributes = ['checked', 'disabled', 'label', 'value'];
 
   constructor() {
     super();
@@ -68,7 +68,7 @@ export class AxToggle extends BaseComponent {
     this._btn.setAttribute('aria-checked', String(this.checked));
     this._btn.setAttribute('aria-label', this.getAttribute('label') || 'Toggle');
     this._btn.disabled = this.hasAttribute('disabled');
-    this._internals.setFormValue(this.checked ? (this.getAttribute('value') || 'on') : null);
+    this._internals.setFormValue(this.checked && !this.hasAttribute('disabled') ? (this.getAttribute('value') || 'on') : null);
   }
 }
 
