@@ -76,7 +76,7 @@ class RouteProgress extends BaseComponent {
 
     this.setAttribute('active', '');
 
-    // 2. Initial Jump: Use a sharper bezier for that "kickstart" feel
+    // 2. Initial Jump: Snap the bar to its starting position with a soft ease-out.
     bar.style.transition = 'transform var(--duration-base) var(--ease-out-soft)';
     bar.style.transform = 'translateX(-70%)';
 

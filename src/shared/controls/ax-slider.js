@@ -12,6 +12,7 @@ const CSS = `
     -webkit-appearance: none; appearance: none;
     width: 100%; height: 44px; margin: 0;
     background: transparent; cursor: pointer;
+    touch-action: none;
   }
   input:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; border-radius: 8px; }
   input::-webkit-slider-runnable-track {

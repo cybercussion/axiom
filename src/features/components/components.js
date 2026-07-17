@@ -20,6 +20,12 @@ export class ComponentsUI extends BaseComponent {
     super.connectedCallback();
   }
 
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    // Preview is page-scoped — don't leave the whole app in reduced motion.
+    delete document.documentElement.dataset.motion;
+  }
+
   render() {
     this.shadowRoot.innerHTML = `
       <main class="page">

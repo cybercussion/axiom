@@ -67,6 +67,7 @@ export class NavDock extends BaseComponent {
   }
 
   disconnectedCallback() {
+    super.disconnectedCallback();
     if (this._cleanup) this._cleanup();
     window.removeEventListener('resize', this._onResize);
   }
