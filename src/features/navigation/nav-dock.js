@@ -93,6 +93,12 @@ export class NavDock extends BaseComponent {
           <rect width="7" height="5" x="3" y="16" rx="1"></rect>
         </svg>
       </a>
+      <a class="nav-link" href="components" title="Components" aria-label="Components">
+        <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect width="18" height="18" x="3" y="3" rx="2"></rect>
+          <path d="M3 9h18"></path><path d="M9 21V9"></path>
+        </svg>
+      </a>
       <a class="nav-link" href="contact" title="Contact" aria-label="Contact">
         <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect width="20" height="16" x="2" y="4" rx="2"></rect>

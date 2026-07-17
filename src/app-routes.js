@@ -1,5 +1,5 @@
 export const ROUTE_DEPTHS = { 'home': 0, 'default': 1 };
-export const ROUTE_ORDER = ['home', 'counter', 'dashboard'];
+export const ROUTE_ORDER = ['home', 'counter', 'dashboard', 'components'];
 export const DEFAULT_ROUTE = 'home';
 
 export const ROUTES = {
@@ -10,6 +10,7 @@ export const ROUTES = {
     api: () => import('@features/dashboard/dashboard-api.js').then(m => m.fetchDashboardData()),
     dataKey: 'dashboardData'
   },
+  'components': { path: '@features/components/components.js' },
   'contact': { path: '@features/contact/contact.js' },
   'navigation': { path: '@features/navigation/navigation.js' },
   'not-found': { path: '@features/not-found/not-found.js' }
