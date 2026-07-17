@@ -14,7 +14,7 @@ const CSS = `
     transform-origin: left; transform: scaleX(var(--p, 0));
     transition: transform var(--duration-slow) var(--ease-out-soft);
   }
-  :host([indeterminate]) .fill {
+  :host([indeterminate]) .fill, :host([data-nan]) .fill {
     transform: none; width: 40%;
     animation: ax-indeterminate 1.4s var(--ease-cinematic) infinite; /* motion-gate: allow */
   }
@@ -25,7 +25,7 @@ const CSS = `
 `;
 
 export class AxProgress extends BaseComponent {
-  static observedAttributes = ['value', 'indeterminate', 'label'];
+  static observedAttributes = ['value', 'max', 'indeterminate', 'label'];
 
   constructor() {
     super();
@@ -49,18 +49,19 @@ export class AxProgress extends BaseComponent {
   }
 
   _sync() {
-    const max = Number(this.getAttribute('max')) || 100;
+    const rawMax = Number(this.getAttribute('max'));
+    const max = Number.isFinite(rawMax) && rawMax > 0 ? rawMax : 100;
     const raw = Number(this.getAttribute('value'));
-    const indeterminate = this.hasAttribute('indeterminate') || Number.isNaN(raw);
     this._internals.ariaLabel = this.getAttribute('label') || 'Progress';
-    if (indeterminate) {
-      this.toggleAttribute('indeterminate', true);
+    // Derived NaN state uses data-nan (unobserved) so it self-recovers when a
+    // valid value arrives — the public `indeterminate` attr stays consumer-owned.
+    this.toggleAttribute('data-nan', Number.isNaN(raw) && !this.hasAttribute('indeterminate'));
+    if (this.hasAttribute('indeterminate') || Number.isNaN(raw)) {
       this._internals.ariaValueNow = null;
       return;
     }
     this._value = Math.min(max, Math.max(0, raw));
-    const pct = this._value / max;
-    this._fill.style.setProperty('--p', String(pct));
+    this._fill.style.setProperty('--p', String(this._value / max));
     this._internals.ariaValueMin = '0';
     this._internals.ariaValueMax = String(max);
     this._internals.ariaValueNow = String(this._value);
