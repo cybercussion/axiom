@@ -3,7 +3,7 @@ name = "axiom"
 vcs = "git"
 toolchain = ["es6"]
 description = "High-performance, zero-build, vanilla Web Standards frontend architecture with Proxy-based state management and native Web Components."
-updated = "2026-07-10"
+updated = "2026-07-17"
 
 [[capabilities]]
 id = "zero-build-architecture"
@@ -67,4 +67,12 @@ tags = ["es6"]
 claim = "Constraint Validation API wrapper (custom rules, async), native <dialog> modal with focus trap and animations, toast manager with auto-dismiss"
 maturity = "shipped"
 entry_points = ["src/shared/form-validator.js", "src/shared/modal.js", "src/shared/toast-manager.js"]
+pattern_doc = ""
+
+[[capabilities]]
+id = "motion-system-control-set"
+tags = ["es6", "web-components", "a11y"]
+claim = "Motion token layer (CSS linear() springs, 4 durations/4 easings, single reduced-motion collapse point) + seven formAssociated ax-* controls (toggle, dipswitch, slider, progress, button, popover, skeleton) with animated show/hide via @starting-style/allow-discrete; /components showcase route; grep-enforced no-literal-easing rule"
+maturity = "shipped"
+entry_points = ["src/shared/styles/theme.css", "src/shared/controls/", "src/features/components/components.js", "docs/superpowers/specs/2026-07-17-motion-system-design.md"]
 pattern_doc = ""
