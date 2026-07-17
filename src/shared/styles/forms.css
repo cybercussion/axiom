@@ -154,7 +154,8 @@ textarea::placeholder {
   transition:
     filter var(--duration-fast) var(--ease-out-soft),
     transform var(--duration-fast) var(--ease-out-soft),
-    box-shadow var(--duration-fast) var(--ease-out-soft);
+    box-shadow var(--duration-fast) var(--ease-out-soft),
+    opacity var(--duration-fast) var(--ease-out-soft);
   text-transform: uppercase;
   letter-spacing: 1px;
 }
