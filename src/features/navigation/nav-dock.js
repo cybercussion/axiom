@@ -2,6 +2,9 @@ import { BaseComponent } from '@shared/base-component.js';
 import { router } from '@core/router.js';
 import { state } from '@state';
 import { auth } from '@core/auth.js';
+import '@shared/controls/ax-popover.js';
+import '@shared/controls/ax-toggle.js';
+import '@shared/controls/ax-slider.js';
 
 export class NavDock extends BaseComponent {
   async connectedCallback() {
@@ -10,19 +13,16 @@ export class NavDock extends BaseComponent {
 
     // Subscribe to route changes to update active state
     this._cleanup = state.subscribe(({ key, value }) => {
-      if (key === 'route') {
-        this.updateActive(value);
-      }
-      if (key === 'user' || key === 'theme') {
-        this.render();
-      }
+      if (key === 'route') this.updateActive(value);
+      if (key === 'user') this.render();
+      if (key === 'theme') this._syncThemeIcon(value);
       if (key === 'audioLevel') {
         const slider = this.shadowRoot.querySelector('.audio-slider');
         if (slider) slider.value = value;
       }
       if (key === 'captionsEnabled') {
-        const cb = this.shadowRoot.querySelector('.captions-checkbox');
-        if (cb) cb.checked = value;
+        const t = this.shadowRoot.querySelector('.captions-toggle');
+        if (t) t.checked = value;
       }
     });
 
@@ -31,52 +31,44 @@ export class NavDock extends BaseComponent {
 
     // Bridge the Shadow DOM gap to the global router (One-time setup)
     this.shadowRoot.addEventListener('click', e => {
-      // Handle Settings Button
       if (e.target.closest('.settings-btn')) {
         e.preventDefault();
         e.stopPropagation();
-        const menu = this.shadowRoot.querySelector('.settings-menu');
-        if (menu) menu.classList.toggle('hidden');
+        const pop = this.shadowRoot.querySelector('ax-popover');
+        pop?.toggle(this.shadowRoot.querySelector('.settings-btn'));
         return;
       }
-      // Clicks inside settings menu shouldn't close it
-      if (e.target.closest('.settings-menu')) {
-        return;
-      }
-      // Close settings menu on click outside
-      const menu = this.shadowRoot.querySelector('.settings-menu');
-      if (menu && !menu.classList.contains('hidden')) {
-        menu.classList.add('hidden');
-      }
+      if (e.composedPath().some(el => el.tagName === 'AX-POPOVER')) return;
       const link = e.target.closest('a');
-      if (link) {
-        const href = link.getAttribute('href');
-        if (href === state.data.route) {
-          e.preventDefault();
-          return;
-        }
+      if (link && link.getAttribute('href') === state.data.route) {
+        e.preventDefault();
+        return;
       }
       router.handleIntercept(e);
     });
 
     // Settings menu input handlers (delegated, survives re-renders)
     this.shadowRoot.addEventListener('input', e => {
-      if (e.target.closest('.audio-slider')) {
-        state.data.audioLevel = parseInt(e.target.value, 10);
+      if (e.target.classList?.contains('audio-slider')) {
+        state.data.audioLevel = e.detail.value;
       }
     });
     this.shadowRoot.addEventListener('change', e => {
-      if (e.target.closest('.captions-checkbox')) {
-        state.data.captionsEnabled = e.target.checked;
+      if (e.target.classList?.contains('captions-toggle')) {
+        state.data.captionsEnabled = e.detail.checked;
       }
-      if (e.target.closest('.theme-checkbox')) {
-        state.data.theme = e.target.checked ? 'dark' : 'light';
+      if (e.target.classList?.contains('theme-toggle')) {
+        state.data.theme = e.detail.checked ? 'dark' : 'light';
       }
     });
+
+    this._onResize = () => this._positionPill(false);
+    window.addEventListener('resize', this._onResize);
   }
 
   disconnectedCallback() {
     if (this._cleanup) this._cleanup();
+    window.removeEventListener('resize', this._onResize);
   }
 
   render() {
@@ -86,6 +78,7 @@ export class NavDock extends BaseComponent {
 
     this.shadowRoot.innerHTML = `
     <nav class="dock-wrapper">
+      <span class="dock-pill" aria-hidden="true"></span>
       <a class="nav-link" href="home" title="Home" aria-label="Home">
         <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
@@ -139,52 +132,33 @@ export class NavDock extends BaseComponent {
         </svg>
       </button>
 
-      <div class="settings-menu hidden" role="menu" aria-label="Settings">
-        <div class="settings-row" role="menuitem" title="Appearance">
-          <svg class="settings-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            ${isDark ? `
-              <circle cx="12" cy="12" r="5"></circle>
-              <line x1="12" y1="1" x2="12" y2="3"></line>
-              <line x1="12" y1="21" x2="12" y2="23"></line>
-              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-              <line x1="1" y1="12" x2="3" y2="12"></line>
-              <line x1="21" y1="12" x2="23" y2="12"></line>
-              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-            ` : `
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-            `}
-          </svg>
-          <label class="toggle-switch" aria-label="Toggle dark mode">
-            <input type="checkbox" class="toggle-input theme-checkbox" ${isDark ? 'checked' : ''}>
-            <span class="toggle-track"><span class="toggle-thumb"></span></span>
-          </label>
+      <ax-popover aria-label="Settings">
+        <div class="settings-row" title="Appearance">
+          <svg class="settings-icon theme-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${this._themeIconPath(isDark)}</svg>
+          <ax-toggle class="theme-toggle" label="Toggle dark mode" ${isDark ? 'checked' : ''}></ax-toggle>
         </div>
-        <div class="settings-row" role="menuitem" title="Audio">
+        <div class="settings-row" title="Audio">
           <svg class="settings-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
             <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
             <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
           </svg>
-          <input type="range" class="audio-slider" aria-label="Audio level" min="0" max="100" value="${state.data.audioLevel}">
+          <ax-slider class="audio-slider" label="Audio level" min="0" max="100" value="${state.data.audioLevel}"></ax-slider>
         </div>
-        <div class="settings-row" role="menuitem" title="Closed Captions">
+        <div class="settings-row" title="Closed Captions">
           <svg class="settings-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="2" y="4" width="20" height="16" rx="2"></rect>
             <text x="6" y="15" font-size="9" font-weight="700" fill="currentColor" stroke="none" font-family="sans-serif">CC</text>
           </svg>
-          <label class="toggle-switch" aria-label="Toggle captions">
-            <input type="checkbox" class="toggle-input captions-checkbox" ${state.data.captionsEnabled ? 'checked' : ''}>
-            <span class="toggle-track"><span class="toggle-thumb"></span></span>
-          </label>
+          <ax-toggle class="captions-toggle" label="Toggle captions" ${state.data.captionsEnabled ? 'checked' : ''}></ax-toggle>
         </div>
-      </div>
+      </ax-popover>
     </nav>
   `;
 
     // Ensure initial active state is set after render
     this.updateActive(state.data.route);
+    this._positionPill(false);
   }
 
 
@@ -200,6 +174,40 @@ export class NavDock extends BaseComponent {
         link.removeAttribute('aria-current');
       }
     });
+    this._positionPill(true);
+  }
+
+  _themeIconPath(isDark) {
+    return isDark
+      ? `<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>`
+      : `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>`;
+  }
+
+  _syncThemeIcon(theme) {
+    const icon = this.shadowRoot.querySelector('.theme-icon');
+    if (icon) icon.innerHTML = this._themeIconPath(theme === 'dark');
+    const t = this.shadowRoot.querySelector('.theme-toggle');
+    if (t) t.checked = theme === 'dark';
+  }
+
+  /**
+   * Springy indicator: measure the active link and glide the pill to it.
+   * animate=false snaps (initial paint, resize) — no transition flash.
+   */
+  _positionPill(animate = true) {
+    const pill = this.shadowRoot.querySelector('.dock-pill');
+    const wrapper = this.shadowRoot.querySelector('.dock-wrapper');
+    const active = this.shadowRoot.querySelector('.nav-link.active');
+    if (!pill || !wrapper) return;
+    if (!active) { pill.style.opacity = '0'; return; }
+    const w = wrapper.getBoundingClientRect();
+    const r = active.getBoundingClientRect();
+    if (!animate) pill.style.transition = 'none';
+    pill.style.opacity = '1';
+    pill.style.width = `${r.width}px`;
+    pill.style.height = `${r.height}px`;
+    pill.style.transform = `translate(${r.left - w.left}px, ${r.top - w.top}px)`;
+    if (!animate) requestAnimationFrame(() => { pill.style.transition = ''; });
   }
 
 }

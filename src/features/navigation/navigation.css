@@ -14,12 +14,14 @@
   color: var(--color-muted);
   text-decoration: none;
   border-radius: var(--space-s);
-  transition:
-    color var(--duration-fast) var(--ease-out-soft),
-    background var(--duration-fast) var(--ease-out-soft);
+  transition: color var(--duration-fast) var(--ease-out-soft),
+    background var(--duration-fast) var(--ease-out-soft),
+    transform var(--duration-fast) var(--ease-spring);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
+
+.nav-link:active { transform: scale(0.88); }
 
 @media (hover: hover) {
   .nav-link:hover {
@@ -50,10 +52,7 @@
   }
 }
 
-.nav-link.active {
-  color: var(--color-primary);
-  background: rgba(168, 85, 247, 0.1);
-}
+.nav-link.active { color: var(--color-primary); background: transparent; }
 
 button.nav-link,
 select.nav-link {
@@ -123,41 +122,26 @@ option {
   position: relative;
 }
 
-/* Settings Menu */
-.settings-menu {
-  position: absolute;
+/* Popover placement above the dock (host positioning contract) */
+ax-popover {
   bottom: calc(100% + var(--space-s));
   right: 0;
-  min-width: 160px;
-  background: var(--dock-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--dock-border);
-  border-radius: 12px;
-  padding: var(--space-m);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-  z-index: 101;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-s);
-  animation: settingsSlideUp var(--duration-fast) var(--ease-out-soft);
+  min-width: 200px;
 }
 
-.settings-menu.hidden {
-  display: none;
-}
+.settings-row ax-slider { flex: 1; }
 
-@keyframes settingsSlideUp {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* Sliding active pill */
+.dock-pill {
+  position: absolute; left: 0; top: 0;
+  border-radius: var(--space-s);
+  background: rgba(168, 85, 247, 0.1);
+  opacity: 0; pointer-events: none;
+  transition: transform var(--duration-base) var(--ease-spring),
+    width var(--duration-base) var(--ease-spring),
+    opacity var(--duration-fast) var(--ease-out-soft);
 }
+.nav-link { position: relative; }  /* paint above the pill */
 
 .settings-row {
   display: flex;
@@ -173,59 +157,6 @@ option {
   height: 16px;
   flex: 0 0 16px;
   color: var(--color-muted);
-}
-
-.toggle-switch {
-  display: block;
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 36px;
-  height: 20px;
-  cursor: pointer;
-}
-
-.toggle-input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-  position: absolute;
-}
-
-.toggle-track {
-  position: absolute;
-  inset: 0;
-  background: var(--dock-border);
-  border-radius: 10px;
-  transition: background var(--duration-fast) var(--ease-out-soft);
-}
-
-.toggle-input:checked+.toggle-track {
-  background: var(--color-primary);
-}
-
-.toggle-thumb {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 16px;
-  height: 16px;
-  background: #fff;
-  border-radius: 50%;
-  transition: transform var(--duration-fast) var(--ease-out-soft);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-}
-
-.toggle-input:checked+.toggle-track .toggle-thumb {
-  transform: translateX(16px);
-}
-
-.settings-row input[type="range"] {
-  flex: 1;
-  height: 4px;
-  accent-color: var(--color-primary);
-  cursor: pointer;
 }
 
 /* Sidebar Specifics */
