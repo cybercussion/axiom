@@ -100,6 +100,21 @@
   /* Control tracks (toggle/slider/progress rails) — must stay visible on glass panels */
   --control-track: rgba(255, 255, 255, 0.22);
 
+  /* Glass surface system: panel = outer sheet, tile = nested inner card */
+  --glass-panel: rgba(18, 18, 24, 0.55);
+  --glass-panel-border: rgba(255, 255, 255, 0.12);
+  --glass-tile: rgba(255, 255, 255, 0.06);
+  --glass-tile-border: rgba(255, 255, 255, 0.08);
+
+  /* Chart palette — VALIDATED 2026-07-18 with the dataviz six-check script
+     against BOTH surfaces (dark #09090b, light #f1f5f9): all checks pass,
+     worst adjacent ΔE 12.5 (protan) / 24.3 (normal), contrast ≥ 3:1.
+     Do NOT change a value without re-running the validator (see plan Task 1). */
+  --chart-1: #3b82f6;
+  --chart-2: #d97706;
+  --chart-3: #0d9488;
+  --chart-4: #c026d3;
+
   /* Buttons */
   --btn-text: white;
   --btn-outline-bg: rgba(255, 255, 255, 0.02);
@@ -152,6 +167,11 @@
 
   /* Control tracks (toggle/slider/progress rails) — must stay visible on glass panels */
   --control-track: rgba(0, 0, 0, 0.15);
+
+  --glass-panel: rgba(255, 255, 255, 0.55);
+  --glass-panel-border: rgba(0, 0, 0, 0.08);
+  --glass-tile: rgba(255, 255, 255, 0.55);
+  --glass-tile-border: rgba(0, 0, 0, 0.06);
 
   /* Buttons */
   --btn-text: #0f172a;
@@ -581,6 +601,23 @@ input::placeholder,
 textarea::placeholder {
   color: var(--input-placeholder);
   opacity: 1;
+}
+
+/* ============ GLASS SURFACES ============ */
+.glass-panel {
+  background: var(--glass-panel);
+  border: 1px solid var(--glass-panel-border);
+  border-radius: 20px;
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  padding: var(--space-l);
+}
+
+.glass-tile {
+  background: var(--glass-tile);
+  border: 1px solid var(--glass-tile-border);
+  border-radius: 14px;
+  padding: var(--space-m);
 }
 
 /* ============ REDUCED MOTION ============
