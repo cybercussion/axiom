@@ -14,27 +14,28 @@ const CSS = `
     background: transparent; cursor: pointer;
     touch-action: none;
   }
-  input:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; border-radius: 8px; }
+  input:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; border-radius: 999px; }
+  /* Glass pill rail — matches the ax-barchart mark language, not the stock thin bar. */
   input::-webkit-slider-runnable-track {
-    height: 4px; border-radius: 2px;
+    height: 14px; border-radius: 999px;
     background: linear-gradient(to right,
       var(--color-primary) var(--fill, 0%), var(--control-track) var(--fill, 0%));
   }
   input::-webkit-slider-thumb {
-    -webkit-appearance: none; width: 16px; height: 16px; margin-top: -6px;
+    -webkit-appearance: none; width: 24px; height: 24px; margin-top: -5px;
     border-radius: 50%; background: #fff;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
     transition: transform var(--duration-fast) var(--ease-spring);
   }
-  input:active::-webkit-slider-thumb { transform: scale(1.4); }
-  input::-moz-range-track { height: 4px; border-radius: 2px; background: var(--control-track); }
-  input::-moz-range-progress { height: 4px; border-radius: 2px; background: var(--color-primary); }
+  input:active::-webkit-slider-thumb { transform: scale(1.2); }
+  input::-moz-range-track { height: 14px; border-radius: 999px; background: var(--control-track); }
+  input::-moz-range-progress { height: 14px; border-radius: 999px; background: var(--color-primary); }
   input::-moz-range-thumb {
-    width: 16px; height: 16px; border: none; border-radius: 50%; background: #fff;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    width: 24px; height: 24px; border: none; border-radius: 50%; background: #fff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
     transition: transform var(--duration-fast) var(--ease-spring);
   }
-  input:active::-moz-range-thumb { transform: scale(1.4); }
+  input:active::-moz-range-thumb { transform: scale(1.2); }
   .bubble {
     position: absolute; bottom: calc(100% - 6px); left: var(--fill, 0%);
     transform: translateX(-50%) scale(0.8);

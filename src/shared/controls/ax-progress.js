@@ -6,16 +6,18 @@ import { BaseComponent } from '@shared/base-component.js';
 const CSS = `
   :host { display: block; width: 100%; }
   .track {
-    height: 6px; border-radius: 3px; overflow: hidden;
+    height: 14px; border-radius: 999px; overflow: hidden;
     background: var(--control-track);
   }
+  /* Width, not scaleX: scaling squashes the rounded cap into an ellipse at
+     low values. Width keeps the pill end perfectly round at every value. */
   .fill {
-    height: 100%; border-radius: 3px; background: var(--color-primary);
-    transform-origin: left; transform: scaleX(var(--p, 0));
-    transition: transform var(--duration-slow) var(--ease-out-soft);
+    height: 100%; border-radius: 999px; background: var(--color-primary);
+    width: calc(var(--p, 0) * 100%);
+    transition: width var(--duration-slow) var(--ease-out-soft);
   }
   :host([indeterminate]) .fill, :host([data-nan]) .fill {
-    transform: none; width: 40%;
+    width: 40%;
     animation: ax-indeterminate 1.4s var(--ease-cinematic) infinite; /* motion-gate: allow */
   }
   @keyframes ax-indeterminate {
