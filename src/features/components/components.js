@@ -10,6 +10,13 @@ import '@shared/controls/ax-progress.js';
 import '@shared/controls/ax-button.js';
 import '@shared/controls/ax-popover.js';
 import '@shared/controls/ax-skeleton.js';
+import '@shared/controls/ax-barchart.js';
+import '@shared/controls/ax-ring.js';
+import '@shared/controls/ax-progress-ring.js';
+import '@shared/controls/ax-stat.js';
+import '@shared/controls/ax-trend.js';
+import '@shared/controls/ax-chip.js';
+import '@shared/controls/ax-datestrip.js';
 
 const DURATIONS = ['instant', 'fast', 'base', 'slow'];
 const EASINGS = ['ease-spring', 'ease-spring-gentle', 'ease-out-soft', 'ease-cinematic'];
@@ -90,6 +97,43 @@ export class ComponentsUI extends BaseComponent {
         </section>
 
         <section class="glass-card">
+          <h2>Bar chart</h2>
+          <ax-barchart class="demo-bars" unit="%" label="Demo bars"></ax-barchart>
+          <ax-button variant="ghost" class="bars-randomize">Randomize</ax-button>
+        </section>
+
+        <section class="glass-card">
+          <h2>Ring &amp; progress rings</h2>
+          <div class="row">
+            <ax-ring class="demo-ring" size="150" label="Demo ring">
+              <span class="ring-pct">75%</span>
+            </ax-ring>
+            <div class="ring-gauges">
+              <ax-progress-ring class="demo-pring" value="40" size="56" label="Demo gauge"></ax-progress-ring>
+              <ax-slider class="pring-slider" label="Drive the gauge" value="40"></ax-slider>
+            </div>
+          </div>
+        </section>
+
+        <section class="glass-card">
+          <h2>Stat, trend &amp; chip</h2>
+          <div class="row">
+            <ax-stat value="108" unit="bpm" label="Heart Rate">
+              <span slot="icon">&hearts;</span>
+              <ax-trend slot="trend" value="1.27"></ax-trend>
+            </ax-stat>
+            <ax-chip class="demo-chip" tone="ongoing">On Going</ax-chip>
+            <ax-button variant="ghost" class="chip-toggle">Toggle tone</ax-button>
+          </div>
+        </section>
+
+        <section class="glass-card">
+          <h2>Date strip</h2>
+          <ax-datestrip class="demo-strip"></ax-datestrip>
+          <p class="strip-log token-note">Select a day&hellip;</p>
+        </section>
+
+        <section class="glass-card">
           <h2>Motion tokens</h2>
           <p class="token-note">Lanes replay at 4&times; the real duration so the curves are visible.</p>
           <div class="token-grid">
@@ -155,6 +199,34 @@ export class ComponentsUI extends BaseComponent {
 
     $('.pop-btn').addEventListener('click', e => {
       $('ax-popover').toggle(e.currentTarget);
+    });
+
+    const seedBars = () => {
+      $('.demo-bars').data = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+        .map(label => ({ label, value: Math.round(Math.random() * 90) + 10 }));
+    };
+    $('.bars-randomize').addEventListener('click', seedBars);
+    seedBars();
+
+    $('.demo-ring').segments = [
+      { label: 'Calories', value: 37.5 },
+      { label: 'Protein', value: 37.5 },
+      { label: 'Carbs', value: 25 }
+    ];
+
+    $('.pring-slider').addEventListener('input', e => {
+      $('.demo-pring').value = e.detail.value;
+    });
+
+    $('.chip-toggle').addEventListener('click', () => {
+      const chip = $('.demo-chip');
+      const done = chip.getAttribute('tone') === 'complete';
+      chip.setAttribute('tone', done ? 'ongoing' : 'complete');
+      chip.textContent = done ? 'On Going' : 'Complete';
+    });
+
+    $('.demo-strip').addEventListener('change', e => {
+      $('.strip-log').textContent = `change → ${e.detail.date}`;
     });
 
     const replayTokens = () => {
