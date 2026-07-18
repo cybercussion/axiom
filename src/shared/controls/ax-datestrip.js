@@ -72,9 +72,14 @@ export class AxDatestrip extends BaseComponent {
       if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
       const d = parse(this.selected || this.getAttribute('date') || iso(new Date()));
       d.setDate(d.getDate() + (e.key === 'ArrowRight' ? 1 : -1));
-      // Selection crossing the week boundary shifts the visible week too.
+      // Batch the week shift + selection into ONE rebuild, then restore focus —
+      // _sync destroys the day buttons, which would otherwise drop keyboard focus
+      // to <body> and make arrow navigation single-shot.
+      this._suppressSync = true;
       this.setAttribute('date', iso(d));
+      this._suppressSync = false;
       this._select(iso(d));
+      this.shadowRoot.querySelector('[aria-current="date"]')?.focus();
       e.preventDefault();
     };
   }
@@ -83,6 +88,7 @@ export class AxDatestrip extends BaseComponent {
   set selected(v) { this.setAttribute('selected', v); }
 
   attributeChangedCallback() {
+    if (this._suppressSync) return;
     if (this._days) this._sync(false);
   }
 

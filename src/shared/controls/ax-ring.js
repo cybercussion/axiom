@@ -78,7 +78,7 @@ export class AxRing extends BaseComponent {
     this.shadowRoot.innerHTML = `
       <div class="stage" part="stage">
         <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"
-          role="img" aria-label="${this._esc(this.getAttribute('label') || 'Ring chart')}"></svg>
+          role="group" aria-label="${this._esc(this.getAttribute('label') || 'Ring chart')}"></svg>
         <div class="center" part="center"><slot></slot></div>
         <div class="tip" aria-hidden="true"></div>
       </div>
