@@ -92,7 +92,7 @@ class DashboardUI extends BaseComponent {
           <section class="stat-col">
             ${(p.stats || []).map(s => `
               <ax-stat value="${this._esc(s.value)}" unit="${this._esc(s.unit)}" label="${this._esc(s.label)}">
-                ${icons[s.icon] || ''}
+                ${Object.hasOwn(icons, s.icon) ? icons[s.icon] : ''}
               </ax-stat>`).join('')}
           </section>
 
@@ -107,7 +107,7 @@ class DashboardUI extends BaseComponent {
                     <div class="legend-line">
                       <span class="dot" style="background: var(--chart-${i + 1})"></span>
                       <span class="legend-label">${this._esc(s.label)}</span>
-                      <strong>${s.value}</strong>
+                      <strong>${Number(s.value) || 0}</strong>
                       <ax-trend value="${Number(s.trend) || 0}"></ax-trend>
                     </div>`).join('')}
                 </div>
