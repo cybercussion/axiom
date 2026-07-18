@@ -21,7 +21,7 @@ const CSS = `
     stroke: var(--success-color); fill: none; stroke-width: ${STROKE};
     stroke-linecap: round; stroke-linejoin: round;
     transform: rotate(90deg); transform-origin: center;
-    stroke-dasharray: 30; stroke-dashoffset: 30;
+    stroke-dasharray: var(--check-len, 30); stroke-dashoffset: var(--check-len, 30);
     transition: stroke-dashoffset var(--duration-base) var(--ease-spring);
   }
   :host([data-done]) .check { stroke-dashoffset: 0; }
@@ -45,7 +45,8 @@ export class AxProgressRing extends BaseComponent {
   }
 
   render() {
-    const size = Number(this.getAttribute('size')) > 0 ? Number(this.getAttribute('size')) : 44;
+    const rawSize = Number(this.getAttribute('size'));
+    const size = rawSize > 0 ? rawSize : 44;
     const r = (size - STROKE) / 2;
     const c = 2 * Math.PI * r;
     this._circumference = c;
@@ -55,7 +56,7 @@ export class AxProgressRing extends BaseComponent {
         <circle class="rail" cx="${mid}" cy="${mid}" r="${r}" stroke-width="${STROKE}"></circle>
         <circle class="arc" cx="${mid}" cy="${mid}" r="${r}" stroke-width="${STROKE}"
           stroke-dasharray="${c}" stroke-dashoffset="${c}"></circle>
-        <path class="check" d="M ${mid - r * 0.42} ${mid} l ${r * 0.3} ${r * 0.3} l ${r * 0.55} ${-r * 0.6}"></path>
+        <path class="check" style="--check-len: ${Math.ceil(r * 1.4)}" d="M ${mid - r * 0.42} ${mid} l ${r * 0.3} ${r * 0.3} l ${r * 0.55} ${-r * 0.6}"></path>
       </svg>`;
     this._arc = this.shadowRoot.querySelector('.arc');
     // Double rAF so the initial dashoffset commits before the sweep target,
