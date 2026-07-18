@@ -1,0 +1,83 @@
+/**
+ * <ax-stat value="108" unit="bpm" label="Heart Rate"> — glass stat tile.
+ * Slots: icon (left chip), trend (right of value). The dataviz "not a
+ * chart" form: a headline number, no hover layer.
+ */
+import { BaseComponent } from '@shared/base-component.js';
+
+const CSS = `
+  :host { display: block; }
+  .tile {
+    display: flex; align-items: center; gap: var(--space-m);
+    background: var(--glass-tile); border: 1px solid var(--glass-tile-border);
+    border-radius: 14px; padding: var(--space-m);
+  }
+  .icon-chip {
+    flex: 0 0 auto; width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--glass-tile); border: 1px solid var(--glass-tile-border);
+    color: var(--color-foreground);
+  }
+  .icon-chip ::slotted(svg) { width: 20px; height: 20px; }
+  .body { min-width: 0; }
+  .value-row { display: flex; align-items: baseline; gap: var(--space-xs); }
+  .value {
+    font-size: var(--text-xl); font-weight: 800; color: var(--color-foreground);
+    letter-spacing: -0.02em;
+    transition: opacity var(--duration-fast) var(--ease-out-soft);
+  }
+  .value.swap { opacity: 0; }
+  .unit { font-size: var(--text-sm); color: var(--color-muted); font-weight: 600; }
+  .label { font-size: var(--text-xs); color: var(--color-muted); margin-top: 2px; }
+`;
+
+export class AxStat extends BaseComponent {
+  static observedAttributes = ['value', 'unit', 'label'];
+
+  constructor() {
+    super();
+    this.addStyles(CSS);
+  }
+
+  get value() { return this.getAttribute('value') ?? ''; }
+  set value(v) { this.setAttribute('value', v); }
+
+  attributeChangedCallback(name) {
+    if (!this._value) return;
+    if (name === 'value') {
+      // Cross-fade the number: fade out, swap text, fade back in.
+      this._value.classList.add('swap');
+      setTimeout(() => {
+        this._value.textContent = this.value;
+        this._value.classList.remove('swap');
+      }, 200); // matches --duration-fast
+    } else {
+      this._syncText();
+    }
+  }
+
+  render() {
+    this.shadowRoot.innerHTML = `
+      <div class="tile" part="tile">
+        <span class="icon-chip" part="icon"><slot name="icon"></slot></span>
+        <span class="body">
+          <span class="value-row">
+            <span class="value"></span>
+            <span class="unit"></span>
+            <slot name="trend"></slot>
+          </span>
+          <span class="label"></span>
+        </span>
+      </div>`;
+    this._value = this.shadowRoot.querySelector('.value');
+    this._syncText();
+  }
+
+  _syncText() {
+    this._value.textContent = this.value;
+    this.shadowRoot.querySelector('.unit').textContent = this.getAttribute('unit') || '';
+    this.shadowRoot.querySelector('.label').textContent = this.getAttribute('label') || '';
+  }
+}
+
+customElements.define('ax-stat', AxStat);
