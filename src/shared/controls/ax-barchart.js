@@ -41,7 +41,7 @@ const CSS = `
 `;
 
 export class AxBarchart extends BaseComponent {
-  static observedAttributes = ['data', 'max', 'unit'];
+  static observedAttributes = ['data', 'max', 'unit', 'label'];
 
   constructor() {
     super();
@@ -55,6 +55,11 @@ export class AxBarchart extends BaseComponent {
 
   get data() { return this._data; }
   set data(arr) {
+    this._propSet = true; // explicit property assignment permanently wins over the attribute
+    this._applyData(arr);
+  }
+
+  _applyData(arr) {
     this._data = (Array.isArray(arr) ? arr : [])
       .filter(d => d && !Number.isNaN(Number(d.value)))
       .map(d => ({ label: String(d.label ?? ''), value: Number(d.value) }));
@@ -63,26 +68,27 @@ export class AxBarchart extends BaseComponent {
 
   attributeChangedCallback(name) {
     if (!this._chart) return;
-    if (name === 'data') this._parseAttr();
+    if (name === 'data') { if (!this._propSet) this._parseAttr(); }
     else this._draw();
   }
 
   _parseAttr() {
-    try { this.data = JSON.parse(this.getAttribute('data') || '[]'); }
-    catch { this.data = []; }
+    try { this._applyData(JSON.parse(this.getAttribute('data') || '[]')); }
+    catch { this._applyData([]); }
   }
 
   render() {
     this.shadowRoot.innerHTML = `
-      <div class="chart" part="chart" role="img"
+      <div class="chart" part="chart" role="group"
         aria-label="${this._esc(this.getAttribute('label') || 'Bar chart')}"></div>
       <span class="sr-only" data-summary></span>`;
     this._chart = this.shadowRoot.querySelector('.chart');
-    if (!this._data.length && this.getAttribute('data')) this._parseAttr();
+    if (!this._propSet && this.getAttribute('data')) this._parseAttr();
     else this._draw();
   }
 
   _draw() {
+    this._chart.setAttribute('aria-label', this._esc(this.getAttribute('label') || 'Bar chart'));
     const unit = this.getAttribute('unit') || '';
     const attrMax = Number(this.getAttribute('max'));
     const max = attrMax > 0 ? attrMax : Math.max(1, ...this._data.map(d => d.value));
