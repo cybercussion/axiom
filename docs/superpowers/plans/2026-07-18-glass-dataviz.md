@@ -53,9 +53,11 @@
   --glass-tile-border: rgba(255, 255, 255, 0.08);
 
   /* Chart palette — VALIDATED 2026-07-18 with the dataviz six-check script
-     against BOTH surfaces (dark #09090b, light #f1f5f9): all checks pass,
-     worst adjacent ΔE 12.5 (protan) / 24.3 (normal), contrast ≥ 3:1.
-     Do NOT change a value without re-running the validator (see plan Task 1). */
+     against BOTH surfaces (dark #09090b, light #f1f5f9). All hard checks pass
+     (worst adjacent ΔE 12.5 protan / 24.3 normal). Contrast: ≥ 3:1 in dark;
+     light mode WARNs on --chart-2 (2.91:1) — legal per the method ONLY because
+     every chart mark ships with text labels/legend/sr-only relief. Keep that
+     invariant. Do NOT change a value without re-running the validator. */
   --chart-1: #3b82f6;
   --chart-2: #d97706;
   --chart-3: #0d9488;
