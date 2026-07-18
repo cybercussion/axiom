@@ -1,5 +1,12 @@
 import { BaseComponent } from '@shared/base-component.js';
 import { state } from '@state';
+import '@shared/controls/ax-barchart.js';
+import '@shared/controls/ax-ring.js';
+import '@shared/controls/ax-progress-ring.js';
+import '@shared/controls/ax-stat.js';
+import '@shared/controls/ax-trend.js';
+import '@shared/controls/ax-chip.js';
+import '@shared/controls/ax-datestrip.js';
 
 class DashboardUI extends BaseComponent {
   // A11y: don't delegate the router's post-navigation focus() into the first
@@ -59,112 +66,87 @@ class DashboardUI extends BaseComponent {
     // Surgical extraction: Handle both wrapped and unwrapped data
     const payload = dashboardState.data || dashboardState;
 
-    // Fallback values so the UI doesn't show "undefined"
-    const {
-      systemStatus = 'ONLINE',
-      cpu = 'N/A',
-      memory = 'N/A',
-      network = 'N/A'
-    } = payload;
+    // Each icon carries slot="icon" so it is the TOP-LEVEL slotted element —
+    // ax-stat's ::slotted(svg) sizing only matches top-level nodes.
+    const icons = {
+      heart: `<svg slot="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>`,
+      distance: `<svg slot="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.5" r="2.5"></circle><path d="m10.2 9.4-3.7 4.1 3 2.2L8 21"></path><path d="m13.8 9.4 2.3 2.9 3.9 1.2"></path><path d="M10.2 9.4c.6-.7 1.5-1.1 2.4-.9l1.2.3"></path></svg>`,
+      water: `<svg slot="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69 6.34 8.34a8 8 0 1 0 11.31 0z"></path></svg>`
+    };
+    const p = payload;
+    const selDate = p.week?.selected ? new Date(`${p.week.selected}T00:00:00`) : null;
+    const monthLabel = selDate && !Number.isNaN(selDate.getTime())
+      ? selDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+      : 'This week';
 
     this.shadowRoot.innerHTML = `
       <div class="dashboard-container">
-        <header class="dash-header">
-          <h1>Dashboard</h1>
-          <p class="subtitle">System Status: <span class="status-ok">${systemStatus}</span></p>
-        </header>
+        <header class="dash-header"><h1>${this._esc(p.title || 'Dashboard')}</h1></header>
+        <div class="glass-panel dash-grid">
 
-        <div class="grid">
-          <!-- Stat Cards -->
-          <article class="glass-card stat">
-            <div class="label">CPU Load</div>
-            <div class="value">${cpu}</div>
-            <div class="chart-line"></div>
-          </article>
-          
-          <article class="glass-card stat">
-            <div class="label">Memory</div>
-            <div class="value">${memory}</div>
-            <div class="chart-line"></div>
-          </article>
-          
-          <article class="glass-card stat">
-            <div class="label">Network</div>
-            <div class="value">${network}</div>
-            <div class="chart-line"></div>
-          </article>
-
-          <!-- Main Controls -->
-          <section class="glass-card panel controls">
-            <h2>System Controls</h2>
-            <div class="button-grid">
-              <button class="btn btn-primary btn-fill" onclick="state.notify('Deployment Initiated', 'info')">Deploy</button>
-              <button class="btn btn-secondary btn-fill" onclick="state.notify('Rollback Sequence Started', 'warning')">Rollback</button>
-              <button class="btn btn-success btn-outline" onclick="state.notify('Diagnostics Running...', 'success')">Run Diagnostics</button>
-              <button class="btn btn-warning btn-ghost" onclick="state.notify('Cache Cleared', 'info')">Clear Cache</button>
-              <button class="btn btn-danger btn-outline" onclick="state.notify('Database Purged', 'error')">Purge DB</button>
-              <button class="btn btn-primary btn-outline" onclick="state.notify('Log Stream Opened', 'info')">View Logs</button>
-            </div>
+          <section class="glass-tile panel-activity">
+            <h2>Activity</h2>
+            <ax-barchart unit="${this._esc(p.activity?.unit || '')}" label="Weekly activity"></ax-barchart>
           </section>
 
-          <!-- Configuration (Toggles & Radios) -->
-          <section class="glass-card panel config">
-            <h2>Configuration</h2>
-            <div class="form-group">
-              <h3>Preferences</h3>
-              <label class="toggle">
-                <input type="checkbox" checked onchange="state.set('turboMode', this.checked); state.notify('Turbo Mode ' + (this.checked ? 'Enabled' : 'Disabled'))">
-                <span class="slider"></span>
-                <span class="label-text">Turbo Mode</span>
-              </label>
-              <label class="toggle">
-                <input type="checkbox">
-                <span class="slider"></span>
-                <span class="label-text">Silent Notifications</span>
-              </label>
-            </div>
-            
-            <div class="form-group">
-              <h3>Density</h3>
-              <div class="radio-group">
-                <label class="radio">
-                  <input type="radio" name="density" checked>
-                  <span class="radio-mark"></span>
-                  Compact
-                </label>
-                <label class="radio">
-                  <input type="radio" name="density">
-                  <span class="radio-mark"></span>
-                  Comfortable
-                </label>
-              </div>
-            </div>
+          <section class="stat-col">
+            ${(p.stats || []).map(s => `
+              <ax-stat value="${this._esc(s.value)}" unit="${this._esc(s.unit)}" label="${this._esc(s.label)}">
+                ${icons[s.icon] || ''}
+              </ax-stat>`).join('')}
           </section>
 
-          <!-- Activity Log (Rich List) -->
-          <section class="glass-card panel logs">
-            <h2>Recent Activity</h2>
-            <ul class="rich-list">
-              <li class="list-item">
-                <div class="icon-box info">i</div>
-                <div class="content">
-                  <div class="title">System Initialized</div>
-                  <div class="meta">v1.2.0 • Just now</div>
+          <section class="glass-tile panel-overview">
+            <h2>Overview</h2>
+            <div class="overview-body">
+              <ax-ring size="160" label="Daily overview">
+                <span class="ring-pct">${Number(p.overview?.percent) || 0}%</span>
+                <span class="ring-sub">${this._esc(p.overview?.centerLabel || '')}</span>
+                <div slot="legend" class="overview-legend">
+                  ${(p.overview?.segments || []).map((s, i) => `
+                    <div class="legend-line">
+                      <span class="dot" style="background: var(--chart-${i + 1})"></span>
+                      <span class="legend-label">${this._esc(s.label)}</span>
+                      <strong>${s.value}</strong>
+                      <ax-trend value="${Number(s.trend) || 0}"></ax-trend>
+                    </div>`).join('')}
                 </div>
-                <button class="btn-icon">⋮</button>
-              </li>
-              <li class="list-item">
-                <div class="icon-box success">✓</div>
-                <div class="content">
-                  <div class="title">Data Source Connected</div>
-                  <div class="meta">Took 12ms</div>
-                </div>
-              </li>
-            </ul>
+              </ax-ring>
+            </div>
           </section>
+
+          <section class="glass-tile panel-challenges">
+            <h2>Challenges</h2>
+            ${(p.challenges || []).map(c => `
+              <div class="challenge-row">
+                <ax-progress-ring value="${Number(c.progress) || 0}" size="40" label="${this._esc(c.title)}"></ax-progress-ring>
+                <span class="challenge-title">${this._esc(c.title)}</span>
+                <span class="challenge-fraction">${this._esc(c.fraction)}</span>
+                <ax-chip tone="${c.state === 'complete' ? 'complete' : 'ongoing'}">${c.state === 'complete' ? 'Complete' : 'On Going'}</ax-chip>
+              </div>`).join('')}
+          </section>
+
+          <section class="glass-tile panel-week">
+            <h2>${this._esc(monthLabel)}</h2>
+            <ax-datestrip date="${this._esc(p.week?.anchor || '')}" selected="${this._esc(p.week?.selected || '')}"></ax-datestrip>
+          </section>
+
+          <section class="glass-tile panel-output">
+            <h2>Output</h2>
+            <div class="output-row">
+              <ax-stat value="${this._esc(p.output?.value || '')}" unit="${this._esc(p.output?.unit || '')}" label="${this._esc(p.output?.label || '')}">
+                <ax-trend slot="trend" value="${Number(p.output?.trend) || 0}" good></ax-trend>
+              </ax-stat>
+              <ax-chip tone="neutral">${this._esc(p.output?.badge || '')}</ax-chip>
+            </div>
+          </section>
+
         </div>
-      </div>
-    `;
+      </div>`;
+
+    // Charts take structured data via properties (attributes can't carry arrays cleanly).
+    this.shadowRoot.querySelector('ax-barchart').data = p.activity?.days || [];
+    this.shadowRoot.querySelector('ax-ring').segments = p.overview?.segments || [];
   }
 }
 customElements.define('dashboard-ui', DashboardUI);

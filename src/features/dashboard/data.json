@@ -1,7 +1,36 @@
 {
-  "systemStatus": "OPERATIONAL",
-  "cpu": "12%",
-  "memory": "4.2 GB",
-  "network": "1 Gbps",
-  "uptime": "99.98%"
+  "title": "Lifestats",
+  "activity": {
+    "unit": "%",
+    "days": [
+      { "label": "Sun", "value": 23 },
+      { "label": "Tue", "value": 55 },
+      { "label": "Wed", "value": 50 },
+      { "label": "Thu", "value": 70 },
+      { "label": "Fri", "value": 40 },
+      { "label": "Sat", "value": 65 },
+      { "label": "Mon", "value": 30 }
+    ]
+  },
+  "overview": {
+    "percent": 75,
+    "centerLabel": "1034 ml",
+    "segments": [
+      { "label": "Calories Burn", "value": 37.5, "trend": 1.27 },
+      { "label": "Protein", "value": 37.5, "trend": 3.54 },
+      { "label": "Carbs", "value": 25, "trend": 1.34 }
+    ]
+  },
+  "stats": [
+    { "icon": "heart", "value": "108", "unit": "bpm", "label": "Heart Rate" },
+    { "icon": "distance", "value": "2.5", "unit": "km", "label": "Distance" },
+    { "icon": "water", "value": "1.7", "unit": "l", "label": "Water" }
+  ],
+  "challenges": [
+    { "title": "15,000 steps in a day", "progress": 83, "fraction": "12,540/15,000", "state": "ongoing" },
+    { "title": "3L Water Drink in a day", "progress": 100, "fraction": "3L/3L", "state": "complete" },
+    { "title": "One hour exercise", "progress": 66, "fraction": "40Min/60Min", "state": "ongoing" }
+  ],
+  "week": { "anchor": "2026-07-13", "selected": "2026-07-18" },
+  "output": { "value": "2.5", "unit": "Kg", "label": "Weight Loss", "trend": -2.5, "badge": "amazing!" }
 }
