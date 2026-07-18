@@ -86,7 +86,7 @@ class DashboardUI extends BaseComponent {
 
           <section class="glass-tile panel-activity">
             <h2>Activity</h2>
-            <ax-barchart unit="${this._esc(p.activity?.unit || '')}" label="Weekly activity"></ax-barchart>
+            <ax-barchart unit="${this._esc(p.activity?.unit || '')}" max="100" label="Weekly activity"></ax-barchart>
           </section>
 
           <section class="stat-col">
