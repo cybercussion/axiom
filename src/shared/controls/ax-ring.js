@@ -7,6 +7,9 @@ import { BaseComponent } from '@shared/base-component.js';
 
 const STROKE = 12;
 const GAP_PX = 2;
+// Round caps bulge STROKE/2 past each dash end — the path-length gap must
+// absorb both bulges for GAP_PX of visible rail between segments.
+const PATH_GAP = STROKE + GAP_PX;
 const MAX_SEGMENTS = 4;
 
 const CSS = `
@@ -87,24 +90,25 @@ export class AxRing extends BaseComponent {
   }
 
   _draw() {
+    this._tip?.classList.remove('show');
     const size = this._size, r = (size - STROKE) / 2, mid = size / 2;
     const c = 2 * Math.PI * r;
     const segs = this._segments;
     const total = segs.reduce((a, s) => a + s.value, 0);
-    const gaps = segs.length > 1 ? segs.length * GAP_PX : 0;
+    const gaps = segs.length > 1 ? segs.length * PATH_GAP : 0;
     const usable = c - gaps;
 
     let svg = `<circle class="rail" cx="${mid}" cy="${mid}" r="${r}" stroke-width="${STROKE}"></circle>`;
     let offset = 0;
     segs.forEach((s, i) => {
-      const len = total > 0 ? (s.value / total) * usable : 0;
+      const len = total > 0 ? Math.max(0, (s.value / total) * usable) : 0;
       svg += `<circle class="seg" data-i="${i}" tabindex="0" cx="${mid}" cy="${mid}" r="${r}"
         stroke-width="${STROKE}" stroke="var(--chart-${i + 1})"
         stroke-dasharray="0 ${c}" stroke-dashoffset="${-offset}"
         style="transition-delay: calc(var(--duration-fast) * ${i})"
         data-len="${len}" data-rest="${c - len}"
         aria-label="${this._esc(s.label)}: ${s.value}"></circle>`;
-      offset += len + (segs.length > 1 ? GAP_PX : 0);
+      offset += len + (segs.length > 1 ? PATH_GAP : 0);
     });
     this._svg.innerHTML = svg;
 
