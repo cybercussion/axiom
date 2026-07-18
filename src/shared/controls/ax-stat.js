@@ -42,18 +42,25 @@ export class AxStat extends BaseComponent {
   get value() { return this.getAttribute('value') ?? ''; }
   set value(v) { this.setAttribute('value', v); }
 
-  attributeChangedCallback(name) {
+  attributeChangedCallback(name, oldValue, newValue) {
     if (!this._value) return;
     if (name === 'value') {
-      // Cross-fade the number: fade out, swap text, fade back in.
+      if (oldValue === newValue) return; // same-value re-set: no flicker
+      // Debounce overlapping changes — only the LAST change controls the fade-in.
+      clearTimeout(this._swapTimer);
       this._value.classList.add('swap');
-      setTimeout(() => {
+      this._swapTimer = setTimeout(() => { // matches --duration-fast
         this._value.textContent = this.value;
         this._value.classList.remove('swap');
-      }, 200); // matches --duration-fast
+      }, 200);
     } else {
       this._syncText();
     }
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    clearTimeout(this._swapTimer);
   }
 
   render() {
