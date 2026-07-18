@@ -3,7 +3,7 @@ name = "axiom"
 vcs = "git"
 toolchain = ["es6"]
 description = "High-performance, zero-build, vanilla Web Standards frontend architecture with Proxy-based state management and native Web Components."
-updated = "2026-07-17"
+updated = "2026-07-18"
 
 [[capabilities]]
 id = "zero-build-architecture"
@@ -75,4 +75,12 @@ tags = ["es6", "web-components", "a11y"]
 claim = "Motion token layer (CSS linear() springs, 4 durations/4 easings, single reduced-motion collapse point) + seven formAssociated ax-* controls (toggle, dipswitch, slider, progress, button, popover, skeleton) with animated show/hide via @starting-style/allow-discrete; /components showcase route; grep-enforced no-literal-easing rule"
 maturity = "shipped"
 entry_points = ["src/shared/styles/theme.css", "src/shared/controls/", "src/features/components/components.js", "docs/superpowers/specs/2026-07-17-motion-system-design.md"]
+pattern_doc = ""
+
+[[capabilities]]
+id = "glass-dataviz-set"
+tags = ["es6", "web-components", "a11y", "dataviz"]
+claim = "Glassmorphism data-viz primitives (ax-barchart, ax-ring, ax-progress-ring, ax-stat, ax-trend, ax-chip, ax-datestrip) + two-level glass surface tokens + six-check-validated chart palette (--chart-1..4, passes CVD/contrast on both themes); flagship /dashboard composition. Requires motion-system-control-set tokens; sync src/shared/ wholesale."
+maturity = "shipped"
+entry_points = ["src/shared/controls/", "src/shared/styles/theme.css", "src/features/dashboard/dashboard.js", "docs/superpowers/specs/2026-07-18-glass-dataviz-design.md"]
 pattern_doc = ""
