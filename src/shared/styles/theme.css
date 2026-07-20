@@ -696,3 +696,8 @@ textarea::placeholder {
    document level. Specificity (0,3,0) intentionally beats every
    component-local ring rule. */
 :host([data-modality="pointer"]) :focus-visible { outline: none; }
+/* delegatesFocus makes the HOST match :focus-visible alongside the inner
+   element — the UA paints a plain rectangle around the whole component.
+   Suppress it unconditionally: every focusable control draws its own inner
+   ring, so the host rect is pure duplication (keyboard users lose nothing). */
+:host(:focus-visible) { outline: none; }
