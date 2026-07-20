@@ -147,7 +147,9 @@ ax-popover {
   display: flex;
   align-items: center;
   position: relative;
-  height: 28px;
+  /* Rows must contain their controls' 44px touch targets — a shorter row
+     lets adjacent hit areas bleed into each other and mis-click. */
+  min-height: 44px;
   gap: var(--space-s);
 }
 

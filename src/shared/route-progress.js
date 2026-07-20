@@ -1,4 +1,5 @@
 import { BaseComponent } from './base-component.js';
+import { motionMs } from './motion.js';
 import { state } from '@state';
 
 class RouteProgress extends BaseComponent {
@@ -97,7 +98,7 @@ class RouteProgress extends BaseComponent {
 
     this._timer = setTimeout(() => {
       this.removeAttribute('active');
-    }, 300);
+    }, motionMs('--duration-base', 300));
   }
 
   disconnectedCallback() {

@@ -18,7 +18,13 @@ const CSS = `
   @starting-style {
     :host([open]) { opacity: 0; transform: scale(0.92) translateY(6px); }
   }
-  :host([data-placement="below"]) { transform-origin: var(--ax-popover-origin, top right); }
+  /* Real flip: consumers position the host from OUTSIDE the shadow (their
+     rules beat :host), so the flip must win with !important to reposition. */
+  :host([data-placement="below"]) {
+    bottom: auto !important;
+    top: calc(100% + var(--space-s)) !important;
+    transform-origin: var(--ax-popover-origin, top right);
+  }
   .panel {
     min-width: 180px;
     background: var(--dock-bg);
@@ -33,6 +39,10 @@ const CSS = `
 export class AxPopover extends BaseComponent {
   constructor() {
     super();
+    // Host announces as a labeled group (consumers set aria-label) — the
+    // panel previously exposed no container semantics at all.
+    this._internals = this.attachInternals();
+    this._internals.role = 'group';
     this.addStyles(CSS);
     this._onDocPointerDown = (e) => {
       const path = e.composedPath();

@@ -24,6 +24,9 @@ const themeSheet = new CSSStyleSheet();
 })();
 
 export class BaseComponent extends HTMLElement {
+  /** Shared constructed-sheet cache for addStyles() — keyed by CSS text. */
+  static _sheetCache = new Map();
+
   constructor() {
     super();
     // AOM: delegatesFocus ensures keyboard users don't get trapped on the host.
@@ -75,10 +78,17 @@ export class BaseComponent extends HTMLElement {
   /**
    * Dynamic Style Adoption: Allows features to add their own encapsulated styles
    * without affecting the global theme.
+   * Sheets are memoized by CSS text: every control class passes the same
+   * module-level constant, so N instances share ONE constructed sheet
+   * instead of paying N parses (the same pattern as themeSheet above).
    */
   addStyles(cssString) {
-    const sheet = new CSSStyleSheet();
-    sheet.replaceSync(cssString);
+    let sheet = BaseComponent._sheetCache.get(cssString);
+    if (!sheet) {
+      sheet = new CSSStyleSheet();
+      sheet.replaceSync(cssString);
+      BaseComponent._sheetCache.set(cssString, sheet);
+    }
     this.shadowRoot.adoptedStyleSheets = [...this.shadowRoot.adoptedStyleSheets, sheet];
   }
 

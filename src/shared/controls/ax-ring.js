@@ -59,8 +59,25 @@ export class AxRing extends BaseComponent {
     this.shadowRoot.addEventListener('focusout', () => this._tipFor(null));
   }
 
+  static observedAttributes = ['segments'];
+
   get segments() { return this._segments; }
   set segments(arr) {
+    this._propSet = true; // explicit property assignment permanently wins over the attribute
+    this._applySegments(arr);
+  }
+
+  attributeChangedCallback(name) {
+    if (!this._svg) return;
+    if (name === 'segments' && !this._propSet) this._parseAttr();
+  }
+
+  _parseAttr() {
+    try { this._applySegments(JSON.parse(this.getAttribute('segments') || '[]')); }
+    catch { this._applySegments([]); }
+  }
+
+  _applySegments(arr) {
     const clean = (Array.isArray(arr) ? arr : [])
       .filter(s => s && Number(s.value) > 0)
       .map(s => ({ label: String(s.label ?? ''), value: Number(s.value) }));
@@ -86,7 +103,8 @@ export class AxRing extends BaseComponent {
       <span class="sr-only" data-summary></span>`;
     this._svg = this.shadowRoot.querySelector('svg');
     this._tip = this.shadowRoot.querySelector('.tip');
-    this._draw();
+    if (!this._propSet && this.getAttribute('segments')) this._parseAttr();
+    else this._draw();
   }
 
   _draw() {
@@ -135,7 +153,7 @@ export class AxRing extends BaseComponent {
 
   _tipFor(target) {
     const seg = target?.classList?.contains('seg') ? target : null;
-    if (!seg) { this._tip.classList.remove('show'); return; }
+    if (!seg) { this._tip?.classList.remove('show'); return; }
     const s = this._segments[Number(seg.dataset.i)];
     if (!s) return;
     this._tip.textContent = `${s.label}: ${s.value}`;

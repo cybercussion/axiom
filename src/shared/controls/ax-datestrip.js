@@ -84,6 +84,19 @@ export class AxDatestrip extends BaseComponent {
     };
   }
 
+  connectedCallback() {
+    super.connectedCallback();
+    // Pill position is pixel-cached; re-measure on viewport changes
+    // (parity with nav-dock's dock pill).
+    this._onResize = () => this._positionPill(false);
+    window.addEventListener('resize', this._onResize);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    window.removeEventListener('resize', this._onResize);
+  }
+
   get selected() { return this.getAttribute('selected') || ''; }
   set selected(v) { this.setAttribute('selected', v); }
 

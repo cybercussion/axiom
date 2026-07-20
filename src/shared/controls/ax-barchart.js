@@ -98,7 +98,7 @@ export class AxBarchart extends BaseComponent {
       const labeled = pct >= 60 || i === 0 || i === this._data.length - 1;
       return `
       <div class="col">
-        <div class="rail" tabindex="0" data-i="${i}" role="presentation"
+        <div class="rail" tabindex="0" data-i="${i}"
           aria-label="${this._esc(d.label)}: ${d.value}${this._esc(unit)}">
           <span class="val ${labeled ? 'show' : ''}" aria-hidden="true">${d.value}${this._esc(unit)}</span>
           <div class="fill" data-h="${pct}" style="transition-delay: calc(var(--duration-instant) * ${i} * 0.4)"></div>

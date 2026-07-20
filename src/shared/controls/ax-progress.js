@@ -53,7 +53,10 @@ export class AxProgress extends BaseComponent {
   _sync() {
     const rawMax = Number(this.getAttribute('max'));
     const max = Number.isFinite(rawMax) && rawMax > 0 ? rawMax : 100;
-    const raw = Number(this.getAttribute('value'));
+    // Absent value = "no usable value" → indeterminate, matching native
+    // <progress> (Number(null) would silently coerce to a determinate 0%).
+    const attr = this.getAttribute('value');
+    const raw = attr === null ? NaN : Number(attr);
     this._internals.ariaLabel = this.getAttribute('label') || 'Progress';
     // Derived NaN state uses data-nan (unobserved) so it self-recovers when a
     // valid value arrives — the public `indeterminate` attr stays consumer-owned.

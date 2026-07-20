@@ -4,14 +4,13 @@
  * chart" form: a headline number, no hover layer.
  */
 import { BaseComponent } from '@shared/base-component.js';
+import { motionMs } from '@shared/motion.js';
 
 const CSS = `
   :host { display: block; }
-  .tile {
-    display: flex; align-items: center; gap: var(--space-m);
-    background: var(--glass-tile); border: 1px solid var(--glass-tile-border);
-    border-radius: 14px; padding: var(--space-m);
-  }
+  /* Surface comes from the shared .glass-tile utility (adopted theme sheet);
+     only layout is local, so glass-system retunes propagate automatically. */
+  .tile { display: flex; align-items: center; gap: var(--space-m); }
   .icon-chip {
     flex: 0 0 auto; width: 44px; height: 44px; border-radius: 12px;
     display: flex; align-items: center; justify-content: center;
@@ -52,7 +51,7 @@ export class AxStat extends BaseComponent {
       this._swapTimer = setTimeout(() => { // matches --duration-fast
         this._value.textContent = this.value;
         this._value.classList.remove('swap');
-      }, 200);
+      }, motionMs('--duration-fast', 200));
     } else {
       this._syncText();
     }
@@ -65,7 +64,7 @@ export class AxStat extends BaseComponent {
 
   render() {
     this.shadowRoot.innerHTML = `
-      <div class="tile" part="tile">
+      <div class="tile glass-tile" part="tile">
         <span class="icon-chip" part="icon"><slot name="icon"></slot></span>
         <span class="body">
           <span class="value-row">

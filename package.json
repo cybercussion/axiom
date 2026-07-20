@@ -6,12 +6,13 @@
   "scripts": {
     "start": "npx serve -s .",
     "dev": "browser-sync start --server --files 'src/**/*' --single --no-notify",
-    "build": "node tools/minify.js",
+    "build": "node tools/motion-gate.js && node tools/minify.js",
     "feature": "node tools/create-feature.js",
     "check-pwa": "node tools/check-pwa.js",
     "verify-dist": "node tools/verify-dist.js",
     "test:tools": "node --test 'tools/**/*.test.js'",
-    "lint": "npx eslint src/**/*.js"
+    "lint": "npx eslint src/**/*.js",
+    "lint:motion": "node tools/motion-gate.js"
   },
   "devDependencies": {
     "browser-sync": "^3.0.0",

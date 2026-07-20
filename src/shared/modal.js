@@ -1,7 +1,5 @@
 import { BaseComponent } from './base-component.js';
-
-// Must match --duration-base in theme.css (motion token layer)
-const MODAL_ANIM_MS = 300;
+import { motionMs } from './motion.js';
 
 /**
  * AxiomModal
@@ -279,8 +277,9 @@ export class AxiomModal extends BaseComponent {
         this._onClose();
       };
 
-      // Wait for the CSS close transition (MODAL_ANIM_MS, kept in sync with --duration-base)
-      setTimeout(cleanup, MODAL_ANIM_MS);
+      // Wait for the CSS close transition — read the live token so the wait
+      // collapses under reduced motion and tracks future retunes.
+      setTimeout(cleanup, motionMs('--duration-base', 300));
     }
   }
 
