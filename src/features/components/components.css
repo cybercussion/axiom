@@ -41,3 +41,30 @@
 }
 
 .fill-demos { display: flex; flex-direction: column; gap: var(--space-s); max-width: 420px; }
+
+.neu-stage {
+  display: flex; flex-wrap: wrap; gap: var(--space-l);
+  padding: var(--space-l); border-radius: 20px;
+  background: var(--neu-surface-deep);
+}
+.power-panel {
+  display: flex; gap: var(--space-l); align-items: stretch;
+}
+.power-label {
+  writing-mode: vertical-rl; transform: rotate(180deg);
+  font-family: var(--font-mono); font-weight: 800; font-size: var(--text-2xl);
+  letter-spacing: 0.35em; color: var(--color-muted); opacity: 0.5;
+  align-self: center;
+}
+.power-mid { display: flex; flex-direction: column; align-items: center; gap: var(--space-s); justify-content: center; }
+.power-title { font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: 0.25em; color: var(--color-muted); }
+.power-readout { font-family: var(--font-mono); color: var(--color-muted); }
+.power-num { font-size: var(--text-4xl); font-weight: 300; letter-spacing: 0.08em; color: var(--color-foreground); } /* light display numerals — Cybertruck reference */
+.power-cap { font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: 0.25em; color: var(--color-muted); }
+.power-side { display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: var(--space-m); }
+.led-rail { display: flex; flex-direction: column; gap: var(--space-s); align-items: center; padding-top: var(--space-s); }
+.knob-panel { display: flex; flex-direction: column; align-items: center; gap: var(--space-m); min-width: 220px; }
+@media (max-width: 700px) {
+  .power-panel { flex-direction: column; align-items: center; }
+  .power-label { writing-mode: horizontal-tb; transform: none; align-self: center; }
+}

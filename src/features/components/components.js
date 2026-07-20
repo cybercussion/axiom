@@ -17,6 +17,10 @@ import '@shared/controls/ax-stat.js';
 import '@shared/controls/ax-trend.js';
 import '@shared/controls/ax-chip.js';
 import '@shared/controls/ax-datestrip.js';
+import '@shared/controls/ax-gauge.js';
+import '@shared/controls/ax-stepper.js';
+import '@shared/controls/ax-led.js';
+import '@shared/controls/ax-knob.js';
 
 const DURATIONS = ['instant', 'fast', 'base', 'slow'];
 const EASINGS = ['ease-spring', 'ease-spring-gentle', 'ease-out-soft', 'ease-cinematic'];
@@ -149,6 +153,39 @@ export class ComponentsUI extends BaseComponent {
         </section>
 
         <section class="glass-card">
+          <h2>Cyber-Neumorphism</h2>
+          <p class="token-note">Second surface tier: opacity + depth. Same tokens, same contracts.</p>
+          <div class="neu-stage">
+            <div class="neu-panel power-panel">
+              <span class="power-label" aria-hidden="true">POWER</span>
+              <ax-gauge class="power-gauge" value="29" unit="%" label="Battery power" height="220"></ax-gauge>
+              <div class="power-mid">
+                <span class="power-title">BATTERY POWER</span>
+                <span class="power-readout"><strong class="power-num">29</strong> %</span>
+                <ax-stepper class="power-stepper" value="29" min="0" max="100" step="1" label="Capacity"></ax-stepper>
+                <span class="power-cap" aria-hidden="true">CAPACITY</span>
+              </div>
+              <div class="power-side">
+                <div class="led-rail">
+                  <ax-led tone="ok" label="Power"></ax-led>
+                  <ax-led class="charge-led" tone="info" pulse label="Charging"></ax-led>
+                  <ax-led tone="off" label="Fault"></ax-led>
+                </div>
+                <ax-button surface="neu" shape="round" class="power-on" aria-pressed="true">ON</ax-button>
+              </div>
+            </div>
+            <div class="neu-panel knob-panel">
+              <ax-knob class="demo-knob" value="30" label="Volume"></ax-knob>
+              <span class="knob-readout token-note">Volume: <strong class="knob-num">30</strong></span>
+              <ax-toggle surface="neu" checked label="Neu slide switch"></ax-toggle>
+              <ax-dipswitch surface="neu" switches="PWR,NET,DBG" on="PWR" label="Neu rockers"></ax-dipswitch>
+              <ax-slider surface="neu" variant="fill" label="Neu groove" value="55"></ax-slider>
+              <ax-progress surface="neu" value="72" label="Neu progress"></ax-progress>
+            </div>
+          </div>
+        </section>
+
+        <section class="glass-card">
           <h2>Motion tokens</h2>
           <p class="token-note">Lanes replay at 4&times; the real duration so the curves are visible.</p>
           <div class="token-grid">
@@ -242,6 +279,19 @@ export class ComponentsUI extends BaseComponent {
 
     $('.demo-strip').addEventListener('change', e => {
       $('.strip-log').textContent = `change → ${e.detail.date}`;
+    });
+
+    $('.power-stepper').addEventListener('change', e => {
+      $('.power-gauge').value = e.detail.value;
+      $('.power-num').textContent = e.detail.value;
+      $('.charge-led').setAttribute('tone', e.detail.value >= 100 ? 'ok' : 'info');
+    });
+
+    $('.demo-knob').addEventListener('input', e => {
+      $('.knob-num').textContent = e.detail.value;
+    });
+    $('.demo-knob').addEventListener('change', e => {
+      $('.knob-num').textContent = e.detail.value;
     });
 
     const replayTokens = () => {
