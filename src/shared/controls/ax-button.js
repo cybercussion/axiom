@@ -28,6 +28,25 @@ const CSS = `
   @keyframes ax-spin { to { rotate: 360deg; } }
   :host([loading]) .label { opacity: 0; }
   :host([loading]) .spinner { opacity: 1; }
+
+  /* ===== surface="neu" — raised hardware key (ON-key feel) ===== */
+  :host([surface="neu"]) .btn {
+    background: var(--neu-face);
+    color: var(--color-foreground);
+    text-shadow: none;
+    box-shadow: var(--neu-raised-sm);
+  }
+  :host([surface="neu"]) .btn:hover { transform: none; filter: none; box-shadow: var(--neu-raised); }
+  :host([surface="neu"]) .btn:active {
+    transform: none;
+    background: var(--neu-face-pressed);
+    box-shadow: var(--neu-well);
+  }
+  :host([surface="neu"][tone="danger"]) .btn { color: var(--danger-color); }
+  :host([surface="neu"][tone="success"]) .btn { color: var(--success-color); }
+  :host([surface="neu"][shape="round"]) .btn {
+    border-radius: 50%; padding: 0; width: 56px; height: 56px; min-height: 56px;
+  }
 `;
 
 export class AxButton extends BaseComponent {

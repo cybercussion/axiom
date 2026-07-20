@@ -24,6 +24,16 @@ const CSS = `
     from { translate: -100% 0; }
     to { translate: 250% 0; }
   }
+
+  /* ===== surface="neu" — inset groove + glowing fill sliver ===== */
+  :host([surface="neu"]) .track {
+    background: var(--neu-surface-deep); box-shadow: var(--neu-well);
+  }
+  :host([surface="neu"]) .fill {
+    background: linear-gradient(90deg, var(--color-primary),
+      color-mix(in srgb, var(--accent-glow) 70%, var(--color-primary)));
+    box-shadow: 0 0 10px color-mix(in srgb, var(--accent-glow) 45%, transparent);
+  }
 `;
 
 export class AxProgress extends BaseComponent {

@@ -84,6 +84,26 @@ const CSS = `
   }
   .track-icon ::slotted(svg) { width: 18px; height: 18px; }
   :host([variant="fill"]) .track-icon { display: inline-flex; }
+
+  /* ===== surface="neu" — inset groove + aurora fill (composes with variant="fill") ===== */
+  :host([surface="neu"]) input::-webkit-slider-runnable-track {
+    box-shadow: var(--neu-well);
+    background: linear-gradient(to right,
+      color-mix(in srgb, var(--color-primary) 55%, var(--accent-glow)) var(--fill, 0%),
+      var(--neu-surface-deep) var(--fill, 0%));
+  }
+  :host([surface="neu"]) input::-moz-range-track {
+    box-shadow: var(--neu-well); background: var(--neu-surface-deep);
+  }
+  :host([surface="neu"]) input::-moz-range-progress {
+    background: color-mix(in srgb, var(--color-primary) 55%, var(--accent-glow));
+  }
+  :host([surface="neu"]) input::-webkit-slider-thumb {
+    background: var(--neu-face); box-shadow: var(--neu-raised-sm);
+  }
+  :host([surface="neu"]) input::-moz-range-thumb {
+    background: var(--neu-face); box-shadow: var(--neu-raised-sm);
+  }
 `;
 
 export class AxSlider extends BaseComponent {
