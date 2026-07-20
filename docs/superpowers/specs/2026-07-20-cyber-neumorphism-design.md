@@ -12,6 +12,22 @@ genre — freefrontend gallery, bot-walled so techniques cited from the genre's 
 dashboards), `neu` = opacity + depth (instrument panels). One design language, two
 materials; all existing motion/token/a11y rules apply unchanged.
 
+## Hard constraints (user-set)
+
+- **Simplicity is non-negotiable**: vanilla ES6 + home-grown CSS only; the whole tier is
+  tokens, utility classes, `:host([surface="neu"])` CSS variants, and four small
+  primitives following the existing single-file pattern. If a piece needs a library or a
+  build step, it's out.
+- **No bloat**: variants are additive CSS on existing controls (no forked components, no
+  new base classes); the four primitives reuse established patterns (progress-ring arc
+  math, slider event contract, chip tone mapping).
+- **Agent-uniform API**: every control keeps the same contract shape (attrs in, composed
+  events with `detail` out, property-wins data, `surface`/`variant` attrs for skinning) so
+  coding agents can compose UIs without reading internals. Deliverable:
+  **`docs/CONTROLS.md`** — a one-page agent-facing reference listing every `ax-*` tag, its
+  attributes, properties, events, slots, and variants (the SCOBOT.md precedent). Kept
+  current as part of this pass; MANIFEST points at it.
+
 ## Non-goals
 
 - No forked components — neumorphism arrives as tokens, utilities, `surface="neu"`
@@ -45,6 +61,13 @@ New token block (both themes; recipes shared, materials differ):
 Composite shadows (defined once, from the pieces above):
 
 ```css
+/* Face gradients — the premium trick from the reference pen (WNvqjpL):
+   raised elements carry a subtle top-lit vertical gradient, never a flat
+   fill; pressed states swap to the well shadows + a reversed face. */
+--neu-face: linear-gradient(180deg,
+    color-mix(in srgb, var(--neu-surface) 88%, white) 0%, var(--neu-surface) 100%);
+--neu-face-pressed: linear-gradient(180deg,
+    color-mix(in srgb, var(--neu-surface) 90%, black) 0%, var(--neu-surface) 100%);
 --neu-raised: -6px -6px 14px var(--neu-light), 6px 6px 16px var(--neu-dark);
 --neu-raised-sm: -3px -3px 7px var(--neu-light), 3px 3px 8px var(--neu-dark);
 --neu-well: inset 4px 4px 10px var(--neu-dark), inset -4px -4px 8px var(--neu-light);
