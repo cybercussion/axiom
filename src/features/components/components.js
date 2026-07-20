@@ -171,7 +171,7 @@ export class ComponentsUI extends BaseComponent {
                   <ax-led class="charge-led" tone="info" pulse label="Charging"></ax-led>
                   <ax-led tone="off" label="Fault"></ax-led>
                 </div>
-                <ax-button surface="neu" shape="round" class="power-on" aria-pressed="true">ON</ax-button>
+                <ax-button surface="neu" shape="round" class="power-on">ON</ax-button>
               </div>
             </div>
             <div class="neu-panel knob-panel">

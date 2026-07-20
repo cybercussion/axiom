@@ -88,7 +88,7 @@ pattern_doc = ""
 [[capabilities]]
 id = "neu-surface-tier"
 tags = ["es6", "web-components", "a11y", "design-system"]
-claim = "Cyber-Neumorphism surface tier: depth/gradient-face tokens (--neu-*, --accent-glow decorative-only), .neu-panel/.neu-well utilities, surface=neu variants (button/slider/progress + realistic slide-switch toggle and tilting rocker dipswitch), four hardware primitives (ax-gauge, ax-stepper, ax-led, ax-knob), power-panel showcase; agent contract reference docs/CONTROLS.md. Depends on motion-system tokens + motionMs; sync src/shared/ wholesale."
+claim = "Cyber-Neumorphism surface tier: depth/gradient-face tokens (--neu-*, --accent-glow: control value indicators + glows, never text ink or chart marks), .neu-panel/.neu-well utilities, surface=neu variants (button/slider/progress + realistic slide-switch toggle and tilting rocker dipswitch), four hardware primitives (ax-gauge, ax-stepper, ax-led, ax-knob), power-panel showcase; agent contract reference docs/CONTROLS.md. Depends on motion-system tokens; sync src/shared/ wholesale."
 maturity = "shipped"
 entry_points = ["src/shared/styles/theme.css", "src/shared/controls/", "docs/CONTROLS.md", "docs/superpowers/specs/2026-07-20-cyber-neumorphism-design.md"]
 pattern_doc = ""
