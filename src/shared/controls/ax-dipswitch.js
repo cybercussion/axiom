@@ -52,18 +52,21 @@ const CSS = `
       inset 0 10px 8px -8px var(--neu-dark),
       inset 0 -10px 8px -8px var(--neu-light);
   }
-  /* Thumb becomes the ON indicator dot at the cap's top edge. */
+  /* Thumb becomes the ON indicator dot at the cap's top edge.
+     !important is required here: ::part() rules cannot out-specify the toggle's
+     internal :active state rules across the shadow boundary, and the LED dot
+     must stay inert (no slide travel, no press flash) in the rocker context. */
   :host([surface="neu"]) .dip ax-toggle::part(thumb) {
     width: 6px; height: 6px; left: calc(50% - 3px); top: 8px;
-    background: var(--color-muted); box-shadow: none; opacity: 0.4;
+    background: var(--color-muted); transform: none !important; box-shadow: none !important; opacity: 0.4;
     transition: background var(--duration-fast) var(--ease-out-soft),
       opacity var(--duration-fast) var(--ease-out-soft),
       box-shadow var(--duration-fast) var(--ease-out-soft);
   }
   :host([surface="neu"]) .dip ax-toggle[checked]::part(thumb) {
-    transform: none;
+    transform: none !important;
     background: var(--accent-glow); opacity: 1;
-    box-shadow: 0 0 6px var(--accent-glow);
+    box-shadow: 0 0 6px var(--accent-glow) !important;
   }
 `;
 
