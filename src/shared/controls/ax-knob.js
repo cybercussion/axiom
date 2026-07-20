@@ -42,12 +42,11 @@ const CSS = `
 
 export class AxKnob extends BaseComponent {
   static formAssociated = true;
-  static observedAttributes = ['value', 'min', 'max', 'label'];
+  static observedAttributes = ['value', 'min', 'max', 'step', 'label'];
 
   constructor() {
     super();
     this._internals = this.attachInternals();
-    this._internals.role = 'slider';
     this.addStyles(CSS);
   }
 
@@ -64,7 +63,7 @@ export class AxKnob extends BaseComponent {
     this._circumference = 2 * Math.PI * r;
     const mid = size / 2;
     this.shadowRoot.innerHTML = `
-      <div class="knob" part="knob" tabindex="0" style="width:${size}px;height:${size}px;--dot-r:${mid - 22}px">
+      <div class="knob" part="knob" role="slider" tabindex="0" style="width:${size}px;height:${size}px;--dot-r:${mid - 22}px">
         <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true">
           <circle class="rail" cx="${mid}" cy="${mid}" r="${r}" stroke-width="${STROKE}"
             stroke-dasharray="${this._circumference * SWEEP} ${this._circumference}"></circle>
@@ -88,7 +87,7 @@ export class AxKnob extends BaseComponent {
       const { min, max, step } = this._bounds();
       const dv = ((this._dragStart.y - e.clientY) / DRAG_RANGE_PX) * (max - min);
       const next = Math.min(max, Math.max(min,
-        Math.round((this._dragStart.value + dv) / step) * step));
+        min + Math.round((this._dragStart.value + dv - min) / step) * step));
       if (next !== this.value) {
         this.setAttribute('value', String(next));
         this.dispatchEvent(new CustomEvent('input', {
@@ -155,10 +154,10 @@ export class AxKnob extends BaseComponent {
     this._arc.setAttribute('stroke-dasharray',
       `${this._circumference * SWEEP * frac} ${this._circumference}`);
     this._dot.style.setProperty('--ang', `${-135 + frac * 270}deg`);
-    this._internals.ariaLabel = this.getAttribute('label') || 'Knob';
-    this._internals.ariaValueMin = String(min);
-    this._internals.ariaValueMax = String(max);
-    this._internals.ariaValueNow = String(this._value);
+    this._knob.setAttribute('aria-label', this.getAttribute('label') || 'Knob');
+    this._knob.setAttribute('aria-valuemin', String(min));
+    this._knob.setAttribute('aria-valuemax', String(max));
+    this._knob.setAttribute('aria-valuenow', String(this._value));
     this._internals.setFormValue(String(this._value));
   }
 }

@@ -105,7 +105,7 @@
      extrusion + gradient faces (reference technique: raised elements wear a
      top-lit vertical gradient, pressed swaps to inset + darkened face).
      --accent-glow is DECORATIVE ONLY: shadows and glows, never text ink,
-     never a data-mark color. */
+     never a CHART data-mark color (--chart-* owns those). Control value indicators (gauge fill, knob arc, LED) are its intended use. */
   --neu-surface: #1c1e26;
   --neu-surface-deep: #14161c;
   --neu-light: rgba(255, 255, 255, 0.06);
