@@ -98,10 +98,11 @@ const CSS = `
   :host([surface="neu"]) input::-moz-range-progress {
     background: color-mix(in srgb, var(--color-primary) 55%, var(--accent-glow));
   }
-  :host([surface="neu"]) input::-webkit-slider-thumb {
+  /* Puck thumb is the KNOBBED slider's; variant="fill" stays knobless by design. */
+  :host([surface="neu"]:not([variant="fill"])) input::-webkit-slider-thumb {
     background: var(--neu-face); box-shadow: var(--neu-raised-sm);
   }
-  :host([surface="neu"]) input::-moz-range-thumb {
+  :host([surface="neu"]:not([variant="fill"])) input::-moz-range-thumb {
     background: var(--neu-face); box-shadow: var(--neu-raised-sm);
   }
 `;
