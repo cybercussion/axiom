@@ -465,7 +465,7 @@ git commit -m "feat(neu): ax-gauge vertical tick-ruler meter with glowing aurora
  */
 import { BaseComponent } from '@shared/base-component.js';
 
-const STROKE = 4;
+const STROKE = 6; // thick arc per the Cybertruck dial reference
 const SWEEP = 0.75; // 270° of the circle
 const DRAG_RANGE_PX = 150; // full-range vertical travel
 
@@ -925,7 +925,7 @@ import '@shared/controls/ax-knob.js';
 .power-mid { display: flex; flex-direction: column; align-items: center; gap: var(--space-s); justify-content: center; }
 .power-title { font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: 0.25em; color: var(--color-muted); }
 .power-readout { font-family: var(--font-mono); color: var(--color-muted); }
-.power-num { font-size: var(--text-4xl); font-weight: 800; letter-spacing: 0.05em; color: var(--color-foreground); }
+.power-num { font-size: var(--text-4xl); font-weight: 300; letter-spacing: 0.08em; color: var(--color-foreground); } /* light display numerals — Cybertruck reference */
 .power-cap { font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: 0.25em; color: var(--color-muted); }
 .power-side { display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: var(--space-m); }
 .led-rail { display: flex; flex-direction: column; gap: var(--space-s); align-items: center; padding-top: var(--space-s); }
