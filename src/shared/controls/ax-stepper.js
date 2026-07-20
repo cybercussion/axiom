@@ -16,6 +16,7 @@ const CSS = `
     background: var(--neu-face); box-shadow: var(--neu-raised-sm);
     overflow: hidden;
   }
+  .pill:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
   :host([orientation="horizontal"]) .pill { flex-direction: row-reverse; }
   .key {
     all: unset; cursor: pointer; min-width: 44px; min-height: 44px;
@@ -38,7 +39,6 @@ export class AxStepper extends BaseComponent {
   constructor() {
     super();
     this._internals = this.attachInternals();
-    this._internals.role = 'spinbutton';
     this.addStyles(CSS);
     this._stopHold = () => { clearTimeout(this._holdTimer); clearInterval(this._holdRepeat); };
   }
@@ -53,9 +53,9 @@ export class AxStepper extends BaseComponent {
   render() {
     const chevron = dir => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="${dir > 0 ? '6 15 12 9 18 15' : '6 9 12 15 18 9'}"></polyline></svg>`;
     this.shadowRoot.innerHTML = `
-      <div class="pill" part="pill">
-        <button class="key" data-dir="1" aria-label="Increase">${chevron(1)}</button>
-        <button class="key" data-dir="-1" aria-label="Decrease">${chevron(-1)}</button>
+      <div class="pill" part="pill" role="spinbutton" tabindex="0">
+        <button class="key" data-dir="1" aria-label="Increase" tabindex="-1">${chevron(1)}</button>
+        <button class="key" data-dir="-1" aria-label="Decrease" tabindex="-1">${chevron(-1)}</button>
       </div>`;
     this._pill = this.shadowRoot.querySelector('.pill');
 
@@ -110,10 +110,11 @@ export class AxStepper extends BaseComponent {
     const { min, max } = this._bounds();
     const raw = Number(this.getAttribute('value'));
     this._value = Number.isNaN(raw) ? min : Math.min(max, Math.max(min, raw));
-    this._internals.ariaLabel = this.getAttribute('label') || 'Stepper';
-    this._internals.ariaValueMin = String(min);
-    this._internals.ariaValueMax = String(max);
-    this._internals.ariaValueNow = String(this._value);
+    this._pill.setAttribute('aria-label', this.getAttribute('label') || 'Stepper');
+    this._pill.setAttribute('aria-valuemin', String(min));
+    this._pill.setAttribute('aria-valuemax', String(max));
+    this._pill.setAttribute('aria-valuenow', String(this._value));
+    this._internals.setFormValue(String(this._value));
     const [inc, dec] = this._pill.querySelectorAll('.key');
     inc.setAttribute('aria-disabled', String(this._value >= max));
     dec.setAttribute('aria-disabled', String(this._value <= min));
