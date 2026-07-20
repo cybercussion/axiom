@@ -18,9 +18,6 @@ const CSS = `
     outline-offset: 4px;
   }
   .knob:focus-visible { outline: 2px solid var(--color-primary); }
-  /* The pointerdown .focus() (needed for Escape-cancel) can trip
-     :focus-visible — suppress the ring for pointer modality only. */
-  .knob.pointer-focus:focus-visible { outline: none; }
   svg { position: absolute; inset: 0; transform: rotate(135deg); pointer-events: none; }
   .rail { stroke: var(--control-track); fill: none; }
   .arc {
@@ -83,7 +80,6 @@ export class AxKnob extends BaseComponent {
     this._knob.addEventListener('pointerdown', e => {
       // State first, capture last — capture can throw for exotic pointers and
       // must never abort modality/focus bookkeeping.
-      this._knob.classList.add('pointer-focus');
       this._knob.focus(); // Safari doesn't focus divs on click — Escape-cancel needs it
       this._dragStart = { y: e.clientY, value: this.value };
       try { this._knob.setPointerCapture(e.pointerId); } catch { /* inactive pointer */ }
@@ -114,9 +110,7 @@ export class AxKnob extends BaseComponent {
     this._knob.addEventListener('pointerup', endDrag);
     this._knob.addEventListener('pointercancel', endDrag);
 
-    this._knob.addEventListener('blur', () => this._knob.classList.remove('pointer-focus'));
     this._knob.addEventListener('keydown', e => {
-      if (e.key !== 'Escape') this._knob.classList.remove('pointer-focus');
       const { min, max, step } = this._bounds();
       let next = null;
       if (e.key === 'ArrowUp' || e.key === 'ArrowRight') next = this.value + step;

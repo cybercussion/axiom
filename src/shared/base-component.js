@@ -23,6 +23,24 @@ const themeSheet = new CSSStyleSheet();
   }
 })();
 
+// ============ INPUT-MODALITY TRACKER ============
+// One document-level listener pair; the current modality is mirrored as a
+// data-modality attribute on every mounted component so shadow CSS (via the
+// adopted theme sheet) can suppress pointer-origin focus rings UNIVERSALLY.
+// Keyboard users keep rings: any non-modifier keypress flips back instantly.
+const mountedComponents = new Set();
+let inputModality = 'keyboard';
+const setModality = m => {
+  if (m === inputModality) return;
+  inputModality = m;
+  for (const el of mountedComponents) el.setAttribute('data-modality', m);
+};
+window.addEventListener('pointerdown', () => setModality('pointer'), true);
+window.addEventListener('keydown', e => {
+  if (e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Meta') return;
+  setModality('keyboard');
+}, true);
+
 export class BaseComponent extends HTMLElement {
   /** Shared constructed-sheet cache for addStyles() — keyed by CSS text. */
   static _sheetCache = new Map();
@@ -123,6 +141,8 @@ export class BaseComponent extends HTMLElement {
   //render() { this.shadowRoot.innerHTML = '<slot></slot>'; }
   // The "Brain" version of connectedCallback
   async connectedCallback() {
+    mountedComponents.add(this);
+    this.setAttribute('data-modality', inputModality);
     // Sync theme
     const applyTheme = (val) => this.setAttribute('data-theme', val);
     applyTheme(state.get('theme'));
@@ -157,6 +177,7 @@ export class BaseComponent extends HTMLElement {
   }
 
   disconnectedCallback() {
+    mountedComponents.delete(this);
     if (this._themeCleanup) this._themeCleanup();
     if (this._unsubscribers) {
       this._unsubscribers.forEach(unsub => unsub());

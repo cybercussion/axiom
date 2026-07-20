@@ -687,3 +687,12 @@ textarea::placeholder {
   --ease-spring: linear;
   --ease-spring-gentle: linear;
 }
+
+/* ============ POINTER-MODALITY FOCUS ============
+   Pointer/touch interactions must not paint focus rings; keyboard must.
+   BaseComponent mirrors the live input modality onto every component host,
+   and this rule (adopted into every shadow root) suppresses rings only
+   while the user is driving with a pointer. :host(...) is inert at
+   document level. Specificity (0,3,0) intentionally beats every
+   component-local ring rule. */
+:host([data-modality="pointer"]) :focus-visible { outline: none; }

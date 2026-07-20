@@ -15,9 +15,6 @@ const CSS = `
     touch-action: none;
   }
   input:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; border-radius: 999px; }
-  /* Native range inputs match :focus-visible even for pointer focus — we
-     track modality ourselves so mouse/touch users don't get a ring. */
-  .wrap.pointer-focus input:focus-visible { outline: none; }
   /* Glass pill rail — matches the ax-barchart mark language, not the stock thin bar. */
   input::-webkit-slider-runnable-track {
     height: 14px; border-radius: 999px;
@@ -170,12 +167,7 @@ export class AxSlider extends BaseComponent {
     });
     const start = () => this._wrap.classList.add('interacting');
     const stop = () => this._wrap.classList.remove('interacting');
-    this._input.addEventListener('pointerdown', () => {
-      this._wrap.classList.add('pointer-focus');
-      start();
-    });
-    this._input.addEventListener('keydown', () => this._wrap.classList.remove('pointer-focus'));
-    this._input.addEventListener('blur', () => this._wrap.classList.remove('pointer-focus'));
+    this._input.addEventListener('pointerdown', start);
     this._input.addEventListener('pointerup', stop);
     this._input.addEventListener('pointercancel', stop);
     this._input.addEventListener('focus', start);
