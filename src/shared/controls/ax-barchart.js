@@ -38,6 +38,15 @@ const CSS = `
       transform var(--duration-fast) var(--ease-spring);
   }
   .tip.show { opacity: 1; transform: translate(-50%, -100%) scale(1); }
+  /* ===== surface="neu" — carved rails; fills stay chart-colored (palette
+     contract), glow derives from the chart color itself. ===== */
+  :host([surface="neu"]) .rail {
+    background: var(--neu-surface-deep);
+    box-shadow: var(--neu-well);
+  }
+  :host([surface="neu"]) .fill {
+    box-shadow: 0 0 12px color-mix(in srgb, var(--chart-1) 45%, transparent);
+  }
 `;
 
 export class AxBarchart extends BaseComponent {

@@ -25,6 +25,16 @@ const CSS = `
     transition: stroke-dashoffset var(--duration-base) var(--ease-spring);
   }
   :host([data-done]) .check { stroke-dashoffset: 0; }
+  /* ===== surface="neu" — control indicator: aurora arc is its intended use. ===== */
+  :host([surface="neu"]) .rail { stroke: var(--neu-surface-deep); }
+  :host([surface="neu"]) .arc {
+    stroke: var(--accent-glow);
+    filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent-glow) 60%, transparent));
+  }
+  :host([surface="neu"][data-done]) .arc {
+    stroke: var(--success-color);
+    filter: drop-shadow(0 0 6px color-mix(in srgb, var(--success-color) 60%, transparent));
+  }
 `;
 
 export class AxProgressRing extends BaseComponent {

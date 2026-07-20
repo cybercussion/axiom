@@ -45,6 +45,16 @@ const CSS = `
       transform var(--duration-fast) var(--ease-spring);
   }
   .tip.show { opacity: 1; transform: translate(-50%, -100%) scale(1); }
+  /* ===== surface="neu" — circular carved backdrop; segments stay --chart-N,
+     no per-segment glow (restraint). ===== */
+  :host([surface="neu"]) .stage::before {
+    content: ''; position: absolute; inset: -12px; border-radius: 50%;
+    background: var(--neu-surface-deep); box-shadow: var(--neu-well);
+    z-index: -1;
+  }
+  :host([surface="neu"]) .rail {
+    stroke: color-mix(in srgb, black 25%, var(--neu-surface-deep));
+  }
 `;
 
 export class AxRing extends BaseComponent {
