@@ -28,6 +28,16 @@ const CSS = `
   .value.swap { opacity: 0; }
   .unit { font-size: var(--text-sm); color: var(--color-muted); font-weight: 600; }
   .label { font-size: var(--text-xs); color: var(--color-muted); margin-top: 2px; }
+  /* ===== surface="neu" — raised face card; wins over the .glass-tile utility. ===== */
+  :host([surface="neu"]) .tile {
+    background: var(--neu-face); border: none;
+    border-radius: 14px; padding: var(--space-m);
+    box-shadow: var(--neu-raised-sm);
+  }
+  :host([surface="neu"]) .icon-chip {
+    background: var(--neu-surface-deep); border: none;
+    box-shadow: var(--neu-well);
+  }
 `;
 
 export class AxStat extends BaseComponent {

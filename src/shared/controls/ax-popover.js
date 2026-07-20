@@ -34,6 +34,12 @@ const CSS = `
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
     display: flex; flex-direction: column; gap: var(--space-s);
   }
+  /* ===== surface="neu" — opaque raised panel, no backdrop blur. ===== */
+  :host([surface="neu"]) .panel {
+    background: var(--neu-face); border: none;
+    box-shadow: var(--neu-raised), 0 14px 28px var(--neu-dark);
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+  }
 `;
 
 export class AxPopover extends BaseComponent {

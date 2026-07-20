@@ -39,6 +39,16 @@ const CSS = `
       width var(--duration-base) var(--ease-spring),
       opacity var(--duration-fast) var(--ease-out-soft);
   }
+  /* ===== surface="neu" — well strip, raised selection puck. ===== */
+  :host([surface="neu"]) .strip {
+    background: var(--neu-surface-deep); border-radius: 16px;
+    box-shadow: var(--neu-well); padding: var(--space-2xs);
+  }
+  :host([surface="neu"]) .pill {
+    background: var(--neu-face); border: none;
+    box-shadow: var(--neu-raised-sm);
+  }
+  :host([surface="neu"]) .nav:hover { background: transparent; color: var(--color-foreground); }
 `;
 
 // Local-date ISO — toISOString() would shift the day in UTC+ timezones.

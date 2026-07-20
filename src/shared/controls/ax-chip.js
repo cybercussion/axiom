@@ -21,6 +21,14 @@ const CSS = `
     border: 1px solid var(--glass-tile-border); }
   .check { display: none; }
   .chip.complete .check { display: inline; }
+  /* ===== surface="neu" — raised pill; tone moves to ink (neu-button pattern). ===== */
+  :host([surface="neu"]) .chip {
+    background: var(--neu-face); border: none;
+    box-shadow: var(--neu-raised-sm);
+    color: var(--color-foreground);
+  }
+  :host([surface="neu"]) .chip.ongoing { color: var(--color-primary); }
+  :host([surface="neu"]) .chip.complete { color: var(--success-color); }
 `;
 
 const TONES = ['ongoing', 'complete', 'neutral'];
