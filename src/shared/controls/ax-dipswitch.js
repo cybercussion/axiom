@@ -23,6 +23,48 @@ const CSS = `
     letter-spacing: 0.08em; text-transform: uppercase;
     color: var(--color-muted); user-select: none;
   }
+  /* ===== surface="neu" — rocker bank: caps TILT on a pivot instead of sliding ===== */
+  :host([surface="neu"]) .bank {
+    background: var(--neu-surface-deep); border: none;
+    box-shadow: var(--neu-well); border-radius: 12px;
+    padding: var(--space-s) var(--space-m);
+  }
+  /* Rockers do not slide — drop the -90° slide rotation, tilt instead. */
+  :host([surface="neu"]) .dip ax-toggle { rotate: none; margin: 0; }
+  /* The slide-switch variant sizes its key 72px wide — rockers are compact;
+     override the part so the bank doesn't balloon. */
+  :host([surface="neu"]) .dip ax-toggle::part(button) {
+    min-width: 44px; min-height: 48px; perspective: 70px;
+  }
+  :host([surface="neu"]) .dip ax-toggle::part(track) {
+    width: 26px; height: 40px; border-radius: 6px;
+    background: var(--neu-face);
+    box-shadow: var(--neu-raised-sm),
+      inset 0 -10px 8px -8px var(--neu-dark),
+      inset 0 10px 8px -8px var(--neu-light);
+    transform: rotateX(-14deg);
+    transition: transform var(--duration-base) var(--ease-spring),
+      box-shadow var(--duration-fast) var(--ease-out-soft);
+  }
+  :host([surface="neu"]) .dip ax-toggle[checked]::part(track) {
+    transform: rotateX(14deg);
+    box-shadow: var(--neu-raised-sm),
+      inset 0 10px 8px -8px var(--neu-dark),
+      inset 0 -10px 8px -8px var(--neu-light);
+  }
+  /* Thumb becomes the ON indicator dot at the cap's top edge. */
+  :host([surface="neu"]) .dip ax-toggle::part(thumb) {
+    width: 6px; height: 6px; left: calc(50% - 3px); top: 8px;
+    background: var(--color-muted); box-shadow: none; opacity: 0.4;
+    transition: background var(--duration-fast) var(--ease-out-soft),
+      opacity var(--duration-fast) var(--ease-out-soft),
+      box-shadow var(--duration-fast) var(--ease-out-soft);
+  }
+  :host([surface="neu"]) .dip ax-toggle[checked]::part(thumb) {
+    transform: none;
+    background: var(--accent-glow); opacity: 1;
+    box-shadow: 0 0 6px var(--accent-glow);
+  }
 `;
 
 export class AxDipswitch extends BaseComponent {
@@ -69,7 +111,7 @@ export class AxDipswitch extends BaseComponent {
       <div class="bank" part="bank" role="group" aria-label="${this._esc(this.getAttribute('label') || 'DIP switches')}">
         ${labels.map(l => `
           <div class="dip">
-            <ax-toggle data-label="${this._esc(l)}" label="${this._esc(l)}" ${on.has(l) ? 'checked' : ''}></ax-toggle>
+            <ax-toggle data-label="${this._esc(l)}" label="${this._esc(l)}" ${on.has(l) ? 'checked' : ''}${this.getAttribute('surface') === 'neu' ? ' surface="neu"' : ''}></ax-toggle>
             <span class="dip-label">${this._esc(l)}</span>
           </div>`).join('')}
       </div>`;

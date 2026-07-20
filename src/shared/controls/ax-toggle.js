@@ -29,6 +29,36 @@ const CSS = `
   :host([checked]) .track { background: var(--color-primary); }
   :host([checked]) .thumb { transform: translateX(16px); }
   :host([checked]) button:active .thumb { transform: translateX(16px) scaleX(1.15); transform-origin: right; }
+  /* ===== surface="neu" — realistic slide switch: deep groove, domed puck ===== */
+  :host([surface="neu"]) button { min-width: 72px; min-height: 48px; }
+  :host([surface="neu"]) .track {
+    width: 56px; height: 28px; border-radius: 999px;
+    background: var(--neu-surface-deep);
+    box-shadow: var(--neu-well);
+    transition: box-shadow var(--duration-fast) var(--ease-out-soft);
+  }
+  :host([surface="neu"][checked]) .track {
+    box-shadow: var(--neu-well), inset 0 0 12px color-mix(in srgb, var(--accent-glow) 35%, transparent);
+  }
+  :host([surface="neu"]) .thumb {
+    width: 22px; height: 22px;
+    left: calc(50% - 28px + 3px); top: calc(50% - 11px);
+    background:
+      radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.28), transparent 60%),
+      var(--neu-face);
+    box-shadow: var(--neu-raised-sm);
+  }
+  :host([surface="neu"][checked]) .thumb {
+    transform: translateX(28px);
+    box-shadow: var(--neu-raised-sm), var(--neu-glow);
+  }
+  :host([surface="neu"]) button:active .thumb {
+    transform: scale(0.94);
+    box-shadow: var(--neu-raised-sm);
+  }
+  :host([surface="neu"][checked]) button:active .thumb {
+    transform: translateX(28px) scale(0.94);
+  }
 `;
 
 export class AxToggle extends BaseComponent {
