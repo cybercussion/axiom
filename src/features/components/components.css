@@ -39,3 +39,5 @@
 @media (max-width: 600px) {
   .token-row { grid-template-columns: 1fr; gap: var(--space-2xs); }
 }
+
+.fill-demos { display: flex; flex-direction: column; gap: var(--space-s); max-width: 420px; }

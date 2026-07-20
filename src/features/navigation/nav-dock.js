@@ -145,12 +145,13 @@ export class NavDock extends BaseComponent {
           <ax-toggle class="theme-toggle" label="Toggle dark mode" ${isDark ? 'checked' : ''}></ax-toggle>
         </div>
         <div class="settings-row" title="Audio">
-          <svg class="settings-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
-          </svg>
-          <ax-slider class="audio-slider" label="Audio level" min="0" max="100" value="${state.data.audioLevel}"></ax-slider>
+          <ax-slider class="audio-slider" variant="fill" label="Audio level" min="0" max="100" value="${state.data.audioLevel}">
+            <svg slot="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+            </svg>
+          </ax-slider>
         </div>
         <div class="settings-row" title="Closed Captions">
           <svg class="settings-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

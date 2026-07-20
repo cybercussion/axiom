@@ -47,6 +47,43 @@ const CSS = `
       transform var(--duration-fast) var(--ease-spring);
   }
   .wrap.interacting .bubble { opacity: 1; transform: translateX(-50%) scale(1); }
+
+  /* ===== variant="fill" — control-center style: the track IS the control.
+     Value reads from the fill's rounded leading edge; no floating knob.
+     Fill color overridable via --ax-slider-fill (white-on-glass default
+     works both themes because the rail carries the contrast). ===== */
+  :host([variant="fill"]) .wrap { min-height: 48px; }
+  :host([variant="fill"]) input[type="range"] { height: 48px; }
+  :host([variant="fill"]) input::-webkit-slider-runnable-track {
+    height: 48px; border-radius: 999px;
+    background: linear-gradient(to right,
+      var(--ax-slider-fill, rgba(255, 255, 255, 0.9)) var(--fill, 0%),
+      var(--control-track) var(--fill, 0%));
+  }
+  :host([variant="fill"]) input::-webkit-slider-thumb {
+    width: 24px; height: 48px; margin-top: 0;
+    background: transparent; box-shadow: none; border-radius: 999px;
+  }
+  :host([variant="fill"]) input:active::-webkit-slider-thumb { transform: none; }
+  :host([variant="fill"]) input::-moz-range-track {
+    height: 48px; border-radius: 999px; background: var(--control-track);
+  }
+  :host([variant="fill"]) input::-moz-range-progress {
+    height: 48px; border-radius: 999px;
+    background: var(--ax-slider-fill, rgba(255, 255, 255, 0.9));
+  }
+  :host([variant="fill"]) input::-moz-range-thumb {
+    width: 24px; height: 48px; background: transparent; box-shadow: none; border: none;
+  }
+  :host([variant="fill"]) input:active::-moz-range-thumb { transform: none; }
+  .track-icon {
+    position: absolute; left: 16px; top: 50%; translate: 0 -50%;
+    display: none; align-items: center; pointer-events: none;
+    /* Dark icon: it sits on the white fill except at near-zero values. */
+    color: #333;
+  }
+  .track-icon ::slotted(svg) { width: 18px; height: 18px; }
+  :host([variant="fill"]) .track-icon { display: inline-flex; }
 `;
 
 export class AxSlider extends BaseComponent {
@@ -80,6 +117,7 @@ export class AxSlider extends BaseComponent {
     const value = this.getAttribute('value') ?? min;
     this.shadowRoot.innerHTML = `
       <div class="wrap" part="wrap">
+        <span class="track-icon" part="icon"><slot name="icon"></slot></span>
         <input type="range" part="input" min="${Number(min)}" max="${Number(max)}"
           step="${Number(step)}" value="${Number(value)}"
           aria-label="${this._esc(this.getAttribute('label') || 'Slider')}">

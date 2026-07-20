@@ -74,6 +74,21 @@ export class ComponentsUI extends BaseComponent {
           <ax-progress class="wired-progress" value="40" label="Driven progress"></ax-progress>
           <h3>Indeterminate</h3>
           <ax-progress indeterminate label="Loading"></ax-progress>
+          <h3>Fill variant (control-center style)</h3>
+          <div class="fill-demos">
+            <ax-slider variant="fill" label="Volume" value="65">
+              <svg slot="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+              </svg>
+            </ax-slider>
+            <ax-slider variant="fill" label="Brightness" value="40">
+              <svg slot="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="4"></circle>
+                <path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4m11.4-11.4 1.4-1.4"></path>
+              </svg>
+            </ax-slider>
+          </div>
         </section>
 
         <section class="glass-card">
