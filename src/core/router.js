@@ -355,19 +355,8 @@ export const router = {
         const savedScroll = parseInt(rawStored || '0', 10);
         const targetY = savedScroll;
 
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            window.scrollTo({ top: targetY, behavior: 'instant' });
-            state.set('transitioning', false);
-          });
-        });
-
-        requestAnimationFrame(() => {
-          const feature = document.getElementById('app-container')?.firstElementChild;
-          if (feature) { feature.tabIndex = -1; feature.focus(); }
-        });
-
-        // Force a double-frame for layout calculation
+        // Double-frame so layout settles before the restore; focus fires on the
+        // first frame, the scroll on the second — restore wins over focus-scroll.
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             window.scrollTo({ top: targetY, behavior: 'instant' });

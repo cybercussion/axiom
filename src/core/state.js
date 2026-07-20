@@ -41,10 +41,6 @@ export const state = {
         else sessionStorage.removeItem('axiom_auth_redirect');
       }
 
-      if (location.hostname === 'localhost') {
-
-      }
-
       bus.dispatchEvent(new CustomEvent('update', {
         detail: { key, value }
       }));

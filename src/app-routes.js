@@ -12,6 +12,5 @@ export const ROUTES = {
   },
   'components': { path: '@features/components/components.js' },
   'contact': { path: '@features/contact/contact.js' },
-  'navigation': { path: '@features/navigation/navigation.js' },
   'not-found': { path: '@features/not-found/not-found.js' }
 };
