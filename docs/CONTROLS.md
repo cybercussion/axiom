@@ -6,14 +6,15 @@ composed `CustomEvent`s with `detail` out**. Skins via `surface="neu"` and
 JSON attribute (markup); an explicitly set property permanently wins.
 Surface/size/variant attrs are construction-time (set before insert).
 Import: `import '@shared/controls/<tag>.js'` — importing defines the element.
+Form-associated controls (marked ⚑) submit under their `name` attribute — set it like any native input.
 
 | Tag | Attributes | Properties | Events (detail) | Slots | Variants |
 |-----|-----------|------------|-----------------|-------|----------|
-| ax-toggle | checked, disabled, label, value | checked | change ({checked}) | — | surface="neu" (slide switch) |
-| ax-dipswitch | switches="A,B", on="A", label, surface | value → {label:bool}; setAll(map,{stagger}) | change ({label, checked, value}) | — | surface="neu" (rocker bank, forwards to toggles) |
-| ax-slider | min, max, step, value, label, disabled, variant, surface | value (number) | input/change ({value}) | icon (variant="fill") | variant="fill", surface="neu" |
+| ax-toggle ⚑ | checked, disabled, label, name, value | checked | change ({checked}) | — | surface="neu" (slide switch) |
+| ax-dipswitch ⚑ | switches="A,B", on="A", label, name, surface | value → {label:bool}; setAll(map,{stagger}) | change ({label, checked, value}) | — | surface="neu" (rocker bank, forwards to toggles) |
+| ax-slider ⚑ | min, max, step, value, label, name, disabled, variant, surface | value (number) | input/change ({value}) | icon (variant="fill") | variant="fill", surface="neu" |
 | ax-progress | value, max, indeterminate, label, surface | value | — | — | surface="neu"; absent value → indeterminate |
-| ax-button | variant(fill\|outline\|ghost), tone(primary\|secondary\|success\|warning\|danger), type(button\|submit), loading, disabled, surface, shape | — | click (native) | default label | surface="neu" (raised key); shape="round" (only has effect combined with surface="neu") |
+| ax-button ⚑ | variant(fill\|outline\|ghost), tone(primary\|secondary\|success\|warning\|danger), type(button\|submit), name, loading, disabled, surface, shape | — | click (native) | default label | surface="neu" (raised key); shape="round" (only has effect combined with surface="neu") |
 | ax-popover | open (reflected), aria-label (consumer-set; internals.role="group") | open (getter); show(invoker)/hide()/toggle(invoker) | popover-open, popover-close | default | — |
 | ax-skeleton | done | — | — | — | — |
 | ax-barchart | data (JSON), max, unit, label | data = [{label,value}] | — (tooltips internal) | — | — |
@@ -24,9 +25,9 @@ Import: `import '@shared/controls/<tag>.js'` — importing defines the element.
 | ax-chip | tone (ongoing\|complete\|neutral) | — | — | default label | — |
 | ax-datestrip | date (ISO), selected (ISO), label | selected | change ({date}) | — | — |
 | ax-gauge | value, max, unit, label, ticks, height | value | — | — | absent value → data-empty |
-| ax-stepper | value, min, max, step, label, orientation | value; form-associated (submits value) | change ({value}) | — | orientation="horizontal" (default vertical); min/max/step default 0/100/1; pill-level `role="spinbutton"` (the pill itself is the single tab stop — the two chevron buttons are `tabindex="-1"`) |
+| ax-stepper ⚑ | value, min, max, step, label, name, orientation | value; form-associated (submits value) | change ({value}) | — | orientation="horizontal" (default vertical); min/max/step default 0/100/1; pill-level `role="spinbutton"` (the pill itself is the single tab stop — the two chevron buttons are `tabindex="-1"`) |
 | ax-led | tone (ok\|info\|warn\|danger\|off), pulse, label | — | — | — | no label → decorative (aria-hidden); label present → role="status" |
-| ax-knob | value, min, max, step, size, label | value; form-associated (submits value) | input/change ({value}) | — | min/max/step default 0/100/1 |
+| ax-knob ⚑ | value, min, max, step, size, label, name | value; form-associated (submits value) | input/change ({value}) | — | min/max/step default 0/100/1 |
 
 ## Surfaces & utilities
 - Glass: `.glass-panel` (outer sheet), `.glass-tile` (nested).
