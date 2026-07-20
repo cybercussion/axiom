@@ -88,11 +88,17 @@ export class AxStepper extends BaseComponent {
   }
 
   _bounds() {
-    const min = Number(this.getAttribute('min')); const max = Number(this.getAttribute('max'));
+    // getAttribute(null) coerces to 0 via Number() — treat ABSENT as absent,
+    // not zero, so the documented defaults (0/100/1) actually apply.
+    const minAttr = this.getAttribute('min');
+    const maxAttr = this.getAttribute('max');
+    const min = minAttr === null ? 0 : Number(minAttr);
+    const max = maxAttr === null ? 100 : Number(maxAttr);
+    const step = Number(this.getAttribute('step'));
     return {
       min: Number.isFinite(min) ? min : 0,
       max: Number.isFinite(max) ? max : 100,
-      step: Number(this.getAttribute('step')) > 0 ? Number(this.getAttribute('step')) : 1
+      step: Number.isFinite(step) && step > 0 ? step : 1
     };
   }
 
