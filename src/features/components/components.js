@@ -152,7 +152,7 @@ export class ComponentsUI extends BaseComponent {
           <p class="strip-log token-note">Select a day&hellip;</p>
         </section>
 
-        <section class="glass-card">
+        <section class="glass-card span-all">
           <h2>Cyber-Neumorphism</h2>
           <p class="token-note">Second surface tier: opacity + depth. Same tokens, same contracts.</p>
           <div class="neu-stage">
@@ -185,7 +185,7 @@ export class ComponentsUI extends BaseComponent {
           </div>
         </section>
 
-        <section class="glass-card">
+        <section class="glass-card span-all">
           <h2>Motion tokens</h2>
           <p class="token-note">Lanes replay at 4&times; the real duration so the curves are visible.</p>
           <div class="token-grid">
@@ -203,7 +203,7 @@ export class ComponentsUI extends BaseComponent {
           <ax-button variant="ghost" class="replay-tokens">Replay</ax-button>
         </section>
 
-        <section class="glass-card">
+        <section class="glass-card span-all">
           <h2>Route transitions</h2>
           <p>The router picks direction from <code>ROUTE_ORDER</code>: navigating left of this page slides back, right slides forward.</p>
           <div class="row">
