@@ -51,18 +51,15 @@ export class AxGauge extends BaseComponent {
   render() {
     const height = Number(this.getAttribute('height')) > 0 ? Number(this.getAttribute('height')) : 240;
     const ticks = Number(this.getAttribute('ticks')) > 1 ? Number(this.getAttribute('ticks')) : 6;
-    const max = this._max();
-    const labels = Array.from({ length: ticks }, (_, i) =>
-      Math.round(max - i * (max / (ticks - 1))));
     this.shadowRoot.innerHTML = `
       <div class="gauge" part="gauge" style="height: ${height}px">
-        <div class="ruler" part="ruler" aria-hidden="true">
-          ${labels.map(l => `<span>${l}</span>`).join('')}
-        </div>
+        <div class="ruler" part="ruler" aria-hidden="true"></div>
         <div class="well" part="well"><div class="fill" part="fill"></div></div>
       </div>
       <span class="sr-only" data-summary></span>`;
     this._fill = this.shadowRoot.querySelector('.fill');
+    this._ruler = this.shadowRoot.querySelector('.ruler');
+    this._ticks = ticks;
     // Double rAF so the initial 0-height commits and the first value tweens in.
     requestAnimationFrame(() => requestAnimationFrame(() => this._sync()));
   }
@@ -79,7 +76,13 @@ export class AxGauge extends BaseComponent {
     const empty = Number.isNaN(raw);
     this.toggleAttribute('data-empty', empty);
     this._value = empty ? 0 : Math.min(max, Math.max(0, raw));
-    this._fill.style.height = `calc(${(this._value / max) * 100}% - 8px)`;
+    this._fill.style.height = `max(0px, calc(${(this._value / max) * 100}% - 8px))`;
+    if (max !== this._lastMax) {
+      this._lastMax = max;
+      const labels = Array.from({ length: this._ticks }, (_, i) =>
+        Math.round(max - i * (max / (this._ticks - 1))));
+      this._ruler.innerHTML = labels.map(l => `<span>${l}</span>`).join('');
+    }
     const unit = this.getAttribute('unit') || '';
     this._internals.ariaLabel = this.getAttribute('label') || 'Gauge';
     this._internals.ariaValueMin = '0';
