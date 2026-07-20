@@ -170,3 +170,30 @@ reference 2).
 Extend the MANIFEST `glass-dataviz-set` capability or add `neu-surface-tier` (implementer:
 add new `[[capabilities]]` entry — the tier is independently borrowable but depends on
 motion tokens + `motionMs`). Same sync-`src/shared/`-wholesale rule.
+
+## Addendum (2026-07-20, user-directed): neu variants for the data-viz + furniture family
+
+Extend `surface="neu"` (pure CSS, same rules) to seven more controls:
+
+- **ax-barchart**: rails become carved wells (`--neu-surface-deep` + `--neu-well`); FILLS
+  STAY `--chart-1` (palette contract: accent-glow never colors a chart mark) but gain a
+  decorative glow derived from the chart color itself
+  (`0 0 12px color-mix(in srgb, var(--chart-1) 45%, transparent)`).
+- **ax-ring**: a circular neu well disc behind the stage (`::before`, inset -12px,
+  z-index -1); rail stroke darkened; segments stay `--chart-N`, no per-segment glow
+  (restraint — multi-color glow is noise).
+- **ax-progress-ring**: control indicator (not a chart) → aurora arc
+  (`--accent-glow` stroke + drop-shadow glow), success color + glow at done; rail deep.
+- **ax-stat**: tile → raised `--neu-face` card (`--neu-raised-sm`, overriding the
+  `.glass-tile` utility it wears); icon chip becomes a small well.
+- **ax-chip**: raised face pill; tone moves to ink (like neu button) — complete/ongoing
+  color the glyph+text, surface stays material.
+- **ax-datestrip**: strip becomes a well; the selection pill becomes a raised
+  `--neu-face` puck; nav keys lose the glass hover fill.
+- **ax-popover**: panel → raised `--neu-face` card with a deeper drop shadow, no
+  backdrop blur (neu is opaque).
+
+Showcase: a `neu-viz-panel` inside the existing neu stage exercising all seven — the
+barchart/ring seeded via their JSON attributes (dogfooding the attribute pathway).
+CONTROLS.md variant cells updated; MANIFEST claim extended. Trend and skeleton are
+skipped (text-only ink / YAGNI).
