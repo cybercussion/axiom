@@ -28,6 +28,14 @@ materials; all existing motion/token/a11y rules apply unchanged.
   attributes, properties, events, slots, and variants (the SCOBOT.md precedent). Kept
   current as part of this pass; MANIFEST points at it.
 
+## Composition guideline (Tesla-concept reference, 4th inspiration)
+
+Restraint is the premium signal: neu compositions stay near-monochrome with **one accent
+moment per composition** (a single glowing gauge, one active LED cluster, one lit arc —
+not everything glowing at once), generous negative space, thin-stroke iconography. The
+showcase power panel must demonstrate this: the gauge fill and charge LED glow; everything
+else stays material.
+
 ## Non-goals
 
 - No forked components — neumorphism arrives as tokens, utilities, `surface="neu"`
