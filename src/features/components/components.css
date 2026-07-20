@@ -78,3 +78,5 @@
   .power-panel { flex-direction: column; align-items: center; }
   .power-label { writing-mode: horizontal-tb; transform: none; align-self: center; }
 }
+.neu-viz-panel { display: flex; flex-direction: column; gap: var(--space-m); min-width: 300px; flex: 1; }
+.neu-viz-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-m); }

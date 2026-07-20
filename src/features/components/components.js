@@ -182,6 +182,26 @@ export class ComponentsUI extends BaseComponent {
               <ax-slider surface="neu" variant="fill" label="Neu groove" value="55"></ax-slider>
               <ax-progress surface="neu" value="72" label="Neu progress"></ax-progress>
             </div>
+            <div class="neu-panel neu-viz-panel">
+              <ax-barchart surface="neu" unit="%" max="100" label="Neu bars"
+                data='[{"label":"Mon","value":42},{"label":"Tue","value":68},{"label":"Wed","value":30},{"label":"Thu","value":81},{"label":"Fri","value":55}]'></ax-barchart>
+              <div class="neu-viz-row">
+                <ax-ring surface="neu" size="120" label="Neu ring"
+                  segments='[{"label":"Move","value":50},{"label":"Rest","value":30},{"label":"Focus","value":20}]'>
+                  <span class="ring-pct">64%</span>
+                </ax-ring>
+                <ax-progress-ring surface="neu" value="83" size="56" label="Neu gauge"></ax-progress-ring>
+                <ax-progress-ring surface="neu" value="100" size="56" label="Neu done"></ax-progress-ring>
+              </div>
+              <div class="neu-viz-row">
+                <ax-stat surface="neu" value="7,412" label="Steps">
+                  <svg slot="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 4v6l4 2"></path><circle cx="12" cy="12" r="10"></circle></svg>
+                </ax-stat>
+                <ax-chip surface="neu" tone="complete">Complete</ax-chip>
+                <ax-chip surface="neu" tone="ongoing">On Going</ax-chip>
+              </div>
+              <ax-datestrip surface="neu" label="Neu week"></ax-datestrip>
+            </div>
           </div>
         </section>
 
