@@ -12,6 +12,11 @@ const CSS = `
   .led {
     width: 8px; height: 8px; border-radius: 50%;
     background: var(--color-muted); opacity: 0.35;
+    /* Chrome snaps the raster bounds of opacity<1 dots (dim/pulsing) to a
+       different subpixel than opaque siblings once an ancestor's hover
+       transform settles (glass-card lift) — dots drift ~1px apart. Keeping
+       every dot on its own composited layer makes them all snap alike. */
+    will-change: opacity;
     transition: background var(--duration-fast) var(--ease-out-soft),
       box-shadow var(--duration-fast) var(--ease-out-soft),
       opacity var(--duration-fast) var(--ease-out-soft);
