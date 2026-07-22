@@ -13,7 +13,7 @@ const CSS = `
   :host([disabled]), :host([data-form-disabled]) { opacity: 0.45; pointer-events: none; }
   .row {
     display: inline-flex; align-items: center; gap: var(--space-s);
-    min-height: 44px; cursor: pointer;
+    min-height: 44px; min-width: 44px; cursor: pointer;
     -webkit-tap-highlight-color: transparent;
   }
   .box {
@@ -96,6 +96,9 @@ export class AxCheckbox extends FormControlMixin(BaseComponent) {
     const label = this.getAttribute('label') || 'Checkbox';
     this._box.setAttribute('aria-checked', String(this.checked));
     this._box.setAttribute('aria-label', label);
+    const disabled = this.hasAttribute('disabled') || this.hasAttribute('data-form-disabled');
+    this._box.tabIndex = disabled ? -1 : 0;          // disabled = out of the tab order
+    this._box.setAttribute('aria-disabled', String(disabled));
     this.shadowRoot.querySelector('.text').textContent = this.getAttribute('label') || '';
     this._setFormValue(this.checked ? (this.getAttribute('value') || 'on') : null);
   }
