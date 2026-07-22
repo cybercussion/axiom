@@ -153,7 +153,9 @@ export class AxSelect extends FormControlMixin(BaseComponent) {
     this._menu = this.shadowRoot.querySelector('.menu');
     this._msg = this.shadowRoot.querySelector('.msg');
     this._touched = false;
-    this._defaultValue = this.getAttribute('value'); // for form reset
+    // Capture ONCE — render() re-runs on reconnect and value reflects the
+    // user's selection, so an unguarded snapshot would rebase the reset default.
+    if (this._defaultValue === undefined) this._defaultValue = this.getAttribute('value');
 
     this._trigger.addEventListener('click', () => {
       this.hasAttribute('open') ? this._close() : this._open();

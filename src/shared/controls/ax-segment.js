@@ -79,7 +79,8 @@ export class AxSegment extends FormControlMixin(BaseComponent) {
         <span class="puck" part="puck" aria-hidden="true"></span>
       </div>`;
     this._group = this.shadowRoot.querySelector('.group');
-    this._defaultValue = this.getAttribute('value'); // for form reset
+    // Capture ONCE — render() re-runs on reconnect (see ax-select note).
+    if (this._defaultValue === undefined) this._defaultValue = this.getAttribute('value');
 
     this._group.addEventListener('click', e => {
       const seg = e.target.closest('.seg');

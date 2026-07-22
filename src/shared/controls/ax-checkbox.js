@@ -75,7 +75,8 @@ export class AxCheckbox extends FormControlMixin(BaseComponent) {
         <span class="text" part="label"></span>
       </span>`;
     this._box = this.shadowRoot.querySelector('.box');
-    this._defaultChecked = this.hasAttribute('checked'); // for form reset
+    // Capture ONCE — render() re-runs on reconnect (see ax-select note).
+    if (this._defaultChecked === undefined) this._defaultChecked = this.hasAttribute('checked');
 
     this.shadowRoot.querySelector('.row').addEventListener('click', () => this._toggle());
     this._box.addEventListener('keydown', e => {

@@ -23,7 +23,10 @@ export const FormControlMixin = (Base) => class extends Base {
 
   formDisabledCallback(disabled) {
     this.toggleAttribute('data-form-disabled', disabled);
-    if (this._sync) this._sync();
+    // Fires synchronously on insertion into a disabled fieldset — possibly
+    // BEFORE first render. Skip _sync until the shadow tree exists; render()
+    // ends in _sync and reads data-form-disabled then.
+    if (this._sync && this.shadowRoot.firstElementChild) this._sync();
   }
 
   _setFormValue(v) {

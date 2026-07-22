@@ -99,7 +99,10 @@ export class AxTextarea extends FormControlMixin(BaseComponent) {
       this._syncValidity();
     });
 
-    if (this.getAttribute('error')) this.error = this.getAttribute('error');
+    // Replay an error set before first render — property (buffered in _error)
+    // or attribute; the property, like value, must survive pre-connect sets.
+    const initErr = this._error || this.getAttribute('error') || '';
+    if (initErr) this.error = initErr;
     this._sync();
     this._grow();
   }
