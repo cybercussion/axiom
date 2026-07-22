@@ -99,3 +99,4 @@ tags = ["es6", "web-components", "a11y", "forms", "design-system"]
 claim = "Form-entry controls: ax-field/ax-textarea (mirrored constraint validation, touched-model messages), ax-select (owned listbox menu — no OS popup — with full keyboard model and flip-up), ax-checkbox (visible-label form tile), ax-segment (sliding-puck radiogroup); shared FIELD_CHROME_CSS + FormControlMixin (ElementInternals reset/disabled/validity plumbing); all formAssociated, base look matches theme.css global inputs, surface=neu carves the wells; /contact migrated off the retired custom-input/FormValidator stack. Depends on neu-surface-tier; sync src/shared/ wholesale."
 maturity = "shipped"
 entry_points = ["src/shared/controls/", "docs/CONTROLS.md", "docs/superpowers/specs/2026-07-21-neu-form-controls-design.md"]
+pattern_doc = ""
