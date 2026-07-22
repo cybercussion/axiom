@@ -57,8 +57,10 @@ control) and fills the empty column in the /components Cyber-Neumorphism stage.
   proportional to value, normalized PER SIDE: each side's thicknesses + 2px gaps sum to
   at most 168px (the hub's vertical extent plus margin); the stack is vertically
   centered on the hub.
-- Outer ends: x = 150 (sources) / x = 570 (sinks), stacked with the same 2px gap,
-  vertically centered; the 0–150px left of each source ribbon holds its label block.
+- Outer ends: x = 150 (sources) / x = 570 (sinks), stacked with a WIDER 16px gap —
+  this outer spread converging into the tight 2px hub stack is what produces the
+  reference's fan; ribbon thickness itself stays constant (hub-scale) at both ends.
+  Vertically centered; the 0–150px left of each source ribbon holds its label block.
 - Hub ends: ribbons terminate at x = 296 (sources) / x = 424 (sinks) — the hub disc
   edge (center 360 ± r 64) — visually plunging behind the disc (ribbons render BELOW
   the disc in paint order).
