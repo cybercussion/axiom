@@ -44,6 +44,7 @@ is a live setting that applies immediately; a checkbox is a form choice submitte
 | ax-select ⚑ | options (JSON), value, label, placeholder, required, name, disabled | options = [{value,label}] (property wins over attribute); value; reportValidity() | change ({value, label}) | — | surface="neu" (carved well); the open menu is ALWAYS an opaque raised panel; full keyboard listbox (arrows/Home/End/type-ahead/Escape) |
 | ax-checkbox ⚑ | checked, disabled, label, value, name | checked | change ({checked}) | — | surface="neu" (raised tile → pressed lit well); VISIBLE label; Space toggles |
 | ax-segment ⚑ | options="A,B,C", value (selected label; defaults first), label, name, disabled | value | change ({value, index}) | — | surface="neu" (carved rail, raised puck); arrows move AND select (radio parity) |
+| ax-flow | sources (JSON), sinks (JSON), unit, label | sources/sinks = [{label,value}] (property wins per side) | — (hover internal, native title tooltips) | default (hub center) | surface="neu" (carved hub disc); side-coded ribbons (--chart-1 sources / --chart-4 sinks, identity via labels); >4 per side folds to Other |
 
 ## Surfaces & utilities
 - Glass: `.glass-panel` (outer sheet), `.glass-tile` (nested).
