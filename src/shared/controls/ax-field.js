@@ -13,8 +13,14 @@ import { FIELD_CHROME_CSS } from './field-chrome.js';
 const TYPES = ['text', 'email', 'password', 'number', 'search'];
 
 const CSS = FIELD_CHROME_CSS + `
-  input {
+  /* .well input, not bare input: the adopted theme sheet brings theme.css's
+     GLOBAL FORMS rules into this shadow root, and input[type="text"] (0,1,1)
+     out-specifies a bare input reset — leaving the inner input its own themed
+     border + focus halo (a second rectangle inside the well's ring). Matching
+     specificity + later-sheet order neutralizes every property that rule sets. */
+  .well input {
     background: transparent; border: none; outline: none;
+    box-shadow: none; border-radius: 0;
     flex: 1; min-width: 0; min-height: 44px;
     padding: 0;
     color: var(--color-foreground);

@@ -12,8 +12,12 @@ const SUPPORTS_FIELD_SIZING =
   typeof window !== 'undefined' && window.CSS?.supports?.('field-sizing', 'content');
 
 const CSS = FIELD_CHROME_CSS + `
-  textarea {
+  /* .well textarea, not bare textarea: theme.css's global textarea:focus
+     (0,1,1) from the adopted theme sheet out-specifies a bare reset and paints
+     its own focus halo inside the well ring (see ax-field for the full note). */
+  .well textarea {
     background: transparent; border: none; outline: none;
+    box-shadow: none; border-radius: 0;
     flex: 1; min-width: 0; resize: none;
     padding: var(--space-s) 0;
     color: var(--color-foreground);
