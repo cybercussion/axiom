@@ -19,7 +19,8 @@ const OUTER_GAP = 28;   // outer spread — the wide→tight convergence IS the 
                         // Must exceed the ~27px two-line label block so thin
                         // adjacent ribbons never collide their labels (pitch =
                         // h + OUTER_GAP ≥ 30). Outer span always fits: hub
-                        // thickness budget caps sumH at 162, +3×28 = 246 < 340.
+                        // thickness budget caps sumH at 162 (~168 with MIN_H
+                        // flooring under extreme skew), +3×28 ≤ 252 < 340.
 const STACK_MAX = 168;  // hub-side stack budget (thickness + gaps)
 const MAX_PER_SIDE = 4; // beyond this, fold to Other
 const MIN_H = 2;
