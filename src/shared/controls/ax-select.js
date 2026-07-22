@@ -90,6 +90,17 @@ export class AxSelect extends FormControlMixin(BaseComponent) {
       if (e.composedPath().includes(this)) return;
       this._close(false);
     };
+    // Host-level listener registered ONCE here — render() re-runs on every
+    // reconnect and would stack duplicate handlers (fleet invariant:
+    // once-per-instance listeners live in the constructor).
+    this.addEventListener('focusout', () => {
+      queueMicrotask(() => {
+        if (!this._trigger || this.matches(':focus-within')) return;
+        if (this.hasAttribute('open')) this._close(false);
+        this._touched = true;
+        this._syncValidity();
+      });
+    });
   }
 
   get options() { return this._options; }
@@ -154,15 +165,6 @@ export class AxSelect extends FormControlMixin(BaseComponent) {
     this._menu.addEventListener('click', e => {
       const li = e.target.closest('.option');
       if (li) this._select(Number(li.dataset.i));
-    });
-    // Touched when focus truly leaves the component (not trigger→menu hops).
-    this.addEventListener('focusout', () => {
-      queueMicrotask(() => {
-        if (this.matches(':focus-within')) return;
-        if (this.hasAttribute('open')) this._close(false);
-        this._touched = true;
-        this._syncValidity();
-      });
     });
 
     if (this._propSet) this._renderOptions();
@@ -260,6 +262,12 @@ export class AxSelect extends FormControlMixin(BaseComponent) {
         <svg class="tick" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
       </li>`).join('');
     this._sync();
+    // Rebuilding the rows while open orphans the active id — re-clamp and
+    // re-anchor aria-activedescendant onto the fresh rows.
+    if (this.hasAttribute('open')) {
+      if (this._options.length) this._setActive(this._active);
+      else this._trigger.removeAttribute('aria-activedescendant');
+    }
   }
 
   _sync() {
