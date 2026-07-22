@@ -35,7 +35,7 @@ is a live setting that applies immediately; a checkbox is a form choice submitte
 | ax-trend | value (signed), good | value | — | — | — |
 | ax-chip | tone (ongoing\|complete\|neutral) | — | — | default label | surface="neu" |
 | ax-datestrip | date (ISO), selected (ISO), label† | selected | change ({date}) | — | surface="neu" |
-| ax-gauge | value, max, unit, label, ticks†, height† | value | — | — | absent value → data-empty |
+| ax-gauge | value, max, unit, label, ticks†, height† | value | — | — | absent value → data-empty; aurora plasma fill (CSS-only, ambient drift, reduced-motion aware) |
 | ax-stepper ⚑ | value, min, max, step, label, name, orientation | value; form-associated (submits value) | change ({value}) | — | orientation="horizontal" (default vertical); min/max/step default 0/100/1; pill-level `role="spinbutton"` (the pill itself is the single tab stop — the two chevron buttons are `tabindex="-1"`) |
 | ax-led | tone (ok\|info\|warn\|danger\|off), pulse, label | — | — | — | no label → decorative (aria-hidden); label present → role="status" |
 | ax-knob ⚑ | value, min, max, step, size†, label, name | value; form-associated (submits value) | input/change ({value}) | — | min/max/step default 0/100/1 |

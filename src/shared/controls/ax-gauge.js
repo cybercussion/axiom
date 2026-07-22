@@ -22,13 +22,37 @@ const CSS = `
   .fill {
     position: absolute; left: 4px; right: 4px; bottom: 4px; height: 0;
     border-radius: 999px;
-    background: linear-gradient(180deg,
-      color-mix(in srgb, var(--accent-glow) 70%, var(--color-primary)) 0%,
-      var(--color-primary) 100%);
+    overflow: hidden; /* clips the oversized plasma to the capsule's rounded cap */
+    background: color-mix(in srgb, var(--color-primary) 30%, transparent);
     box-shadow: 0 0 18px color-mix(in srgb, var(--accent-glow) 45%, transparent);
     transition: height var(--duration-slow) var(--ease-out-soft);
   }
+  /* Aurora plasma: stacked radial blobs blurred inside the clip. Oversized
+     (inset -40%) so the blur never fades against the capsule walls. Blue base
+     is --accent-glow (control value indicator — its contractual use); the warm
+     core derives from --warning-color as DECORATIVE energy-glow, not a status
+     signal; hot spot is plain white. */
+  .fill::before {
+    content: '';
+    position: absolute; inset: -40%;
+    background:
+      radial-gradient(30% 22% at 52% 62%, rgba(255, 255, 255, 0.85) 0%, transparent 60%),
+      radial-gradient(55% 40% at 46% 52%, color-mix(in srgb, var(--warning-color) 75%, white) 0%, transparent 58%),
+      radial-gradient(65% 48% at 50% 86%, color-mix(in srgb, var(--accent-glow) 85%, white) 0%, transparent 62%);
+    filter: blur(14px) saturate(1.15);
+    animation: ax-gauge-aurora 9s var(--ease-cinematic) infinite alternate; /* motion-gate: allow */
+  }
+  @keyframes ax-gauge-aurora {
+    from { transform: translate(-2%, 2%) scale(1); }
+    to { transform: translate(3%, -5%) scale(1.08); }
+  }
+  /* Drift carries no state — kill it for reduced-motion users (the
+     [data-motion] preview can't pierce shadow CSS; OS setting governs). */
+  @media (prefers-reduced-motion: reduce) {
+    .fill::before { animation: none; }
+  }
   :host([data-empty]) .fill { box-shadow: none; }
+  :host([data-empty]) .fill::before { content: none; }
 `;
 
 export class AxGauge extends BaseComponent {
