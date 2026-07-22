@@ -15,7 +15,11 @@ const HUB_R = 64, ORBIT_R = 84;
 const OUTER_X_SRC = 150, OUTER_X_SNK = VB_W - 150;
 const HUB_X_SRC = CX - HUB_R, HUB_X_SNK = CX + HUB_R;
 const GAP = 2;          // hub-side spacer (method rule)
-const OUTER_GAP = 16;   // outer spread — the wide→tight convergence IS the fan
+const OUTER_GAP = 28;   // outer spread — the wide→tight convergence IS the fan.
+                        // Must exceed the ~27px two-line label block so thin
+                        // adjacent ribbons never collide their labels (pitch =
+                        // h + OUTER_GAP ≥ 30). Outer span always fits: hub
+                        // thickness budget caps sumH at 162, +3×28 = 246 < 340.
 const STACK_MAX = 168;  // hub-side stack budget (thickness + gaps)
 const MAX_PER_SIDE = 4; // beyond this, fold to Other
 const MIN_H = 2;
