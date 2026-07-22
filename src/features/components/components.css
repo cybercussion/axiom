@@ -80,3 +80,5 @@
 }
 .neu-viz-panel { display: flex; flex-direction: column; gap: var(--space-m); min-width: 300px; flex: 1; }
 .neu-viz-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-m); }
+.neu-form-panel { display: flex; flex-direction: column; gap: var(--space-m); min-width: 300px; flex: 1; max-width: 420px; }
+.form-log { overflow-wrap: anywhere; }

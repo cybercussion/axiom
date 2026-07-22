@@ -21,6 +21,11 @@ import '@shared/controls/ax-gauge.js';
 import '@shared/controls/ax-stepper.js';
 import '@shared/controls/ax-led.js';
 import '@shared/controls/ax-knob.js';
+import '@shared/controls/ax-field.js';
+import '@shared/controls/ax-textarea.js';
+import '@shared/controls/ax-select.js';
+import '@shared/controls/ax-checkbox.js';
+import '@shared/controls/ax-segment.js';
 
 const DURATIONS = ['instant', 'fast', 'base', 'slow'];
 const EASINGS = ['ease-spring', 'ease-spring-gentle', 'ease-out-soft', 'ease-cinematic'];
@@ -202,6 +207,17 @@ export class ComponentsUI extends BaseComponent {
               </div>
               <ax-datestrip surface="neu" label="Neu week"></ax-datestrip>
             </div>
+            <div class="neu-panel neu-form-panel">
+              <ax-field surface="neu" label="Callsign" placeholder="CYBR-01" name="callsign">
+                <svg slot="suffix" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21v-1a8 8 0 0 1 16 0v1"></path></svg>
+              </ax-field>
+              <ax-select surface="neu" label="Drive mode" placeholder="Select mode" value="sport" name="mode"
+                options='[{"value":"comfort","label":"Comfort"},{"value":"sport","label":"Sport"},{"value":"offroad","label":"Off-Road"}]'></ax-select>
+              <ax-segment surface="neu" options="Eco,Normal,Boost" value="Normal" label="Power profile" name="profile"></ax-segment>
+              <ax-checkbox surface="neu" label="Telemetry uplink" checked name="telemetry"></ax-checkbox>
+              <ax-textarea surface="neu" label="Mission notes" placeholder="Type here…" rows="2" name="notes"></ax-textarea>
+              <span class="token-note form-log" aria-live="polite">change → interact above</span>
+            </div>
           </div>
         </section>
 
@@ -312,6 +328,12 @@ export class ComponentsUI extends BaseComponent {
     });
     $('.demo-knob').addEventListener('change', e => {
       $('.knob-num').textContent = e.detail.value;
+    });
+
+    // One delegated listener proves the uniform event contract: every form
+    // control's change bubbles composed with a detail payload.
+    $('.neu-form-panel').addEventListener('change', e => {
+      $('.form-log').textContent = `change → ${JSON.stringify(e.detail)}`;
     });
 
     const replayTokens = () => {

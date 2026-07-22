@@ -11,6 +11,14 @@ construction-time — set them before inserting the element; they are marked †
 Import: `import '@shared/controls/<tag>.js'` — importing defines the element.
 Form-associated controls (marked ⚑) submit under their `name` attribute — set it like any native input.
 
+Form-entry controls (ax-field/ax-textarea/ax-select/ax-checkbox/ax-segment) differ from
+hardware controls in three deliberate ways: their `label` attr renders a VISIBLE label;
+validation messages follow a "touched" model (nothing shows before first blur or
+`reportValidity()` — do NOT style `ax-*:invalid` from page CSS, hosts match `:invalid`
+from first paint); and text wells show their focus ring on pointer focus too
+(focus-within chrome — carets need visible context). ax-toggle vs ax-checkbox: a toggle
+is a live setting that applies immediately; a checkbox is a form choice submitted later.
+
 | Tag | Attributes | Properties | Events (detail) | Slots | Variants |
 |-----|-----------|------------|-----------------|-------|----------|
 | ax-toggle ⚑ | checked, disabled, label, name, value | checked | change ({checked}) | — | surface="neu" (slide switch) |
@@ -31,6 +39,11 @@ Form-associated controls (marked ⚑) submit under their `name` attribute — se
 | ax-stepper ⚑ | value, min, max, step, label, name, orientation | value; form-associated (submits value) | change ({value}) | — | orientation="horizontal" (default vertical); min/max/step default 0/100/1; pill-level `role="spinbutton"` (the pill itself is the single tab stop — the two chevron buttons are `tabindex="-1"`) |
 | ax-led | tone (ok\|info\|warn\|danger\|off), pulse, label | — | — | — | no label → decorative (aria-hidden); label present → role="status" |
 | ax-knob ⚑ | value, min, max, step, size†, label, name | value; form-associated (submits value) | input/change ({value}) | — | min/max/step default 0/100/1 |
+| ax-field ⚑ | type†(text\|email\|password\|number\|search), value, label, placeholder, required, minlength†, maxlength†, autocomplete†, name, disabled, error | value (live text), error (custom-validity proxy), reportValidity() | input/change ({value}) | prefix, suffix | surface="neu" (carved well); message shows after first blur (touched model) |
+| ax-textarea ⚑ | value, label, placeholder, required, minlength†, maxlength†, rows†, max-rows†, name, disabled, error | value, error, reportValidity() | input/change ({value}) | — | surface="neu"; auto-grows to max-rows (default 3→8) |
+| ax-select ⚑ | options (JSON), value, label, placeholder, required, name, disabled | options = [{value,label}] (property wins over attribute); value; reportValidity() | change ({value, label}) | — | surface="neu" (carved well); the open menu is ALWAYS an opaque raised panel; full keyboard listbox (arrows/Home/End/type-ahead/Escape) |
+| ax-checkbox ⚑ | checked, disabled, label, value, name | checked | change ({checked}) | — | surface="neu" (raised tile → pressed lit well); VISIBLE label; Space toggles |
+| ax-segment ⚑ | options="A,B,C", value (selected label; defaults first), label, name, disabled | value | change ({value, index}) | — | surface="neu" (carved rail, raised puck); arrows move AND select (radio parity) |
 
 ## Surfaces & utilities
 - Glass: `.glass-panel` (outer sheet), `.glass-tile` (nested).
