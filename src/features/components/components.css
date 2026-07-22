@@ -82,3 +82,8 @@
 .neu-viz-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-m); }
 .neu-form-panel { display: flex; flex-direction: column; gap: var(--space-m); min-width: 300px; flex: 1; max-width: 420px; }
 .form-log { overflow-wrap: anywhere; }
+.neu-flow-panel { display: flex; flex-direction: column; gap: var(--space-m); flex: 2; min-width: 560px; }
+@media (max-width: 640px) { .neu-flow-panel { min-width: 0; } }
+.flow-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-m); flex-wrap: wrap; }
+.flow-hub-title, .flow-hub-sub { font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: 0.2em; color: var(--color-muted); }
+.flow-hub-num { font-size: var(--text-3xl); font-weight: 300; letter-spacing: 0.04em; color: var(--color-foreground); }

@@ -26,6 +26,7 @@ import '@shared/controls/ax-textarea.js';
 import '@shared/controls/ax-select.js';
 import '@shared/controls/ax-checkbox.js';
 import '@shared/controls/ax-segment.js';
+import '@shared/controls/ax-flow.js';
 
 const DURATIONS = ['instant', 'fast', 'base', 'slow'];
 const EASINGS = ['ease-spring', 'ease-spring-gentle', 'ease-out-soft', 'ease-cinematic'];
@@ -218,6 +219,17 @@ export class ComponentsUI extends BaseComponent {
               <ax-textarea surface="neu" label="Mission notes" placeholder="Type here…" rows="2" name="notes"></ax-textarea>
               <span class="token-note form-log" aria-live="polite">change → interact above</span>
             </div>
+            <div class="neu-panel neu-flow-panel">
+              <div class="flow-head">
+                <span class="power-title">SALES FLOW</span>
+                <ax-segment surface="neu" class="flow-range" options="1W,1M,2M,1Y" value="2M" label="Range"></ax-segment>
+              </div>
+              <ax-flow surface="neu" class="demo-flow" unit="$" label="Sales flow">
+                <span class="flow-hub-title">TOTAL SALES</span>
+                <strong class="flow-hub-num">305</strong>
+                <span class="flow-hub-sub">$2,450</span>
+              </ax-flow>
+            </div>
           </div>
         </section>
 
@@ -335,6 +347,66 @@ export class ComponentsUI extends BaseComponent {
     $('.neu-form-panel').addEventListener('change', e => {
       $('.form-log').textContent = `change → ${JSON.stringify(e.detail)}`;
     });
+
+    // ax-flow range demo: canned datasets keyed by the segment's value —
+    // assignment goes through the PROPERTY path (property-wins contract).
+    const FLOW_DATA = {
+      '1W': {
+        num: '74', sub: '$610',
+        sources: [
+          { label: 'Business', value: 5200 }, { label: 'Education', value: 9800 },
+          { label: 'Travel', value: 2400 }, { label: 'Development', value: 7700 }
+        ],
+        sinks: [
+          { label: 'Investments', value: 18000 }, { label: 'Startups', value: 2100 },
+          { label: 'Outsourcing', value: 1900 }, { label: 'Projects', value: 24300 }
+        ]
+      },
+      '1M': {
+        num: '158', sub: '$1,320',
+        sources: [
+          { label: 'Business', value: 11400 }, { label: 'Education', value: 21500 },
+          { label: 'Travel', value: 5600 }, { label: 'Development', value: 16200 }
+        ],
+        sinks: [
+          { label: 'Investments', value: 39000 }, { label: 'Startups', value: 4100 },
+          { label: 'Outsourcing', value: 4700 }, { label: 'Projects', value: 51000 }
+        ]
+      },
+      '2M': {
+        num: '305', sub: '$2,450',
+        sources: [
+          { label: 'Business', value: 20450 }, { label: 'Education', value: 40000 },
+          { label: 'Travel', value: 10500 }, { label: 'Development', value: 30800 }
+        ],
+        sinks: [
+          { label: 'Investments', value: 75000 }, { label: 'Startups', value: 7500 },
+          { label: 'Outsourcing', value: 8450 }, { label: 'Projects', value: 96700 }
+        ]
+      },
+      '1Y': {
+        num: '1,840', sub: '$14,700',
+        sources: [
+          { label: 'Business', value: 122000 }, { label: 'Education', value: 240000 },
+          { label: 'Travel', value: 64000 }, { label: 'Development', value: 187000 }
+        ],
+        sinks: [
+          { label: 'Investments', value: 452000 }, { label: 'Startups', value: 46000 },
+          { label: 'Outsourcing', value: 51000 }, { label: 'Projects', value: 580000 }
+        ]
+      }
+    };
+    const applyFlow = range => {
+      const d = FLOW_DATA[range];
+      if (!d) return;
+      const flow = $('.demo-flow');
+      flow.sources = d.sources;
+      flow.sinks = d.sinks;
+      $('.flow-hub-num').textContent = d.num;
+      $('.flow-hub-sub').textContent = d.sub;
+    };
+    $('.flow-range').addEventListener('change', e => applyFlow(e.detail.value));
+    applyFlow('2M');
 
     const replayTokens = () => {
       // Snap balls back to the start with transitions suppressed — without
