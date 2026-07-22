@@ -568,7 +568,11 @@ select {
 }
 
 .glass-card:hover {
-  transform: translateY(-2px) scale(1.005);
+  /* Lift only — NO scale. Scaling a text-bearing panel makes Chrome stretch
+     the 1x glyph raster (blurry) then re-rasterize on settle (snap to sharp),
+     and it desyncs composited children subpixel-wise (the LED-drift bug).
+     The lift + deeper shadow carry the hover affordance on their own. */
+  transform: translateY(-2px);
   background: rgba(255, 255, 255, 0.07);
   /* This might need a var for light mode hover? */
   box-shadow: 0 0 0 1px var(--glass-border) inset, 0 15px 30px rgba(0, 0, 0, 0.5);
