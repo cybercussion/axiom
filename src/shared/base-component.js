@@ -36,8 +36,22 @@ const setModality = m => {
   for (const el of mountedComponents) el.setAttribute('data-modality', m);
 };
 window.addEventListener('pointerdown', () => setModality('pointer'), true);
+// Manipulation keys ADJUST the focused control (arrowing a slider you just
+// clicked); they are not navigation, so they don't flip a pointer session
+// into keyboard modality (which would surprise-paint focus rings mid-drag).
+// Tab/typing/activation keys still flip, so keyboard-first users — who
+// arrive at controls via Tab — keep every ring.
+const MANIPULATION_KEYS = new Set([
+  'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown'
+]);
 window.addEventListener('keydown', e => {
   if (e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Meta') return;
+  // Shortcut CHORDS are not typing: the Tab inside Cmd+Tab (app switch) must
+  // not flip to keyboard modality — Chrome re-matches :focus-visible when the
+  // window regains focus, so that stray flip painted a ring on the control
+  // you'd been dragging every time you switched apps and back.
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (MANIPULATION_KEYS.has(e.key) && inputModality === 'pointer') return;
   setModality('keyboard');
 }, true);
 
