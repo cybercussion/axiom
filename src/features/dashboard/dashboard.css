@@ -24,12 +24,6 @@
   margin-bottom: var(--space-xs);
 }
 
-.dash-grid {
-  display: grid;
-  grid-template-columns: 1.2fr 0.8fr 1fr;
-  gap: var(--space-m);
-}
-
 .dash-grid h2 {
   font-size: var(--text-base);
   font-weight: 700;
@@ -37,8 +31,6 @@
 }
 
 .stat-col { display: flex; flex-direction: column; gap: var(--space-s); }
-
-.panel-challenges { grid-column: 1 / span 2; }
 
 .challenge-row {
   display: flex; align-items: center; gap: var(--space-m);
@@ -62,8 +54,3 @@
 
 .output-row { display: flex; align-items: center; gap: var(--space-m); }
 .output-row ax-stat { flex: 1; }
-
-@media (max-width: 900px) {
-  .dash-grid { grid-template-columns: 1fr; }
-  .panel-challenges { grid-column: auto; }
-}

@@ -7,6 +7,7 @@ import '@shared/controls/ax-stat.js';
 import '@shared/controls/ax-trend.js';
 import '@shared/controls/ax-chip.js';
 import '@shared/controls/ax-datestrip.js';
+import '@shared/controls/ax-bento.js';
 
 class DashboardUI extends BaseComponent {
   // A11y: don't delegate the router's post-navigation focus() into the first
@@ -82,7 +83,7 @@ class DashboardUI extends BaseComponent {
     this.shadowRoot.innerHTML = `
       <div class="dashboard-container">
         <header class="dash-header"><h1>${this._esc(p.title || 'Dashboard')}</h1></header>
-        <div class="glass-panel dash-grid">
+        <ax-bento class="glass-panel dash-grid" preset="dash" collapse="900">
 
           <section class="glass-tile panel-activity">
             <h2>Activity</h2>
@@ -141,7 +142,7 @@ class DashboardUI extends BaseComponent {
             </div>
           </section>
 
-        </div>
+        </ax-bento>
       </div>`;
 
     // Charts take structured data via properties (attributes can't carry arrays cleanly).
