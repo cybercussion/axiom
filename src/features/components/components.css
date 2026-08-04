@@ -87,3 +87,12 @@
 .flow-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-m); flex-wrap: wrap; }
 .flow-hub-title, .flow-hub-sub { font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: 0.2em; color: var(--color-muted); }
 .flow-hub-num { font-size: var(--text-3xl); font-weight: 300; letter-spacing: 0.04em; color: var(--color-foreground); }
+
+/* Bento card: numbered tiles need a floor so empty divs read as tiles. */
+.bento-demo { margin-top: var(--space-m); }
+.bento-tile {
+  min-height: 72px;
+  display: grid; place-items: center;
+  font-family: var(--font-mono); font-weight: 700;
+  color: var(--color-muted);
+}

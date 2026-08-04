@@ -27,6 +27,7 @@ import '@shared/controls/ax-select.js';
 import '@shared/controls/ax-checkbox.js';
 import '@shared/controls/ax-segment.js';
 import '@shared/controls/ax-flow.js';
+import '@shared/controls/ax-bento.js';
 
 const DURATIONS = ['instant', 'fast', 'base', 'slow'];
 const EASINGS = ['ease-spring', 'ease-spring-gentle', 'ease-out-soft', 'ease-cinematic'];
@@ -234,6 +235,18 @@ export class ComponentsUI extends BaseComponent {
         </section>
 
         <section class="glass-card span-all">
+          <h2>Bento layout</h2>
+          <p class="token-note">ax-bento &mdash; presets place tiles by DOM order; extra
+            tiles auto-flow (hero has 6 slots, dash 4 &mdash; watch the leftovers).
+            Collage geometry: tip of the hat to Flexbox Labs (MIT).</p>
+          <ax-segment class="bento-preset" options="Collage,Hero,Dash" value="Collage" label="Bento preset"></ax-segment>
+          <ax-bento class="bento-demo" preset="collage" collapse="480">
+            ${Array.from({ length: 9 }, (_, i) => `
+              <div class="glass-tile bento-tile" style="view-transition-name: bento-t${i + 1}">${i + 1}</div>`).join('')}
+          </ax-bento>
+        </section>
+
+        <section class="glass-card span-all">
           <h2>Motion tokens</h2>
           <p class="token-note">Lanes replay at 4&times; the real duration so the curves are visible.</p>
           <div class="token-grid">
@@ -407,6 +420,22 @@ export class ComponentsUI extends BaseComponent {
     };
     $('.flow-range').addEventListener('change', e => applyFlow(e.detail.value));
     applyFlow('2M');
+
+    // Bento preset swap — view-transition morph when motion is allowed;
+    // reduced motion (OS or page preview toggle) snaps instead.
+    $('.bento-preset').addEventListener('change', e => {
+      const swap = () => $('.bento-demo').setAttribute('preset', e.detail.value.toLowerCase());
+      const reduced = document.documentElement.dataset.motion === 'reduced'
+        || matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!reduced && document.startViewTransition) {
+        // A second flip mid-morph auto-skips the in-flight transition: the
+        // skipped one rejects .ready with AbortError (while .finished can
+        // still resolve) — swallow both (router.js AbortError precedent).
+        const t = document.startViewTransition(swap);
+        t.ready.catch(() => {});
+        t.finished.catch(() => {});
+      } else swap();
+    });
 
     const replayTokens = () => {
       // Snap balls back to the start with transitions suppressed — without
