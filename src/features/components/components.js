@@ -3,6 +3,7 @@
  * Fleet reference page: every control live, tokens visualized, transitions linked.
  */
 import { BaseComponent } from '@shared/base-component.js';
+import { log } from '@core/logger.js';
 import '@shared/controls/ax-toggle.js';
 import '@shared/controls/ax-dipswitch.js';
 import '@shared/controls/ax-slider.js';
@@ -242,7 +243,7 @@ export class ComponentsUI extends BaseComponent {
           <ax-segment class="bento-preset" options="Collage,Hero,Dash" value="Collage" label="Bento preset"></ax-segment>
           <ax-bento class="bento-demo" preset="collage" collapse="480">
             ${Array.from({ length: 9 }, (_, i) => `
-              <div class="glass-tile bento-tile" style="view-transition-name: bento-t${i + 1}">${i + 1}</div>`).join('')}
+              <div class="glass-tile bento-tile">${i + 1}</div>`).join('')}
           </ax-bento>
         </section>
 
@@ -424,17 +425,22 @@ export class ComponentsUI extends BaseComponent {
     // Bento preset swap — view-transition morph when motion is allowed;
     // reduced motion (OS or page preview toggle) snaps instead.
     $('.bento-preset').addEventListener('change', e => {
-      const swap = () => $('.bento-demo').setAttribute('preset', e.detail.value.toLowerCase());
+      const bento = $('.bento-demo');
+      const swap = () => bento.setAttribute('preset', e.detail.value.toLowerCase());
       const reduced = document.documentElement.dataset.motion === 'reduced'
         || matchMedia('(prefers-reduced-motion: reduce)').matches;
-      if (!reduced && document.startViewTransition) {
-        // A second flip mid-morph auto-skips the in-flight transition: the
-        // skipped one rejects .ready with AbortError (while .finished can
-        // still resolve) — swallow both (router.js AbortError precedent).
-        const t = document.startViewTransition(swap);
-        t.ready.catch(() => {});
-        t.finished.catch(() => {});
-      } else swap();
+      if (reduced || !document.startViewTransition) { swap(); return; }
+      // Transient per-tile names: Chrome can't capture VT names inside shadow
+      // roots (today this morph degrades to the UA cross-fade), and PERMANENT
+      // names would punch tile-shaped holes in the router's route transition
+      // on engines that do capture them. Assign around the swap, always clear.
+      const tiles = [...bento.children];
+      tiles.forEach((t, i) => t.style.viewTransitionName = `bento-t${i + 1}`);
+      const vt = document.startViewTransition(swap);
+      vt.ready.catch(() => {});
+      vt.finished
+        .catch(err => { if (err?.name !== 'AbortError') log.error('[bento card] VT error:', err); })
+        .finally(() => tiles.forEach(t => t.style.viewTransitionName = ''));
     });
 
     const replayTokens = () => {

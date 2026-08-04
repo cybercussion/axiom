@@ -83,7 +83,10 @@ class DashboardUI extends BaseComponent {
     this.shadowRoot.innerHTML = `
       <div class="dashboard-container">
         <header class="dash-header"><h1>${this._esc(p.title || 'Dashboard')}</h1></header>
-        <ax-bento class="glass-panel dash-grid" preset="dash" collapse="900">
+        <!-- collapse measures the HOST's content-box, not the viewport; ~90px of
+             page padding + panel chrome sits between them, so 810 (not 900)
+             restores the old 900px-viewport flip point from the deleted media query. -->
+        <ax-bento class="glass-panel dash-grid" preset="dash" collapse="810">
 
           <section class="glass-tile panel-activity">
             <h2>Activity</h2>
