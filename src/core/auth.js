@@ -200,7 +200,6 @@ export const auth = {
   // --- Private Methods ---
 
   async _handleCallback(code) {
-    const { USER_POOL_DOMAIN, CLIENT_ID, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, REDIRECT_URI } = this._getConfig();
     const verifier = localStorage.getItem(PKCE_VERIFIER_KEY);
     const provider = localStorage.getItem('axiom_auth_provider');
     const turnstileToken = sessionStorage.getItem('turnstile_auth_token');

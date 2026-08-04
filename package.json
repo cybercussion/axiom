@@ -11,12 +11,15 @@
     "check-pwa": "node tools/check-pwa.js",
     "verify-dist": "node tools/verify-dist.js",
     "test:tools": "node --test 'tools/**/*.test.js'",
-    "lint": "npx eslint src/**/*.js",
+    "lint": "eslint src tools",
     "lint:motion": "node tools/motion-gate.js"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "browser-sync": "^3.0.0",
     "csso": "^5.0.5",
+    "eslint": "^10.4.1",
+    "globals": "^17.6.0",
     "terser": "^5.46.0"
   }
 }

@@ -284,7 +284,7 @@ export const router = {
         const importPath = config.path.includes('?') ? config.path : config.path + buildHash;
 
         // Parallelize: Load Code + Fetch Data
-        const [module] = await Promise.all([
+        await Promise.all([
           import(importPath),
           config.api ? state.query(config.dataKey, async () => {
             if (signal.aborted) throw new DOMException('Aborted', 'AbortError');

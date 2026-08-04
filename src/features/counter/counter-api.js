@@ -2,8 +2,6 @@
  * Counter Feature API
  * Placeholders for potential backend interactions.
  */
-import { gateway } from '@core/gateway.js';
-
 export const saveCount = async (count) => {
   console.log(`[Mock API] Syncing count: ${count}...`);
 

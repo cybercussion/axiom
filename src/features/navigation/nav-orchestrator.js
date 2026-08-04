@@ -56,7 +56,6 @@ class NavOrchestrator extends BaseComponent {
 
     this._resizeObserver = new ResizeObserver(entries => {
       for (const entry of entries) {
-        const { height, width } = entry.contentRect;
         const rect = entry.target.getBoundingClientRect();
         const root = document.documentElement;
 
