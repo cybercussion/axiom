@@ -24,3 +24,8 @@ dist/
 # --- Project Specific ---
 # If your feature tool generates temp files
 tools/.temp/
+
+# --- Agent Tooling ---
+# Per-machine session transcripts from rift; regenerable and machine-local,
+# so they never belong in the tree.
+.rift/
