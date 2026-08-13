@@ -11,6 +11,9 @@
 }
 .page > h1, .page > .motto { grid-column: 1 / -1; margin-bottom: 0; }
 .span-all { grid-column: 1 / -1; }
+/* The small control cards live in an ax-bento (weighted spans, even rows);
+   the bento spans the page grid, and cards keep their own glass surface. */
+.card-bento { grid-column: 1 / -1; }
 @media (max-width: 760px) {
   .page { padding: var(--space-l) var(--space-m) calc(var(--space-xl) * 3); }
 }

@@ -34,6 +34,13 @@ const DURATIONS = ['instant', 'fast', 'base', 'slow'];
 const EASINGS = ['ease-spring', 'ease-spring-gentle', 'ease-out-soft', 'ease-cinematic'];
 
 export class ComponentsUI extends BaseComponent {
+  // Route feature: the router focuses this host after navigation
+  // (router.js feature.focus()); with the delegatesFocus default that focus
+  // funnels into the first focusable control on the page and paints a ring
+  // on it (here: the reduced-motion toggle). Same fix as every other route
+  // feature — dashboard-ui precedent. This was the last sibling missing it.
+  static delegatesFocus = false;
+
   async connectedCallback() {
     await this.addExternalStyles(new URL('./components.css', import.meta.url).href);
     super.connectedCallback();
@@ -51,6 +58,11 @@ export class ComponentsUI extends BaseComponent {
         <h1>Components &amp; Motion</h1>
         <p class="motto">Hard rule: no fast default vanilla behavior. Everything animates.</p>
 
+        <!-- The control cards ride ax-bento (dogfooding the 25th control on the
+             page that showcases it): weighted spans interlock the ten cards into
+             even rows instead of the ragged auto-fit flow. DOM order is
+             unchanged, so reading order and the collapsed stack stay identical. -->
+        <ax-bento class="card-bento" cols="3" gap="var(--space-l)" collapse="860">
         <section class="glass-card">
           <h2>Reduced motion</h2>
           <div class="row">
@@ -60,7 +72,7 @@ export class ComponentsUI extends BaseComponent {
           </div>
         </section>
 
-        <section class="glass-card">
+        <section class="glass-card" span="2">
           <h2>Buttons</h2>
           <div class="row">
             <ax-button class="load-demo">Fill (click = loading)</ax-button>
@@ -80,7 +92,7 @@ export class ComponentsUI extends BaseComponent {
           </div>
         </section>
 
-        <section class="glass-card">
+        <section class="glass-card" rows="2">
           <h2>Slider &rarr; Progress</h2>
           <ax-slider class="wired-slider" label="Drive the progress bar" value="40"></ax-slider>
           <ax-progress class="wired-progress" value="40" label="Driven progress"></ax-progress>
@@ -129,7 +141,7 @@ export class ComponentsUI extends BaseComponent {
           <ax-button variant="ghost" class="bars-randomize">Randomize</ax-button>
         </section>
 
-        <section class="glass-card">
+        <section class="glass-card" rows="2">
           <h2>Ring &amp; progress rings</h2>
           <div class="row">
             <ax-ring class="demo-ring" size="150" label="Demo ring">
@@ -142,7 +154,7 @@ export class ComponentsUI extends BaseComponent {
           </div>
         </section>
 
-        <section class="glass-card">
+        <section class="glass-card" span="2">
           <h2>Stat, trend &amp; chip</h2>
           <div class="row">
             <ax-stat value="108" unit="bpm" label="Heart Rate">
@@ -154,11 +166,12 @@ export class ComponentsUI extends BaseComponent {
           </div>
         </section>
 
-        <section class="glass-card">
+        <section class="glass-card" span="2">
           <h2>Date strip</h2>
           <ax-datestrip class="demo-strip"></ax-datestrip>
           <p class="strip-log token-note">Select a day&hellip;</p>
         </section>
+        </ax-bento>
 
         <section class="glass-card span-all">
           <h2>Cyber-Neumorphism</h2>
