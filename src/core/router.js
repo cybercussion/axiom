@@ -23,6 +23,9 @@ export const router = {
   _activeTransition: null,
   _currentController: null,
   _scrollTimeout: null,
+  // Path of the last COMMITTED route — the page the user is actually on.
+  // location.pathname is unreliable for this during popstate handling.
+  _activePath: null,
   _lastIndex: 0,
   _navSeq: 0,
   _activeNavId: null,
@@ -119,8 +122,16 @@ export const router = {
     }
 
     // Capture Scroll Position (SessionStorage)
-    // We save the CURRENT page's scroll before we leave it.
-    this._saveScroll(location.pathname);
+    // We save the DEPARTING page's scroll before we leave it — keyed by
+    // _activePath (the path the router last committed), never by
+    // location.pathname: on a popstate the browser has ALREADY moved
+    // location.pathname to the destination, so reading it here saved the
+    // old page's scroll under the NEW page's key, clobbering the position
+    // this very navigation is about to restore (the "back to home lands at
+    // the top" bug). Null until the first commit — nothing to save on boot,
+    // which also stops the boot pass writing scrollY=0 over a same-session
+    // refresh-restore target.
+    if (this._activePath) this._saveScroll(this._activePath);
 
     // Abort previous pending request
     if (this._currentController) {
@@ -349,6 +360,10 @@ export const router = {
         }
 
         // Scroll Restoration
+        // The URL is final here (pushState already ran on the push branch) —
+        // record the committed path as the page any FUTURE navigation is
+        // departing from.
+        this._activePath = location.pathname;
         const scrollPath = push ? (this.base + (cleanPath || '')).replace('//', '/') : location.pathname;
         const storageKey = `scroll_${scrollPath}`;
         const rawStored = sessionStorage.getItem(storageKey);
