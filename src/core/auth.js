@@ -1,38 +1,51 @@
 /**
  * Project Axiom: Auth Service
- * Lightweight Cognito OAuth2 + PKCE wrapper.
- * Zero-dependency, zero-build.
+ * Lightweight OAuth2 code-flow + PKCE wrapper (Google direct via a worker that holds
+ * the client secret, or legacy Cognito). Zero-dependency, zero-build.
+ *
+ * Reconciled 2026-09-05 from the live projects (tender/ev/scobot) — see
+ * docs/auth-readme.md for the storage keys, the worker contract and what each
+ * downstream keeps local. Pure logic lives in auth-helpers.js (node-tested).
  */
 import { state } from '@state';
 import { config } from '@core/config.js';
 import { log } from '@core/logger.js';
+import {
+  buildAuthorizeUrl, generateCodeVerifier, generateCodeChallenge,
+  hydrateProfile, normalizeAvatarUrl, isRefreshRejected, refreshDelayMs
+} from '@core/auth-helpers.js';
 
-const STORAGE_KEY = 'axiom_auth';
-const PKCE_VERIFIER_KEY = 'axiom_pkce_verifier';
+const STORAGE_KEY = 'axiom_auth';              // token bundle
+const PKCE_VERIFIER_KEY = 'axiom_pkce_verifier'; // held across the provider redirect
+const STATE_KEY = 'axiom_oauth_state';         // CSRF correlation, held across the redirect
+const PROVIDER_KEY = 'axiom_auth_provider';    // 'google' | 'cognito' — routes refresh
+const PROFILE_KEY = 'axiom_profile';           // last-known-good sub/email/name/picture
+const AVATAR_KEY = 'axiom-avatar';             // { key, url, data } data-URL cache
+const GOOGLE_AUTHORIZE = 'https://accounts.google.com/o/oauth2/v2/auth';
+
+// One window for both paths: an on-demand call inside it refreshes, and the keep-alive
+// timer fires at its leading edge so an idle tab never meets an expired token.
+const REFRESH_WINDOW_MS = 10 * 60 * 1000;
+// Transient refresh failure (5xx, network, cold start): retry cadence, not a logout.
+const REFRESH_RETRY_MS = 60 * 1000;
 
 export const auth = {
   _tokens: null,
   _user: null,
-
-  _applyTokenClaimsToUser(user = this._user) {
-    if (!user) return user;
-    if (this._tokens?.admin != null) user.admin = !!this._tokens.admin;
-    if (this._tokens?.role) user.role = this._tokens.role;
-    if (this._tokens?.tier) user.tier = this._tokens.tier;
-    return user;
-  },
+  _refreshing: null,   // single in-flight refresh promise
+  _refreshTimer: null,
+  _onVisible: null,
 
   /**
-   * Initialize auth state from storage or handle OAuth callback.
+   * Initialize auth state from storage or handle the OAuth callback.
    * Call this BEFORE router.init().
    */
   async init() {
-    // Check for OAuth callback
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
 
     if (code) {
-      await this._handleCallback(code);
+      await this._handleCallback(code, params.get('state'));
       // Clean URL
       window.history.replaceState({}, '', window.location.pathname);
       return;
@@ -40,34 +53,26 @@ export const auth = {
 
     // Hydrate from storage
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        const data = JSON.parse(stored);
-        this._tokens = data;
-
-        // Attempt silent refresh if needed
-        const isValid = await this.checkAndRefresh();
-
-        if (isValid) {
-          this._user = this._parseIdToken(this._tokens.idToken);
-          this._applyTokenClaimsToUser(this._user);
-          state.set('user', this._user);
-          this._cacheUserAvatar(this._user);
-          log.info('Auth restored from session (refreshed if needed)');
-        } else {
-          log.warn('Session expired and refresh failed');
-          this._clear();
-        }
-      } catch (e) {
-        log.error('Failed to parse stored auth', e);
+    if (!stored) return;
+    try {
+      this._tokens = JSON.parse(stored);
+      const refreshed = await this.checkAndRefresh();
+      // A TRANSIENT refresh failure on a still-valid token keeps the session — the
+      // old "refresh failed → clear" nuked live sessions on a worker cold start.
+      if (refreshed || this.isAuthenticated()) {
+        this._installUser();
+        log.info('Auth restored from session', { refreshed });
+      } else {
+        log.warn('Session expired and refresh failed');
         this._clear();
       }
+    } catch (e) {
+      log.error('Failed to parse stored auth', e);
+      this._clear();
     }
   },
 
-  /**
-   * Check if user is authenticated.
-   */
+  /** Check if user is authenticated (token present and not past expiry). */
   isAuthenticated() {
     return !!this._tokens && this._tokens.expiresAt > Date.now();
   },
@@ -77,104 +82,90 @@ export const auth = {
     return this.isAuthenticated();
   },
 
-  /**
-   * Check if user has admin role.
-   */
+  /** Check if user has admin role. */
   isAdmin() {
-    return !!(this._user?.admin || this._user?.is_admin || this._user?.teacher);
+    return !!(this._user?.admin || this._user?.is_admin);
   },
 
   /**
-   * Ensure token is valid, refreshing if necessary.
-   * Call this BEFORE any authenticated API requests.
+   * Ensure the token is valid, refreshing if inside the refresh window.
+   * Concurrent callers (every gateway request calls this) share ONE refresh.
+   * Resolves true when the token is usable, false when it is not.
    */
   async checkAndRefresh() {
     if (!this._tokens) return false;
-
-    // Buffer: If less than 10 mins remaining, refresh.
-    const threshold = 10 * 60 * 1000;
-    const isExpiring = Date.now() + threshold > this._tokens.expiresAt;
-
-    if (isExpiring) {
-      if (this._tokens.refreshToken) {
-        log.info('Token expiring soon, attempting silent refresh...');
-        return await this._refreshToken();
-      } else {
-        log.warn('Token expiring and no refresh token available');
-        return false;
-      }
+    const isExpiring = Date.now() + REFRESH_WINDOW_MS > this._tokens.expiresAt;
+    if (!isExpiring) return true;
+    if (!this._tokens.refreshToken) {
+      log.warn('Token expiring and no refresh token available');
+      return this.isAuthenticated();
     }
-
-    return true;
+    return this._refresh();
   },
 
-  /**
-   * Get the current Access Token, ensuring it is fresh.
-   */
+  /** Get the current Access Token, ensuring it is fresh. */
   async getAccessToken() {
-    const valid = await this.checkAndRefresh();
-    return valid ? this._tokens?.accessToken : null;
+    const ok = await this.checkAndRefresh();
+    return ok ? this._tokens?.accessToken ?? null : null;
   },
 
-  /**
-   * Get the current ID Token (JWT), ensuring it is fresh.
-   */
+  /** Get the current ID Token (JWT), ensuring it is fresh. */
   async getIdToken() {
-    const valid = await this.checkAndRefresh();
-    return valid ? this._tokens?.idToken : null;
+    const ok = await this.checkAndRefresh();
+    return ok ? this._tokens?.idToken ?? null : null;
   },
 
-  /**
-   * Get current user info.
-   */
+  /** Get current user info. */
   getUser() {
     return this._user;
   },
 
   /**
-   * Initiate OAuth login with specified provider.
-   * @param {string} provider - 'Google', 'Facebook', or 'DirectGoogle'
+   * Initiate OAuth login with the specified provider.
+   * @param {string} provider - 'Google', 'Facebook' (Cognito identity providers) or 'DirectGoogle'
    */
   async loginWith(provider = 'Google') {
     const { USER_POOL_DOMAIN, CLIENT_ID, GOOGLE_CLIENT_ID, REDIRECT_URI } = this._getConfig();
 
-    // Generate PKCE challenge
-    const verifier = this._generateCodeVerifier();
-    const challenge = await this._generateCodeChallenge(verifier);
+    // PKCE + CSRF state, both held across the redirect. localStorage on purpose:
+    // some in-app browsers complete the redirect in a fresh tab where
+    // sessionStorage is empty.
+    const verifier = generateCodeVerifier();
+    const challenge = await generateCodeChallenge(verifier);
+    const stateToken = generateCodeVerifier();
     localStorage.setItem(PKCE_VERIFIER_KEY, verifier);
+    localStorage.setItem(STATE_KEY, stateToken);
 
-    // Pivot: Direct Google Auth (Cloudflare Migration)
+    // Direct Google (worker-brokered exchange)
     if (provider === 'DirectGoogle' || (GOOGLE_CLIENT_ID && !USER_POOL_DOMAIN)) {
-      localStorage.setItem('axiom_auth_provider', 'google');
-      const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
-      authUrl.searchParams.set('client_id', GOOGLE_CLIENT_ID);
-      authUrl.searchParams.set('redirect_uri', REDIRECT_URI);
-      authUrl.searchParams.set('response_type', 'code');
-      authUrl.searchParams.set('scope', 'openid profile email');
-      authUrl.searchParams.set('code_challenge', challenge);
-      authUrl.searchParams.set('code_challenge_method', 'S256');
-      authUrl.searchParams.set('access_type', 'offline');  // Required for refresh_token
-      authUrl.searchParams.set('prompt', 'consent');        // Forces consent → guarantees refresh_token
-      window.location.href = authUrl.toString();
+      localStorage.setItem(PROVIDER_KEY, 'google');
+      window.location.href = buildAuthorizeUrl({
+        authorizationEndpoint: GOOGLE_AUTHORIZE,
+        clientId: GOOGLE_CLIENT_ID,
+        redirectUri: REDIRECT_URI,
+        challenge,
+        state: stateToken,
+        extra: {
+          access_type: 'offline', // required for a refresh_token
+          prompt: 'consent'       // forces consent → guarantees a refresh_token
+        }
+      });
       return;
     }
 
-    // Legacy: Cognito Auth
-    const authUrl = new URL(`https://${USER_POOL_DOMAIN}/oauth2/authorize`);
-    authUrl.searchParams.set('response_type', 'code');
-    authUrl.searchParams.set('client_id', CLIENT_ID);
-    authUrl.searchParams.set('redirect_uri', REDIRECT_URI);
-    authUrl.searchParams.set('identity_provider', provider);
-    authUrl.searchParams.set('scope', 'openid profile email');
-    authUrl.searchParams.set('code_challenge', challenge);
-    authUrl.searchParams.set('code_challenge_method', 'S256');
-
-    window.location.href = authUrl.toString();
+    // Legacy: Cognito hosted UI
+    localStorage.setItem(PROVIDER_KEY, 'cognito');
+    window.location.href = buildAuthorizeUrl({
+      authorizationEndpoint: `https://${USER_POOL_DOMAIN}/oauth2/authorize`,
+      clientId: CLIENT_ID,
+      redirectUri: REDIRECT_URI,
+      challenge,
+      state: stateToken,
+      extra: { identity_provider: provider }
+    });
   },
 
-  /**
-   * Log out and clear session.
-   */
+  /** Log out and clear session. */
   async logout() {
     const { USER_POOL_DOMAIN, CLIENT_ID, REDIRECT_URI } = this._getConfig();
 
@@ -185,83 +176,59 @@ export const auth = {
     localStorage.removeItem('axiom-sessionId');
     state.set('sessionId', null);
 
-    // Only use Cognito logout if Cognito is configured
     if (USER_POOL_DOMAIN) {
       const logoutUrl = new URL(`https://${USER_POOL_DOMAIN}/logout`);
       logoutUrl.searchParams.set('client_id', CLIENT_ID);
       logoutUrl.searchParams.set('logout_uri', REDIRECT_URI);
       window.location.href = logoutUrl.toString();
     } else {
-      // Direct Google / Cloudflare path — navigate to root; router guard redirects to /login
+      // Direct Google path — navigate to root; router guard redirects to /login
       window.location.href = '/';
     }
   },
 
   // --- Private Methods ---
 
-  async _handleCallback(code) {
+  async _handleCallback(code, returnedState) {
     const verifier = localStorage.getItem(PKCE_VERIFIER_KEY);
-    const provider = localStorage.getItem('axiom_auth_provider');
+    const expectedState = localStorage.getItem(STATE_KEY);
+    const provider = localStorage.getItem(PROVIDER_KEY);
     const turnstileToken = sessionStorage.getItem('turnstile_auth_token');
+    localStorage.removeItem(STATE_KEY); // one-shot, whatever happens next
 
     if (!verifier) {
       log.error('No PKCE verifier found — session may have opened in a different browser context');
       state.notify('Login session expired. Please try again.', 'error');
       return;
     }
+    if (!expectedState || returnedState !== expectedState) {
+      // The callback did not originate from a login this browser started.
+      log.error('OAuth state mismatch — callback rejected');
+      state.notify('Login could not be verified. Please try again.', 'error');
+      localStorage.removeItem(PKCE_VERIFIER_KEY);
+      sessionStorage.removeItem('turnstile_auth_token');
+      return;
+    }
 
     try {
+      let tokens;
       if (provider === 'google') {
         const { NEXUS_URL, AUTH } = config;
-        const nexusUrl = NEXUS_URL || 'https://api.daystra.com';
         const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
         const redirectUri = isLocal
           ? (AUTH.LOCAL_REDIRECT_URI || 'https://localhost:3000')
           : AUTH.REDIRECT_URI;
-        const endpoint = `${nexusUrl}/tool/exchange_google_code`;
-
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 15000);
-        let response;
-        try {
-          response = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              code,
-              code_verifier: verifier,
-              redirect_uri: redirectUri,
-              turnstile_token: turnstileToken
-            }),
-            signal: controller.signal
-          });
-        } finally {
-          clearTimeout(timeout);
-        }
-
-        if (!response.ok) {
-          const result = await response.json().catch(() => ({}));
-          throw new Error(result.error || `Token exchange failed: ${response.status}`);
-        }
-
+        const response = await this._fetchWithTimeout(`${NEXUS_URL}/tool/exchange_google_code`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, code_verifier: verifier, redirect_uri: redirectUri, turnstile_token: turnstileToken })
+        }, 15000);
+        if (!response.ok) throw await this._httpError(response, 'Token exchange failed');
         const result = await response.json();
-        if (!result.ok) throw new Error(result.error);
-
-        const tokens = result.data;
-        localStorage.removeItem(PKCE_VERIFIER_KEY);
-        // Keep axiom_auth_provider — _refreshToken() needs it to route to Google vs Cognito
-
-        this._tokens = {
-          accessToken: tokens.access_token,
-          idToken: tokens.id_token,
-          refreshToken: tokens.refresh_token,
-          expiresAt: Date.now() + (tokens.expires_in * 1000)
-        };
-        if (tokens.admin != null) this._tokens.admin = !!tokens.admin;
-        if (tokens.role) this._tokens.role = tokens.role;
-        if (tokens.tier) this._tokens.tier = tokens.tier;
+        if (!result.ok) throw this._apiError(result, 'Token exchange failed');
+        tokens = result.data;
       } else {
-        // Legacy Cognito Flow
+        // Legacy Cognito flow — the token endpoint accepts PKCE directly
         const { USER_POOL_DOMAIN, CLIENT_ID, REDIRECT_URI } = this._getConfig();
         const response = await fetch(`https://${USER_POOL_DOMAIN}/oauth2/token`, {
           method: 'POST',
@@ -274,32 +241,17 @@ export const auth = {
             code_verifier: verifier
           })
         });
-
-        if (!response.ok) throw new Error(`Cognito exchange failed: ${response.status}`);
-
-        const tokens = await response.json();
-        localStorage.removeItem(PKCE_VERIFIER_KEY);
-
-        this._tokens = {
-          accessToken: tokens.access_token,
-          idToken: tokens.id_token,
-          refreshToken: tokens.refresh_token,
-          expiresAt: Date.now() + (tokens.expires_in * 1000)
-        };
-        if (tokens.admin) this._tokens.admin = true;
-        if (tokens.role) this._tokens.role = tokens.role;
+        if (!response.ok) throw await this._httpError(response, 'Cognito exchange failed');
+        tokens = await response.json();
       }
 
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this._tokens));
-      this._user = this._parseIdToken(this._tokens.idToken);
-      this._applyTokenClaimsToUser(this._user);
-      state.set('user', this._user);
-      this._cacheUserAvatar(this._user);
-
+      localStorage.removeItem(PKCE_VERIFIER_KEY);
+      // PROVIDER_KEY stays — _refreshToken() needs it to route the refresh.
+      this._tokens = this._bundle(tokens, null);
+      this._persistTokens();
+      this._installUser();
       log.info('Auth successful', { email: this._user?.email, provider: provider || 'cognito' });
-
-      // Router will handle redirect via localStorage lookup in init()
-
+      // Router resumes any pending destination via localStorage in init()
     } catch (err) {
       log.error('OAuth callback failed', err);
       state.notify('Login failed. Please try again.', 'error');
@@ -308,47 +260,33 @@ export const auth = {
     }
   },
 
+  /** Single-flight wrapper: concurrent callers await the same refresh. */
+  _refresh() {
+    this._refreshing ??= this._refreshToken().finally(() => { this._refreshing = null; });
+    return this._refreshing;
+  },
+
   async _refreshToken() {
     if (!this._tokens?.refreshToken) return false;
 
-    const provider = localStorage.getItem('axiom_auth_provider');
+    const provider = localStorage.getItem(PROVIDER_KEY);
     const isGoogle = provider === 'google' || !this._getConfig().USER_POOL_DOMAIN;
 
     try {
+      let tokens;
       if (isGoogle) {
-        // Route through Nexus — it has GOOGLE_CLIENT_SECRET
+        // Routed through the worker — it holds GOOGLE_CLIENT_SECRET
         const { NEXUS_URL } = config;
-        const endpoint = `${NEXUS_URL}/tool/refresh_google_token`;
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 12000);
-        let response;
-        try {
-          response = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refresh_token: this._tokens.refreshToken }),
-            signal: controller.signal
-          });
-        } finally {
-          clearTimeout(timeout);
-        }
-
-        if (!response.ok) throw new Error(`Refresh request failed: ${response.status}`);
+        const response = await this._fetchWithTimeout(`${NEXUS_URL}/tool/refresh_google_token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh_token: this._tokens.refreshToken })
+        }, 12000);
+        if (!response.ok) throw await this._httpError(response, 'Refresh request failed');
         const result = await response.json();
-        if (!result.ok) throw new Error(result.error || 'Refresh failed');
-
-        const tokens = result.data;
-        this._tokens = {
-          ...this._tokens,
-          accessToken: tokens.access_token,
-          idToken: tokens.id_token,
-          expiresAt: Date.now() + (tokens.expires_in * 1000)
-        };
-        if (tokens.admin != null) this._tokens.admin = !!tokens.admin;
-        if (tokens.role) this._tokens.role = tokens.role;
-        if (tokens.tier) this._tokens.tier = tokens.tier;
+        if (!result.ok) throw this._apiError(result, 'Refresh failed');
+        tokens = result.data;
       } else {
-        // Legacy Cognito flow
         const { USER_POOL_DOMAIN, CLIENT_ID } = this._getConfig();
         const response = await fetch(`https://${USER_POOL_DOMAIN}/oauth2/token`, {
           method: 'POST',
@@ -359,61 +297,136 @@ export const auth = {
             refresh_token: this._tokens.refreshToken
           })
         });
-
-        if (!response.ok) throw new Error(`Cognito refresh failed: ${response.status}`);
-        const tokens = await response.json();
-        this._tokens = {
-          ...this._tokens,
-          accessToken: tokens.access_token,
-          idToken: tokens.id_token,
-          expiresAt: Date.now() + (tokens.expires_in * 1000)
-        };
+        if (!response.ok) throw await this._httpError(response, 'Cognito refresh failed');
+        tokens = await response.json();
       }
 
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this._tokens));
-      this._user = this._parseIdToken(this._tokens.idToken);
-      this._applyTokenClaimsToUser(this._user);
-      state.set('user', this._user);
-      this._cacheUserAvatar(this._user);
+      this._tokens = this._bundle(tokens, this._tokens);
+      this._persistTokens();
+      this._installUser();
       log.info('Silent refresh successful');
       return true;
     } catch (err) {
-      log.error('Silent refresh failed', err);
-      // Only force logout if the refresh token itself is explicitly rejected.
-      // Transient errors (network, Worker cold start, 5xx) should not nuke the session.
-      const msg = err.message || '';
-      const isTokenInvalid = msg.includes('invalid_grant') || msg.includes('400') || msg.includes('401');
-      if (isTokenInvalid) {
-        log.warn('Refresh token rejected — clearing session');
+      if (isRefreshRejected(err)) {
+        // Explicit rejection (401 / invalid_grant) — the refresh token is dead.
+        log.warn('Refresh token rejected — clearing session', err);
         this._clear();
         state.set('user', null);
+      } else {
+        // Transient (5xx, network, timeout): keep the session, try again shortly.
+        log.warn('Silent refresh failed — keeping session, will retry', err);
+        this._scheduleRefresh(REFRESH_RETRY_MS);
       }
       return false;
     }
   },
 
+  /**
+   * Normalize a provider token response into the stored bundle. A refresh response
+   * usually OMITS refresh_token — carry the previous one forward; a rotated one wins.
+   */
+  _bundle(tokens, prev) {
+    const bundle = {
+      accessToken: tokens.access_token,
+      idToken: tokens.id_token,
+      refreshToken: tokens.refresh_token || prev?.refreshToken || null,
+      expiresAt: Date.now() + ((Number(tokens.expires_in) || 3600) * 1000)
+    };
+    // Optional claims the worker may attach alongside the tokens
+    if (tokens.admin != null) bundle.admin = !!tokens.admin;
+    else if (prev?.admin != null) bundle.admin = prev.admin;
+    if (tokens.role) bundle.role = tokens.role; else if (prev?.role) bundle.role = prev.role;
+    if (tokens.tier) bundle.tier = tokens.tier; else if (prev?.tier) bundle.tier = prev.tier;
+    return bundle;
+  },
+
+  _persistTokens() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(this._tokens));
+  },
+
+  /**
+   * Parse the id_token into the user, backfill lean-token gaps from the in-memory
+   * user and the persisted profile, publish to state, warm the avatar, and arm the
+   * keep-alive. The ONE place a user is installed — callback, restore and refresh.
+   */
+  _installUser() {
+    const parsed = this._parseIdToken(this._tokens?.idToken);
+    const user = hydrateProfile(parsed, this._user, this._readProfile());
+    this._applyTokenClaimsToUser(user);
+    this._user = user;
+    if (user?.sub) this._writeProfile(user);
+    state.set('user', user);
+    this._cacheUserAvatar(user);
+    this._scheduleRefresh();
+    return user;
+  },
+
+  _applyTokenClaimsToUser(user) {
+    if (!user) return user;
+    if (this._tokens?.admin != null) user.admin = !!this._tokens.admin;
+    if (this._tokens?.role) user.role = this._tokens.role;
+    if (this._tokens?.tier) user.tier = this._tokens.tier;
+    return user;
+  },
+
+  _readProfile() {
+    try { return JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null'); } catch { return null; }
+  },
+
+  _writeProfile({ sub, email, name, picture }) {
+    try { localStorage.setItem(PROFILE_KEY, JSON.stringify({ sub, email, name, picture })); } catch { /* quota */ }
+  },
+
   _parseIdToken(idToken) {
     try {
       const payload = idToken.split('.')[1];
-      // JWT uses base64url encoding (- and _ instead of + and /); atob requires standard base64
+      // JWT uses base64url (- and _); atob requires standard base64
       return JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
     } catch {
       return null;
     }
   },
 
+  // Proactive refresh: ONE timer at the leading edge of the refresh window (never a
+  // polling interval), plus a visibilitychange hook for laptop sleep / long idle
+  // where timers were throttled. Re-armed on every token install.
+  _scheduleRefresh(delayMs) {
+    clearTimeout(this._refreshTimer);
+    this._refreshTimer = null;
+    if (!this._tokens?.refreshToken) return;
+    const ms = delayMs ?? refreshDelayMs(this._tokens.expiresAt, Date.now(), REFRESH_WINDOW_MS);
+    if (ms == null) return;
+    this._refreshTimer = setTimeout(() => { this._refresh().catch(() => {}); }, ms);
+    if (!this._onVisible) {
+      this._onVisible = () => {
+        if (document.visibilityState === 'visible') this.checkAndRefresh().catch(() => {});
+      };
+      document.addEventListener('visibilitychange', this._onVisible);
+    }
+  },
+
+  _stopKeepAlive() {
+    clearTimeout(this._refreshTimer);
+    this._refreshTimer = null;
+    if (this._onVisible) {
+      document.removeEventListener('visibilitychange', this._onVisible);
+      this._onVisible = null;
+    }
+  },
+
   async _cacheUserAvatar(user) {
     if (!user?.picture) return;
-    const url = user.picture;
+    // Stable URL (size pinned) + identity key: Google rotates the picture URL on its
+    // own schedule, and a URL-keyed cache re-fetched (and 429'd) on every rotation.
+    const url = normalizeAvatarUrl(user.picture);
+    const key = user.sub || url;
     try {
-      const stored = localStorage.getItem('axiom-avatar');
-      if (stored) {
-        const cached = JSON.parse(stored);
-        if (cached.url === url && cached.data) return; // Already cached
-      }
+      const cached = JSON.parse(localStorage.getItem(AVATAR_KEY) || 'null');
+      if (cached?.key === key && cached.data) return; // Already cached
     } catch { /* corrupt, re-fetch */ }
     try {
-      const res = await fetch(url);
+      // lh3.googleusercontent.com rate-limits by Referer — send none.
+      const res = await fetch(url, { referrerPolicy: 'no-referrer' });
       if (!res.ok) { log.warn('Avatar fetch failed:', res.status); return; }
       const blob = await res.blob();
       const dataUrl = await new Promise((resolve, reject) => {
@@ -422,9 +435,9 @@ export const auth = {
         reader.onerror = reject;
         reader.readAsDataURL(blob);
       });
-      localStorage.setItem('axiom-avatar', JSON.stringify({ url, data: dataUrl }));
+      localStorage.setItem(AVATAR_KEY, JSON.stringify({ key, url, data: dataUrl }));
       log.debug('Avatar cached to localStorage');
-      // Trigger re-render of nav so avatar appears
+      // Trigger re-render of nav so the avatar appears
       state.set('user', { ...this._user });
     } catch (e) {
       log.warn('Avatar cache failed:', e);
@@ -432,11 +445,10 @@ export const auth = {
   },
 
   _clear() {
+    this._stopKeepAlive();
     this._tokens = null;
     this._user = null;
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(PKCE_VERIFIER_KEY);
-    localStorage.removeItem('axiom-avatar');
+    for (const k of [STORAGE_KEY, PKCE_VERIFIER_KEY, STATE_KEY, AVATAR_KEY, PROFILE_KEY]) localStorage.removeItem(k);
   },
 
   _getConfig() {
@@ -446,30 +458,35 @@ export const auth = {
       USER_POOL_DOMAIN: authConfig.USER_POOL_DOMAIN || '',
       CLIENT_ID: authConfig.CLIENT_ID || '',
       GOOGLE_CLIENT_ID: authConfig.GOOGLE_CLIENT_ID || '',
-      GOOGLE_CLIENT_SECRET: authConfig.GOOGLE_CLIENT_SECRET || '',
       REDIRECT_URI: isLocalHost
         ? (authConfig.LOCAL_REDIRECT_URI || 'https://localhost:3000')
         : (authConfig.REDIRECT_URI || window.location.origin)
     };
   },
 
-  _generateCodeVerifier() {
-    const array = new Uint8Array(32);
-    crypto.getRandomValues(array);
-    return this._base64UrlEncode(array);
+  async _fetchWithTimeout(url, options, ms) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), ms);
+    try {
+      return await fetch(url, { ...options, signal: controller.signal });
+    } finally {
+      clearTimeout(timeout);
+    }
   },
 
-  async _generateCodeChallenge(verifier) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(verifier);
-    const digest = await crypto.subtle.digest('SHA-256', data);
-    return this._base64UrlEncode(new Uint8Array(digest));
+  /** HTTP failure → Error carrying `.status` and the OAuth `.code` (body.error) for isRefreshRejected(). */
+  async _httpError(response, fallback) {
+    const body = await response.json().catch(() => ({}));
+    const err = new Error(body.error_description || body.error || `${fallback}: ${response.status}`);
+    err.status = response.status;
+    err.code = typeof body.error === 'string' ? body.error : undefined;
+    return err;
   },
 
-  _base64UrlEncode(buffer) {
-    return btoa(String.fromCharCode(...buffer))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
+  /** Worker envelope `{ ok:false, error }` → Error carrying `.code` (the worker maps a dead refresh token to 'invalid_grant'). */
+  _apiError(result, fallback) {
+    const err = new Error(result.error || fallback);
+    err.code = typeof result.error === 'string' ? result.error : undefined;
+    return err;
   }
 };

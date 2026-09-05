@@ -3,7 +3,7 @@ name = "axiom"
 vcs = "git"
 toolchain = ["es6"]
 description = "High-performance, zero-build, vanilla Web Standards frontend architecture with Proxy-based state management and native Web Components."
-updated = "2026-07-20"
+updated = "2026-09-05"
 
 [[capabilities]]
 id = "zero-build-architecture"
@@ -24,10 +24,10 @@ pattern_doc = ""
 [[capabilities]]
 id = "oauth-auth-gateway"
 tags = ["auth", "aws"]
-claim = "Dual OAuth2 + PKCE support (Google direct + legacy AWS Cognito), token refresh, JWT parsing, admin role detection, Turnstile CAPTCHA integration"
+claim = "Dual OAuth2 code-flow + PKCE + state (Google direct via worker, legacy AWS Cognito). RECONCILED 2026-09-05 from tender/ev/scobot: persisted last-known-good profile (lean refreshed id_tokens), scheduled keep-alive + visibilitychange, single-flight refresh, session cleared ONLY on HTTP 401 / invalid_grant (worker contract in docs/auth-readme.md), no-referrer + sub-keyed avatar cache. Pure helpers node-tested. Turnstile CAPTCHA integration. Borrow from HERE; downstream pull notes in the readme."
 maturity = "shipped"
-entry_points = ["src/core/auth.js", "src/core/gateway.js"]
-pattern_doc = ""
+entry_points = ["src/core/auth.js", "src/core/auth-helpers.js", "src/core/gateway.js", "docs/auth-readme.md", "tools/auth-helpers.test.js"]
+pattern_doc = "docs/auth-readme.md"
 
 [[capabilities]]
 id = "content-agnostic-api-gateway"
@@ -58,7 +58,7 @@ id = "production-minification-pipeline"
 tags = ["release", "testing"]
 claim = "CANONICAL fleet copy (2026-07-10, consolidated from tender/daystrom/new.cybercussion/STNG). Non-destructive build (src → dist): Terser + CSSO, ?v=BUILD_ID stamping of ALL six module surfaces (static/side-effect/dynamic imports, exact aliases like @state resolved to absolute paths, lazy-route path: values, index.html entry scripts + stylesheets + import-map values), two hard-fail guards (no-/src/-in-dist, alias-conflict/split-singleton), 13 unit tests (npm run test:tools). Borrow from HERE; do not fork-and-drift."
 maturity = "shipped"
-entry_points = ["tools/minify.js", "tools/minify.test.js", "_headers", ".github/workflows/deploy.yml"]
+entry_points = ["tools/minify.js", "tools/minify.test.js", "_headers", ".github/workflows/deploy.yml", "tools/templates/sw.js", "tools/check-pwa.js"]
 pattern_doc = "docs/patterns/stale-deploy-prevention.md"
 
 [[capabilities]]
