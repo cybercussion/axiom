@@ -33,7 +33,7 @@ existing `npm run test:tools` gate covers them without touching the build.
 
 ### `src/core/auth.js`
 - **Profile persistence**: `axiom_profile` (last-known-good `sub/email/name/picture`); every user install runs `hydrateProfile(parsed, previousInMemory, stored)` and re-persists.
-- **Keep-alive**: after any token install, schedule ONE refresh at `expiresAt − 5 min` (clamped) and refresh on `visibilitychange → visible`. No polling. Stopped by `_clear()`.
+- **Keep-alive**: after any token install, schedule ONE refresh at the leading edge of the 10-minute refresh window (clamped) and refresh on `visibilitychange → visible`. No polling. Stopped by `_clear()`.
 - **Single-flight**: `checkAndRefresh()` shares one in-flight promise across concurrent callers.
 - **Rejection contract**: the session is cleared only when the refresh response is HTTP `401` or carries `error: "invalid_grant"` (status/field, not message substrings). Anything else keeps the session and retries at the next tick. Worker contract documented in `docs/auth-readme.md`.
 - **OAuth `state`**: generated per login, stored in `axiom_oauth_state`, sent on Google and Cognito, validated (and cleared) before exchange.
