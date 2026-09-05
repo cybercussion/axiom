@@ -205,7 +205,7 @@ async function main() {
   // 2. Copy Index & Manifest
   copyFile('index.html');
   copyFile('manifest.json');
-  copyFile('sw.js');
+  copySw(); // stamps __BUILD_ID__ into the cache name (see tools/templates/sw.js)
   copyFile('_headers'); // Cloudflare Pages/Workers Assets cache policy (no-op on GitHub Pages)
   copyDir('assets');
   copyDir('public');
@@ -429,6 +429,17 @@ function copyFile(name) {
     fs.copyFileSync(srcPath, path.join(DIST_DIR, name));
     console.log(`Copied ${name}`);
   }
+}
+
+// Service worker: the cache name carries the build id so every deploy gets an isolated,
+// internally consistent cache and activate() can purge the previous build's. Verbatim
+// copy when the file has no placeholder (hand-versioned workers keep working).
+function copySw() {
+  const srcPath = path.join(ROOT_DIR, 'sw.js');
+  if (!fs.existsSync(srcPath)) return;
+  const stamped = fs.readFileSync(srcPath, 'utf8').replace(/__BUILD_ID__/g, BUILD_ID);
+  fs.writeFileSync(path.join(DIST_DIR, 'sw.js'), stamped);
+  console.log(`Copied sw.js (cache: axiom-${BUILD_ID})`);
 }
 
 function copyDir(name) {

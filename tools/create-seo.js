@@ -191,6 +191,26 @@ function generateManifestFile(c) {
   const manifestPath = path.join(ROOT_DIR, 'manifest.json');
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
   console.log('\x1b[32m✅ Generated manifest.json\x1b[0m');
+
+  // Service worker: seeded from tools/templates/sw.js once; never overwritten (it is
+  // yours after that). tools/minify.js stamps __BUILD_ID__ into its cache name.
+  const swPath = path.join(ROOT_DIR, 'sw.js');
+  if (fs.existsSync(swPath)) {
+    console.log('ℹ️  sw.js already exists — left untouched.');
+  } else {
+    fs.copyFileSync(path.join(__dirname, 'templates', 'sw.js'), swPath);
+    console.log('\x1b[32m✅ Generated sw.js\x1b[0m (edit API_PREFIXES if your API is same-origin under another path)');
+  }
+  console.log(`
+Register it once in src/app.js (skipped on localhost so dev never serves stale modules):
+
+  if ('serviceWorker' in navigator && !/^(localhost|127\\.0\\.0\\.1)$/.test(location.hostname)) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch((err) => log.error('SW registration failed', err));
+    });
+  }
+
+Then \`npm run check-pwa\`.`);
 }
 
 function normalizeTwitterHandle(input) {

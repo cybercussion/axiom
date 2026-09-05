@@ -76,6 +76,14 @@ function checkServiceWorker(swCode, appCode) {
 function main() {
   console.log('🔎 Axiom PWA Check\n');
 
+  // PWA is OPT-IN (node tools/create-seo.js --pwa). No manifest AND no service worker
+  // means this project never opted in — that is not a failure. Exactly one of the two
+  // is a broken contract and fails below.
+  if (!fs.existsSync(MANIFEST_PATH) && !fs.existsSync(SW_PATH)) {
+    console.log('ℹ️  Not a PWA: no manifest.json and no sw.js. Opt in with `node tools/create-seo.js --pwa`.');
+    return;
+  }
+
   const hasIndex = ensureFileExists(INDEX_PATH, 'index.html');
   const hasManifest = ensureFileExists(MANIFEST_PATH, 'manifest.json');
   const hasSw = ensureFileExists(SW_PATH, 'sw.js');

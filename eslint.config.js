@@ -32,6 +32,15 @@ export default [
     },
   },
   {
+    // Service worker: the seeded template and a project's opted-in root sw.js
+    files: ['tools/templates/sw.js', 'sw.js'],
+    languageOptions: {
+      ecmaVersion: 2025,
+      sourceType: 'script',
+      globals: { ...globals.serviceworker },
+    },
+  },
+  {
     ignores: ['dist/**', 'node_modules/**', '.rift/**'],
   },
 ];
