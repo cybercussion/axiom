@@ -24,20 +24,46 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Gates. Axiom is zero-build and the showcase deploys SOURCE, but a broken edit
+      # must not reach the page: lint, the tool tests, and a throwaway build + dist
+      # verification (the canonical fleet pipeline dogfoods itself here).
+      - name: Install
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Tool tests
+        run: npm run test:tools
+      - name: Build + verify dist
+        run: npm run build && npm run verify-dist
+      - name: PWA contract
+        run: npm run check-pwa
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
       - name: Inject Production Base Path
-        # Swaps the local development base tag for the production subdirectory
+        # The showcase lives under /axiom/. Relative URLs follow the <base> tag, but
+        # ABSOLUTE import-map addresses ("/src/...") resolve against the DOMAIN root and
+        # 404 — every core module was failing to load from 2026-07-10 until this rewrite.
+        # dist/ is not what deploys (zero-build thesis), so it is removed from the artifact.
         run: |
           sed -i 's|<base.*>|<base href="/axiom/">|g' index.html
+          sed -i 's|"/src/|"/axiom/src/|g' index.html
+          grep -q '"@state": "/axiom/src/core/state.js"' index.html
+          rm -rf dist node_modules
           touch .nojekyll
           cp index.html 404.html
-      
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Zero-build project: The root directory IS the artifact
+          # Zero-build project: the root directory IS the artifact
           path: '.'
 
       - name: Deploy to GitHub Pages
