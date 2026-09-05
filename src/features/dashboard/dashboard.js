@@ -1,5 +1,6 @@
 import { BaseComponent } from '@shared/base-component.js';
 import { state } from '@state';
+import { fetchDashboardData } from './dashboard-api.js';
 import '@shared/controls/ax-barchart.js';
 import '@shared/controls/ax-ring.js';
 import '@shared/controls/ax-progress-ring.js';
@@ -57,10 +58,16 @@ class DashboardUI extends BaseComponent {
             <h2 class="text-danger">Signal Lost</h2>
             <p>Unable to fetch dashboard telemetry.</p>
             <code class="error-code">${errorMsg}</code>
-            <button class="btn btn-secondary" onclick="state.notify('Retrying Uplink...', 'warning', 2000); state.query('dashboardData', () => import('src/features/dashboard/dashboard-api.js').then(m => m.fetchDashboardData()))">Retry Uplink</button>
+            <button class="btn btn-secondary" id="retry-uplink">Retry Uplink</button>
           </div>
         </div>
       `;
+      // Bound here, not inline: `state` is a module binding (not a global), and an
+      // inline import() path would be a source path that breaks in dist/.
+      this.shadowRoot.getElementById('retry-uplink')?.addEventListener('click', () => {
+        state.notify('Retrying Uplink...', 'warning', 2000);
+        state.query('dashboardData', fetchDashboardData);
+      });
       return;
     }
 
