@@ -39,7 +39,8 @@ old "message contains 400/401" heuristic logged users out on worker cold starts.
 - `checkAndRefresh()` / `getAccessToken()` / `getIdToken()`: called by the gateway on every
   request; concurrent callers share one in-flight refresh.
 - Keep-alive: one timer at the leading edge of the refresh window (re-armed on every token
-  install) plus `visibilitychange`. No polling.
+  install) plus `visibilitychange`. No polling. On by default; an app that wants refresh
+  only on demand (guards / gateway calls) passes `auth.init({ keepAlive: false })`.
 - Route guards are the app's call. The router runs `guard()` async, so a guard that refreshes
   is one line:
 

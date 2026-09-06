@@ -33,14 +33,19 @@ export const auth = {
   _tokens: null,
   _user: null,
   _refreshing: null,   // single in-flight refresh promise
+  _keepAlive: true,    // init({ keepAlive }) — proactive refresh timer + visibility hook
   _refreshTimer: null,
   _onVisible: null,
 
   /**
    * Initialize auth state from storage or handle the OAuth callback.
    * Call this BEFORE router.init().
+   * @param {{ keepAlive?: boolean }} [options] — keepAlive (default true) arms the
+   *   proactive refresh timer + visibility hook. An app that prefers to refresh only
+   *   on demand (route guards / gateway calls) passes { keepAlive: false }.
    */
-  async init() {
+  async init({ keepAlive = true } = {}) {
+    this._keepAlive = keepAlive;
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
 
@@ -393,7 +398,7 @@ export const auth = {
   _scheduleRefresh(delayMs) {
     clearTimeout(this._refreshTimer);
     this._refreshTimer = null;
-    if (!this._tokens?.refreshToken) return;
+    if (!this._keepAlive || !this._tokens?.refreshToken) return;
     const ms = delayMs ?? refreshDelayMs(this._tokens.expiresAt, Date.now(), REFRESH_WINDOW_MS);
     if (ms == null) return;
     this._refreshTimer = setTimeout(() => { this._refresh().catch(() => {}); }, ms);
