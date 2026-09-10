@@ -6,7 +6,7 @@ Welcome to **Axiom**. We mistakenly decided that 500MB `node_modules` folders, 3
 
 We were wrong.
 
-Axiom is a **zero-build**, **zero-dependency**, **vanilla Web Standards** architecture. It runs directly in the browser. It respects your RAM. It respects your time.
+Axiom is a **vanilla Web Standards** architecture with **zero runtime dependencies**: the source you write is the source the browser executes, unbuilt. Release tooling (lint, minify, verify) exists, is optional, and is dev-only — nothing in `devDependencies` ever reaches a user. It respects your RAM. It respects your time.
 
 ---
 
@@ -21,7 +21,7 @@ It's not a global store library. It's a `Proxy`.
 
 ### 2. The "Router" (Navigation)
 **File:** `src/core/router.js`
-It's roughly 200 lines of code. Popular alternatives are 30,000. existentially weigh those options.
+It's about 500 lines of code. Popular alternatives are 30,000. Existentially weigh those options.
 - **Parallel Loading:** It fetches your JS module AND your data simultaneously. No waterfalls here.
 - **Panic Mode:** If the route fails, we show a 404. If the 404 fails, we panic gracefully to avoid the White Screen of Death.
 - **View Transitions:** Native browser animations on navigation. Smoother than butter.
