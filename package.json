@@ -11,7 +11,9 @@
     "check-pwa": "node tools/check-pwa.js",
     "verify-dist": "node tools/verify-dist.js",
     "test:tools": "node --test 'tools/**/*.test.js'",
-    "lint": "eslint src tools",
+    "test:core": "node --import ./tests/helpers/setup.js --test 'tests/**/*.test.js'",
+    "test": "npm run test:tools && npm run test:core",
+    "lint": "eslint src tools tests",
     "lint:motion": "node tools/motion-gate.js"
   },
   "devDependencies": {

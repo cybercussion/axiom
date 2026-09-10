@@ -37,8 +37,8 @@ jobs:
         run: npm ci
       - name: Lint
         run: npm run lint
-      - name: Tool tests
-        run: npm run test:tools
+      - name: Tests (tools + core)
+        run: npm test
       - name: Build + verify dist
         run: npm run build && npm run verify-dist
       - name: PWA contract

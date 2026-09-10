@@ -32,6 +32,20 @@ export default [
     },
   },
   {
+    // Core tests: Node test runner driving BROWSER modules. The setup harness
+    // installs the browser globals, so both sets are in scope here.
+    files: ['tests/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2025,
+      sourceType: 'module',
+      globals: { ...globals.node, ...globals.browser },
+    },
+    rules: {
+      'no-empty': ['error', { allowEmptyCatch: true }],
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+    },
+  },
+  {
     // Service worker: the seeded template and a project's opted-in root sw.js
     files: ['tools/templates/sw.js', 'sw.js'],
     languageOptions: {
