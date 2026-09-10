@@ -23,7 +23,7 @@ It's not a global store library. It's a `Proxy`.
 **File:** `src/core/router.js`
 It's about 500 lines of code. Popular alternatives are 30,000. Existentially weigh those options.
 - **Parallel Loading:** It fetches your JS module AND your data simultaneously. No waterfalls here.
-- **Panic Mode:** If the route fails, we show a 404. If the 404 fails, we panic gracefully to avoid the White Screen of Death.
+- **Error Contract:** If the route fails, we show a 404. If the 404 fails, the router emits a cancelable `axiom:router-error` and *your app* decides what that looks like — call `preventDefault()` and you own it. Only if nobody handles it does the router draw a minimal fallback, into the app container, never over `document.body`.
 - **View Transitions:** Native browser animations on navigation. Smoother than butter.
 
 ### 3. The "Gateway" (API)

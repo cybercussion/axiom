@@ -415,16 +415,17 @@ export const router = {
             await import('@features/not-found/not-found.js');
             state.set('route', 'not-found');
 
-            // Update URL to /not-found so user knows they are lost
-            history.replaceState({ index: this._lastIndex }, '', '/not-found');
+            // Update the URL so the user knows they are lost. BASE-AWARE: a
+            // bare '/not-found' resolves against the DOMAIN root, so on the
+            // /axiom/ Pages subpath a failed route rewrote the address out of
+            // the deployment entirely and 404'd at the host.
+            history.replaceState({ index: this._lastIndex }, '', this.base + 'not-found');
           } catch (panicErr) {
-            // If 404 fails, we panic.
-            document.body.innerHTML = '<h1>System Panic: 404 Component Failed</h1>';
-            log.error(panicErr);
+            this._panic('not-found-component-failed', panicErr, slug);
           }
         } else {
-          // If we were TRYING to load 404 and it failed...
-          document.body.innerHTML = '<h1>System Panic: 404 Logic Broken</h1>';
+          // We were TRYING to load 404 and that failed too.
+          this._panic('not-found-route-broken', err, slug);
         }
       }
     };
@@ -491,6 +492,46 @@ export const router = {
     });
 
     return isMatch ? params : null;
+  },
+
+  /**
+   * Terminal navigation failure.
+   *
+   * The router does NOT decide what a fatal error looks like — that is the
+   * application's call. It emits a cancelable `axiom:router-error` on window;
+   * an app that calls preventDefault() owns the outcome from there (error
+   * boundary, toast, telemetry, full-screen panic — its choice).
+   *
+   * Only when nobody handles it does the router draw a last-resort message, and
+   * it draws into the APP CONTAINER, not document.body. Overwriting
+   * body.innerHTML tore out the shell and every live component instance with
+   * it — a white screen with extra steps, not a graceful panic. Built with
+   * textContent rather than markup so a route slug can never inject.
+   *
+   * @returns {boolean} true if the application handled it
+   */
+  _panic(reason, error, slug) {
+    log.error(`Axiom Router panic [${reason}] on [${slug}]`, error);
+
+    const handled = !window.dispatchEvent(new CustomEvent('axiom:router-error', {
+      detail: { reason, error, slug, path: location.pathname },
+      cancelable: true,
+    }));
+    if (handled) return true;
+
+    const host = document.getElementById('app-container') || document.body;
+    const panel = document.createElement('div');
+    panel.className = 'axiom-router-panic';
+    panel.setAttribute('role', 'alert');
+
+    const heading = document.createElement('h1');
+    heading.textContent = 'This page failed to load';
+    const detail = document.createElement('p');
+    detail.textContent = 'Try reloading. If it keeps happening, this route is broken.';
+
+    panel.append(heading, detail);
+    host.replaceChildren(panel);
+    return false;
   },
 
   _saveScroll(path) {

@@ -19,6 +19,7 @@
 import { registerHooks } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
+import { installDom } from './dom.js';
 
 // Derived, never hard-coded: an absolute machine-local path must not ship.
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -69,7 +70,4 @@ globalThis.location ??= {
   origin: 'http://localhost',
   search: '',
 };
-globalThis.document ??= { baseURI: 'http://localhost/' };
-// config.js reads window.AXIOM_CONFIG; undefined is the correct "no injected
-// runtime config" case and falls through to the local defaults.
-globalThis.window ??= globalThis;
+installDom();
