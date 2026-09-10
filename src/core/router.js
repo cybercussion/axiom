@@ -364,25 +364,36 @@ export const router = {
         // record the committed path as the page any FUTURE navigation is
         // departing from.
         this._activePath = location.pathname;
-        const scrollPath = push ? (this.base + (cleanPath || '')).replace('//', '/') : location.pathname;
-        const storageKey = `scroll_${scrollPath}`;
-        const rawStored = sessionStorage.getItem(storageKey);
-        const savedScroll = parseInt(rawStored || '0', 10);
-        const targetY = savedScroll;
 
-        // Double-frame so layout settles before the restore; focus fires on the
-        // first frame, the scroll on the second — restore wins over focus-scroll.
+        // A PUSH is a new arrival and lands at the TOP. Only a POP restores the
+        // offset saved when that page was left — back/forward, and the boot pass,
+        // which navigates with push=false so a same-session refresh still returns
+        // you to where you were. Restoring the destination's stale sessionStorage
+        // offset on a push was the "navigate lands halfway down the page" bug:
+        // clicking a link to a page you had scrolled earlier dropped you into the
+        // middle of it. Reconciled from daystra; axiom carried this one.
+        let targetY = 0;
+        if (!push) {
+          targetY = parseInt(sessionStorage.getItem(`scroll_${location.pathname}`) || '0', 10);
+        }
+
+        // One double-frame: the first lets layout resolve, the second commits
+        // focus and scroll together. They used to be split across frames so the
+        // restore could out-race focus-scroll — an ordering workaround that is
+        // unnecessary now the cause is fixed below.
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
+            const feature = document.getElementById('app-container')?.firstElementChild;
+            // preventScroll: BaseComponent attaches its shadow root with
+            // delegatesFocus on by default, so a bare focus() lands on the page's
+            // FIRST FOCUSABLE child and scrolls it into view — putting the user
+            // mid-page on any route whose first tabbable element is below the
+            // fold. Keep the focus for a11y; never let it move the viewport.
+            // Reconciled from daystra / scobot / tender; axiom carried this one.
+            if (feature) { feature.tabIndex = -1; feature.focus({ preventScroll: true }); }
             window.scrollTo({ top: targetY, behavior: 'instant' });
             state.set('transitioning', false);
           });
-        });
-
-        // 4. A11y & Focus
-        requestAnimationFrame(() => {
-          const feature = document.getElementById('app-container')?.firstElementChild;
-          if (feature) { feature.tabIndex = -1; feature.focus(); }
         });
 
       } catch (err) {
