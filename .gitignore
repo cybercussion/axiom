@@ -7,9 +7,13 @@ Thumbs.db
 *.swp
 
 # --- Node & Dependencies ---
-# We use them for tools/dev, but they never touch the repo
+# node_modules is dev-only and never touches the repo.
+# package-lock.json IS tracked, deliberately: the deploy workflow runs `npm ci`,
+# which cannot resolve without it, and actions/setup-node's npm cache keys off
+# it. Ignoring it here while gating CI on `npm ci` made every deploy fail at
+# Setup Node ("Dependencies lock file is not found"). Dev deps still ship to
+# nobody — the lockfile pins the TOOLCHAIN, not the runtime.
 node_modules/
-package-lock.json
 npm-debug.log*
 
 # --- IDEs & Environments ---
