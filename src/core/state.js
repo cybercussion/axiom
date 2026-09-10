@@ -129,9 +129,17 @@ export const state = {
       const succ = this.get(key);
       this.set(key, { ...succ, status: 'success' });
     } catch (err) {
-      // 2. Rollback to EXACT backup, but ensure we don't restore a 'syncing' status
-      // If we stacked mutations, the backup might be 'syncing'. We force 'success' to avoid UI stuck in limbo.
-      const safeBackup = { ...backup, status: (backup.status === 'syncing' ? 'success' : backup.status) };
+      // 2. Rollback to the EXACT backup. Only a SMART OBJECT carries a status
+      // worth sanitizing: a stacked mutation can leave the backup 'syncing', so
+      // force 'success' there to avoid a UI stuck in limbo. A primitive or null
+      // backup is restored untouched — spreading one gave {} for a number and a
+      // char map for a string, and `backup.status` THREW on null, inside this
+      // catch, replacing the real error, skipping the notify below and pinning
+      // status at 'syncing': the exact limbo this guard exists to prevent.
+      const isSmart = backup && typeof backup === 'object' && 'data' in backup;
+      const safeBackup = (isSmart && backup.status === 'syncing')
+        ? { ...backup, status: 'success' }
+        : backup;
       this.set(key, safeBackup);
       this.notify(`Mutation Failed: Rolling back.`, 'error');
       log.error(`Axiom Mutation Failed [${key}]: Rolling back.`, err);
