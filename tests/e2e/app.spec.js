@@ -17,9 +17,14 @@ test.beforeEach(async ({ page }) => {
 });
 
 /** Uncaught errors and console errors for the life of the page. */
+// "ResizeObserver loop completed with undelivered notifications" is the spec's
+// signal that some observations were deferred a frame; WebKit surfaces it as an
+// uncaught error. It is not a failure. Its source (a layout change inside an
+// observer) is tracked with the layout-shift work, not hidden: see the ledger.
+const BENIGN = /ResizeObserver loop completed with undelivered notifications/;
 const watch = (page) => {
   const problems = [];
-  page.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`));
+  page.on('pageerror', (e) => { if (!BENIGN.test(e.message)) problems.push(`pageerror: ${e.message}`); });
   page.on('console', (m) => { if (m.type() === 'error') problems.push(`console: ${m.text()}`); });
   return problems;
 };
@@ -29,6 +34,23 @@ const violations = (page) => page.evaluate(() => window.__csp);
  * (transitioning back to false). Scrolling before that races the router's own
  * restore, which is what the first draft of the scroll tests did.
  */
+/**
+ * Layout has stopped moving: document height unchanged for 8 frames. /components
+ * keeps laying out for ~350 ms after it reports rendered (6,322 -> 4,623 px);
+ * scrolling before that lets the browser move the reader, and the router then
+ * faithfully saves wherever the page really was.
+ */
+const stable = (page) => page.evaluate(() => new Promise((resolve) => {
+  let last = -1;
+  let still = 0;
+  const tick = () => {
+    const h = document.documentElement.scrollHeight;
+    still = h === last ? still + 1 : 0;
+    last = h;
+    if (still >= 8) resolve(h); else requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}));
 const settled = async (page, tag) => {
   // The predicate must be SYNCHRONOUS: an async one returns a Promise, which is
   // truthy, and waitForFunction resolves on its first poll without waiting.
@@ -138,6 +160,7 @@ test('back and forward restore routes through popstate', async ({ page }) => {
 test('a push lands at the top; back returns to the saved offset (f970f5e)', async ({ page }) => {
   await page.goto('/components');
   await settled(page, 'components-ui');
+  await stable(page);
   const target = await page.evaluate(() => Math.min(1200, document.documentElement.scrollHeight - innerHeight - 10));
   expect(target, 'the page must actually scroll for this test to mean anything').toBeGreaterThan(300);
   // Instant, and wait for it: the theme sets scroll-behavior: smooth, so a plain
@@ -162,6 +185,7 @@ test('Back during an in-flight navigation still restores the offset', async ({ p
   // the contact stylesheet keeps that navigation in flight when Back fires.
   await page.goto('/components');
   await settled(page, 'components-ui');
+  await stable(page);
   const target = await page.evaluate(() => Math.min(1200, document.documentElement.scrollHeight - innerHeight - 10));
   // Instant, and wait for it: the theme sets scroll-behavior: smooth, so a plain
   // scrollTo animates — Firefox was still mid-animation when the test clicked
@@ -200,6 +224,76 @@ test('router-error: unhandled, it draws into the container and the shell survive
   await expect(panic).toHaveAttribute('role', 'alert');
   await expect(page.locator('nav-orchestrator')).toBeAttached();
   await expect(page.locator('toast-manager')).toBeAttached();
+});
+
+for (const honours of [false, true]) {
+  test(`a navigation that lost leaves no data behind (its loader ${honours ? 'honours' : 'ignores'} the AbortSignal)`, async ({ page }) => {
+    // The review's A/B race: /item/1 (slow) then /item/2 (fast). Before the fix,
+    // the page ended on /item/2 showing item 1's data — or, with a loader that
+    // honours its signal, flashed an error state for the navigation that lost.
+    await page.goto('/');
+    await expect(page.locator('#app-container > home-ui')).toBeAttached();
+    const out = await page.evaluate(async (honoursSignal) => {
+      const { router } = await import('/src/core/router.js');
+      const { state } = await import('/src/core/state.js');
+      const writes = [];
+      state.subscribe(({ key, value }) => { if (key === 'item') writes.push(`id=${value?.data?.id ?? '-'} ${value?.status ?? 'cleared'}`); });
+      router.routes['item/:id'] = {
+        path: '@features/counter/counter.js',
+        dataKey: 'item',
+        api: (params, signal) => new Promise((resolve, reject) => {
+          const t = setTimeout(() => resolve({ id: params.id }), params.id === '1' ? 900 : 150);
+          if (honoursSignal) signal.addEventListener('abort', () => { clearTimeout(t); reject(new DOMException('Aborted', 'AbortError')); });
+        }),
+      };
+      router.navigate('/item/1');
+      setTimeout(() => router.navigate('/item/2'), 50);
+      await new Promise((r) => setTimeout(r, 1500));
+      return { url: location.pathname, shows: state.get('item')?.data?.id, writes };
+    }, honours);
+    expect(out.url).toBe('/item/2');
+    expect(out.shows, out.writes.join(' | ')).toBe('2');
+    expect(out.writes.filter((w) => w.startsWith('id=1')), 'the navigation that lost wrote its data').toEqual([]);
+    expect(out.writes.filter((w) => w.includes('error')), 'the navigation that lost wrote an error').toEqual([]);
+  });
+}
+
+const brokenCounter = (phase) => `import { BaseComponent } from '/src/shared/base-component.js';
+class CounterUI extends BaseComponent {
+  async setup() { ${phase === 'setup' ? "throw new Error('setup exploded');" : ''} }
+  render() { ${phase === 'render' ? "throw new Error('render exploded');" : "this.shadowRoot.textContent = 'ok';"} }
+}
+customElements.define('counter-ui', CounterUI);`;
+
+for (const phase of ['setup', 'render']) {
+  test(`a component that throws in ${phase}() is contained — its navigation still completes`, async ({ page }) => {
+    // Regression: the router awaits `rendered`, which a throwing component never
+    // resolved — URL and host swapped, transitioning stuck true, no focus or scroll.
+    const problems = watch(page);
+    await page.route('**/src/features/counter/counter.js*', (r) => r.fulfill({ contentType: 'text/javascript', body: brokenCounter(phase) }));
+    await page.goto('/');
+    await expect(page.locator('#app-container > home-ui')).toBeAttached();
+    await navigateInPage(page, ['/counter']);
+    await settled(page, 'counter-ui');
+    await expect(page.locator('counter-ui .axiom-component-error')).toHaveAttribute('role', 'alert');
+    await expect(page.locator('nav-orchestrator')).toBeAttached();
+    expect(problems, 'contained: nothing uncaught').toEqual([]);
+    await navigateInPage(page, ['/dashboard']);
+    await expect(page.locator('#app-container > dashboard-ui')).toBeAttached();
+  });
+}
+
+test('an ancestor can own a component failure — preventDefault on axiom:component-error', async ({ page }) => {
+  await page.route('**/src/features/counter/counter.js*', (r) => r.fulfill({ contentType: 'text/javascript', body: brokenCounter('setup') }));
+  await page.goto('/');
+  await expect(page.locator('#app-container > home-ui')).toBeAttached();
+  await page.evaluate(() => document.getElementById('app-container').addEventListener('axiom:component-error', (e) => {
+    e.preventDefault();
+    window.__caught = `${e.detail.component}:${e.detail.phase}`;
+  }));
+  await navigateInPage(page, ['/counter']);
+  await expect.poll(() => page.evaluate(() => window.__caught)).toBe('counter-ui:setup');
+  await expect(page.locator('counter-ui .axiom-component-error')).toHaveCount(0);
 });
 
 test('notify() renders a markup payload as text (6564943)', async ({ page }) => {

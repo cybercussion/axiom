@@ -44,10 +44,10 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-      - name: Browser tests (Chromium, production CSP)
+      - name: Browser tests (Chromium, WebKit, Firefox — production CSP)
         run: |
-          npx playwright install --with-deps chromium
-          npm run e2e
+          npx playwright install --with-deps chromium webkit firefox
+          AXIOM_ENGINES=chromium,webkit,firefox npm run e2e
       - name: Build + verify dist + README weight claims
         run: npm run build && npm run verify-dist && node tools/weigh.js --check
       - name: PWA contract
