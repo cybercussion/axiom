@@ -93,3 +93,26 @@ function onNameChange(userId, newName) {
 3.  **Use `state.mutate`**: For POST/PUT/DELETE requests requiring optimistic updates.
 
 Simple. Native. Fast.
+
+## Response types and errors
+
+By default the gateway reads a response by its `content-type` — JSON, XML, text, otherwise a `Blob`. That is convenient until a server returns an HTML error or login page with `200 OK`, and code expecting an object receives a string.
+
+When the caller needs a specific type, say so. `expect` is the last argument of every verb:
+
+```js
+const user = await gateway.get('/me', {}, { expect: 'json' });
+// a text/html 200 now rejects with a GatewayError naming what actually arrived
+```
+
+| `expect` | Returns | Rejects when |
+|---|---|---|
+| `'auto'` (default) | parsed by content type — unchanged behaviour | non-2xx |
+| `'json'` | parsed JSON (`application/json` and any `+json` type) | non-2xx, other content type, malformed body |
+| `'xml'` | `Document` | non-2xx, non-XML content type |
+| `'text'` / `'blob'` | that type, whatever the content type | non-2xx |
+| `'response'` | the raw `Response` | non-2xx |
+
+For an explicit `expect`, `204`/`205` resolves `null`. An unknown `expect` is refused rather than silently treated as `'auto'`.
+
+Every failure is a `GatewayError` (`import { GatewayError } from '@core/gateway.js'`) carrying `status`, `statusText`, `contentType`, `url`, `method`, and `body` (the first 2 KB of the response text) — branch on fields, not on message strings. `gateway.graphql()` always expects JSON, and a response with `errors[]` rejects with `err.errors` and any partial `err.data`.
