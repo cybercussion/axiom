@@ -542,3 +542,42 @@ test("a page's title comes from its route; the default route is the app's name",
   await settled(page, 'components-ui');
   expect(await page.title()).toBe('Components — Axiom');
 });
+
+test('three navigations, the middle one resolving last: only the last commits', async ({ page }) => {
+  // The 2026-09-11 review's ordering case, stated exactly: navigate A, B, C;
+  // then A resolves, C resolves, B resolves. C must commit; A and B must not —
+  // B's late resolution is the one that would land a stale page.
+  const problems = watch(page);
+  await page.goto('/');
+  await settled(page, 'home-ui');
+  const out = await page.evaluate(async () => {
+    const { router } = await import('/src/core/router.js');
+    const { state } = await import('/src/core/state.js');
+    const tick = (ms) => new Promise((r) => setTimeout(r, ms));
+    const gates = {};
+    const writes = [];
+    const navs = [];
+    window.addEventListener('axiom:navigation', (e) => navs.push(`${e.detail.path}:${e.detail.phase}`));
+    state.subscribe(({ key, value }) => { if (key === 'item') writes.push(`id=${value?.data?.id ?? '-'} ${value?.status ?? 'cleared'}`); });
+    router.routes['item/:id'] = {
+      path: '@features/counter/counter.js',
+      dataKey: 'item',
+      api: (params) => new Promise((resolve) => { gates[params.id] = () => resolve({ id: params.id }); }),
+    };
+    router.navigate('/item/1'); await tick(60);
+    router.navigate('/item/2'); await tick(60);
+    router.navigate('/item/3'); await tick(60);
+    gates['1'](); await tick(150);   // A resolves
+    gates['3'](); await tick(250);   // then C
+    gates['2'](); await tick(400);   // then B, last
+    return { url: location.pathname, shows: state.get('item')?.data?.id, writes, navs };
+  });
+
+  expect(out.url).toBe('/item/3');
+  expect(out.shows, out.writes.join(' | ')).toBe('3');
+  expect(out.writes.filter((w) => /id=[12] /.test(w)), 'a navigation that lost wrote its data').toEqual([]);
+  const items = out.navs.filter((n) => n.startsWith('/item/'));
+  expect(items.filter((n) => n.endsWith(':commit')), out.navs.join(' | ')).toEqual(['/item/3:commit']);
+  expect(items.filter((n) => n.endsWith(':abort')).sort()).toEqual(['/item/1:abort', '/item/2:abort']);
+  expect(problems).toEqual([]);
+});

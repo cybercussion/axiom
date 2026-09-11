@@ -33,6 +33,25 @@ const oracle = (initial, ops) => {
 };
 const deferred = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; };
 
+/**
+ * One case, from a seed. Shared by the sweep and by the coverage check below, so
+ * the shapes that check reports are the shapes the sweep actually runs.
+ */
+const makeCase = (seed) => {
+  const rand = mulberry32(seed);
+  const pick = (arr) => arr[Math.floor(rand() * arr.length)];
+  const initial = pick([{ data: { a: 0 }, status: 'idle' }, 0, 'x', null, { plain: true }]);
+  const n = 1 + Math.floor(rand() * 8);
+  const ops = Array.from({ length: n }, (_, i) => ({
+    i,
+    ok: rand() < 0.5,
+    payload: rand() < 0.2 ? Math.floor(rand() * 100) : { [pick(['a', 'b', 'c'])]: Math.floor(rand() * 100) },
+    gate: deferred(),
+  }));
+  const order = [...ops].sort(() => rand() - 0.5);   // random settlement order
+  return { initial, ops, order };
+};
+
 test(`mutate(): ${CASES} random sequences keep "initial + successes, in issue order"`, async () => {
   const quiet = { notify: state.notify, error: log.error };
   state.notify = () => {};       // a failure toast per case is noise here
@@ -40,22 +59,11 @@ test(`mutate(): ${CASES} random sequences keep "initial + successes, in issue or
   try {
     for (let c = 0; c < CASES; c++) {
       const seed = 1000 + c;
-      const rand = mulberry32(seed);
-      const pick = (arr) => arr[Math.floor(rand() * arr.length)];
       const key = `fuzz_${c}`;
-      const initial = pick([{ data: { a: 0 }, status: 'idle' }, 0, 'x', null, { plain: true }]);
+      const { initial, ops, order } = makeCase(seed);
+      const n = ops.length;
       state.set(key, initial);
-
-      const n = 1 + Math.floor(rand() * 8);
-      const ops = Array.from({ length: n }, (_, i) => ({
-        i,
-        ok: rand() < 0.5,
-        payload: rand() < 0.2 ? Math.floor(rand() * 100) : { [pick(['a', 'b', 'c'])]: Math.floor(rand() * 100) },
-        gate: deferred(),
-      }));
       for (const op of ops) op.done = state.mutate(key, op.payload, () => op.gate.promise);
-
-      const order = [...ops].sort(() => rand() - 0.5);   // random settlement order
       const settled = new Set();
       for (const op of order) {
         if (op.ok) op.gate.resolve(); else op.gate.reject(new Error('refused'));
@@ -74,4 +82,24 @@ test(`mutate(): ${CASES} random sequences keep "initial + successes, in issue or
     state.notify = quiet.notify;
     log.error = quiet.error;
   }
+});
+
+/**
+ * The sweep covers these by construction; this names them, so "we fuzz it" is a
+ * claim a reader can check rather than take on trust. Shapes from the 2026-09-11
+ * review: a failure between two successes, and alternating failure/success.
+ */
+test('the corpus contains the sequences the review asked for', () => {
+  const shapes = { 'ok,fail,ok': [true, false, true], 'fail,ok,fail,ok': [false, true, false, true] };
+  const found = Object.fromEntries(Object.keys(shapes).map((k) => [k, 0]));
+  for (let c = 0; c < CASES; c++) {
+    const outcomes = makeCase(1000 + c).ops.map((o) => o.ok);
+    for (const [name, want] of Object.entries(shapes)) {
+      if (outcomes.length === want.length && want.every((v, i) => outcomes[i] === v)) found[name] += 1;
+    }
+  }
+  for (const [name, n] of Object.entries(found)) {
+    assert.ok(n > 0, `no case in the default ${CASES} has shape ${name} — the sweep no longer covers it`);
+  }
+  console.log(`      corpus: ${Object.entries(found).map(([k, v]) => `${k} ×${v}`).join(', ')}`);
 });

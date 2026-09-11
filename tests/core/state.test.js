@@ -277,3 +277,46 @@ describe('update() — the supported way to change nested data', () => {
     assert.match(warnings[0], /same object/i);
   });
 });
+
+describe('mutate(): the sequences the 2026-09-11 review named', () => {
+  // Same guarantee the fuzz sweep checks over 2,000 random sequences, written out
+  // in the review's own terms: a failure removes exactly its own change, and the
+  // successes land in ISSUE order however they settle.
+  const deferred = () => {
+    let resolve, reject;
+    const promise = new Promise((a, b) => { resolve = a; reject = b; });
+    return { promise, resolve, reject };
+  };
+
+  test('A succeeds, B fails, C succeeds — B is excised, A and C land in issue order', async () => {
+    const key = freshKey('review_abc');
+    state.set(key, { data: { n: 0 }, status: 'idle' });
+    const [a, b, c] = [deferred(), deferred(), deferred()];
+    const writes = [
+      state.mutate(key, { a: 1 }, () => a.promise),
+      state.mutate(key, { b: 2 }, () => b.promise),
+      state.mutate(key, { c: 3 }, () => c.promise),
+    ];
+    assert.equal(state.get(key).status, 'syncing', 'three in flight');
+    c.resolve(); b.reject(new Error('refused')); a.resolve();   // settle out of issue order
+    await Promise.all(writes);
+    assert.deepEqual(state.get(key).data, { n: 0, a: 1, c: 3 }, "B's field must be gone, A's and C's kept");
+    assert.equal(state.get(key).status, 'success');
+  });
+
+  test('A fails, B succeeds, C fails, D succeeds — only B and D land', async () => {
+    const key = freshKey('review_abcd');
+    state.set(key, { data: { n: 0 }, status: 'idle' });
+    const [a, b, c, d] = [deferred(), deferred(), deferred(), deferred()];
+    const writes = [
+      state.mutate(key, { a: 1 }, () => a.promise),
+      state.mutate(key, { b: 2 }, () => b.promise),
+      state.mutate(key, { c: 3 }, () => c.promise),
+      state.mutate(key, { d: 4 }, () => d.promise),
+    ];
+    d.resolve(); a.reject(new Error('refused')); c.reject(new Error('refused')); b.resolve();
+    await Promise.all(writes);
+    assert.deepEqual(state.get(key).data, { n: 0, b: 2, d: 4 });
+    assert.equal(state.get(key).status, 'success');
+  });
+});
