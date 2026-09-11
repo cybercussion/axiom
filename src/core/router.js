@@ -6,6 +6,7 @@ import { state } from '@state';
 import { log } from '@core/logger.js';
 import { config } from '@core/config.js';
 import { auth } from '@core/auth.js';
+import { announce } from '@core/announce.js';
 
 const ROUTE_TITLES = {
   home: 'Axiom',
@@ -59,6 +60,7 @@ export const router = {
   _navSeq: 0,
   _activeNavId: null,
   _committedNavId: null,
+  _announced: false,
 
   // Configurable state
   /** @type {Record<string, RouteConfig>} */
@@ -450,6 +452,11 @@ export const router = {
             // Reconciled from daystra / scobot / tender; axiom carried this one.
             if (feature) { feature.tabIndex = -1; feature.focus({ preventScroll: true }); }
             window.scrollTo({ top: targetY, behavior: 'instant' });
+            // Announce the new page — focus alone lands on a host with no
+            // accessible name. Not on the first load: a screen reader reads a
+            // fresh page on its own. A navigation that lost never gets here.
+            if (this._announced) announce(document.title);
+            this._announced = true;
             state.set('transitioning', false);
           });
         });
@@ -532,7 +539,9 @@ export const router = {
     // component's shadow root → full page reload instead of a view transition.
     const link = e.composedPath().find(el => el && el.tagName === 'A' && el.href);
     if (!link || link.origin !== location.origin) return;
-    if ((link.target && link.target !== '_self') || link.hasAttribute('download')) return;
+    // rel="external" is the explicit opt-out for a same-origin link the app does
+    // not own — a server-rendered page, a download endpoint. Reconciled from ev.
+    if ((link.target && link.target !== '_self') || link.hasAttribute('download') || link.relList.contains('external')) return;
 
     // Internal only: the browser-resolved URL must sit under our base.
     if (link.href.startsWith(location.origin + this.base) || this.base === '/') {

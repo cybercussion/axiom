@@ -12,5 +12,6 @@ export const ROUTES = {
   },
   'components': { path: '@features/components/components.js' },
   'contact': { path: '@features/contact/contact.js' },
+  'login': { path: '@features/login/login.js' }, // template sign-in; auth.js is a placeholder
   'not-found': { path: '@features/not-found/not-found.js' }
 };

@@ -48,6 +48,16 @@ jobs:
         run: |
           npx playwright install --with-deps chromium webkit firefox
           AXIOM_ENGINES=chromium,webkit,firefox npm run e2e
+      # A retry that passes hides a real flake; keep the failed attempt's trace
+      # (playwright.config: trace retain-on-failure) so it can be diagnosed.
+      - name: Upload browser-test traces
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-traces
+          path: /tmp/axiom-e2e-results
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Build + verify dist + README weight claims
         run: npm run build && npm run verify-dist && node tools/weigh.js --check
       - name: PWA contract

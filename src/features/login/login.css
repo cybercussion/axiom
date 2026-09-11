@@ -1,0 +1,33 @@
+/* /login — one centred card. The house classes (glass-card, btn) carry the look. */
+.login-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100dvh - var(--nav-bottom-pad, 0px));
+  padding: var(--space-xl, 3rem) var(--space-m, 1rem);
+}
+
+.login-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-m, 1rem);
+  width: 100%;
+  max-width: 22rem;
+  padding: var(--space-l, 1.5rem);
+  text-align: center;
+}
+
+.login-title {
+  margin: 0;
+  font-size: var(--text-2xl, 1.5rem);
+}
+
+.login-note,
+.login-hint {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.login-note { font-size: var(--text-sm, 0.875rem); }
+.login-hint { font-size: var(--text-xs, 0.75rem); line-height: 1.5; }
+.login-google { width: 100%; }

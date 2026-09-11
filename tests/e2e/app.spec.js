@@ -335,3 +335,46 @@ test('app settings persist under their historical keys; the slider keeps a 44px 
   // measured mid-animation reads 44 × 0.92.
   expect(await slider.evaluate((el) => el.offsetHeight)).toBeGreaterThanOrEqual(44);
 });
+
+test('/login renders — and says so when no provider is configured', async ({ page }) => {
+  const problems = watch(page);
+  await page.goto('/login');
+  await expect(page.locator('#app-container > login-ui')).toBeAttached();
+  await expect(page.locator('login-ui h1')).toHaveText('Sign in');
+  await expect(page.locator('login-ui [role="status"]')).toContainText("isn't configured");
+  await expect(page.locator('login-ui [data-ref="google"]')).toHaveCount(0);
+  expect(problems).toEqual([]);
+  expect(await violations(page)).toEqual([]);
+});
+
+test("the dock's Login link reaches the login page", async ({ page }) => {
+  // Regression: it led to the 404 — the template linked a page it did not have.
+  await page.goto('/');
+  await page.locator('nav-dock a[href="login"]').click();
+  await expect(page.locator('#app-container > login-ui')).toBeAttached();
+  await expect(page).toHaveURL(/\/login$/);
+});
+
+test('a route change is announced to screen readers; the first load is not', async ({ page }) => {
+  await page.goto('/');
+  await settled(page, 'home-ui');
+  expect(await page.locator('#a11y-announcer').textContent()).toBe('');
+  await page.locator('nav-dock a[href="dashboard"]').click();
+  await settled(page, 'dashboard-ui');
+  const title = await page.title();
+  await expect.poll(() => page.evaluate(() => document.getElementById('a11y-announcer').textContent)).toBe(title);
+});
+
+test('rel="external" opts a same-origin link out of client routing', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#app-container > home-ui')).toBeAttached();
+  await page.evaluate(() => {
+    window.__sameDocument = true;
+    document.body.append(Object.assign(document.createElement('a'), { href: '/dashboard', rel: 'external', id: 'external-link', textContent: 'server page' }));
+  });
+  await page.locator('#external-link').click();
+  await page.waitForURL('**/dashboard');
+  await expect(page.locator('#app-container > dashboard-ui')).toBeAttached();
+  expect(await page.evaluate(() => window.__sameDocument), 'a full document load happened').toBeUndefined();
+});
+
