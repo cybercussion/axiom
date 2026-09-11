@@ -79,6 +79,25 @@ export const state = {
     this.data[key] = value;
   },
 
+  /**
+   * Functional update — the supported way to change NESTED data.
+   * state.data is shallowly reactive: `state.data.user.name = 'x'` mutates the
+   * held object in place, the Proxy never sees a set, and nothing re-renders.
+   * Return the next value instead of mutating the current one:
+   *     state.update('user', u => ({ ...u, name: 'x' }))
+   * @returns the value that was set
+   */
+  update(key, fn) {
+    const current = this.get(key);
+    const next = fn(current);
+    if (next === current && next !== null && typeof next === 'object') {
+      log.warn(`state.update('${key}'): the updater returned the same object. In-place mutation does not notify — return a new one ({ ...prev, field }).`);
+      return next;
+    }
+    this.set(key, next);
+    return next;
+  },
+
   // Derived state helper
   select(key, selectorFn) {
     return selectorFn(this.get(key));

@@ -225,3 +225,55 @@ describe('mutate() under concurrency — no failure resurrects a replaced value'
     assert.deepEqual(state.get(key).data, { a: 9, z: 1 });
   });
 });
+
+describe('update() — the supported way to change nested data', () => {
+  // state.data is SHALLOWLY reactive: the Proxy sees assignments to its own
+  // keys, never mutations inside the objects they hold. update() makes the
+  // immutable change the easy one to write.
+
+  test('characterization: mutating inside a held object does NOT notify', () => {
+    const key = freshKey('shallow');
+    state.set(key, { name: 'A' });
+    const seen = [];
+    const off = state.subscribe(({ key: k, value }) => { if (k === key) seen.push(value); });
+    state.data[key].name = 'B';
+    off();
+    assert.deepEqual(seen, [], 'this is the documented rule, pinned so it cannot drift silently');
+  });
+
+  test('passes the current value and notifies with the returned one', () => {
+    const key = freshKey('update');
+    state.set(key, { name: 'A', prefs: { x: 1 } });
+    const seen = [];
+    const off = state.subscribe(({ key: k, value }) => { if (k === key) seen.push(value); });
+    const result = state.update(key, (u) => ({ ...u, name: 'B' }));
+    off();
+    assert.deepEqual(result, { name: 'B', prefs: { x: 1 } });
+    assert.equal(seen.length, 1);
+    assert.equal(seen[0].name, 'B');
+    assert.deepEqual(state.get(key), result);
+  });
+
+  test('works for primitives and missing keys', () => {
+    const key = freshKey('counter');
+    state.update(key, (n = 0) => n + 1);
+    state.update(key, (n = 0) => n + 1);
+    assert.equal(state.get(key), 2);
+  });
+
+  test('returning the SAME object (mutated in place) warns instead of pretending it worked', async () => {
+    const { log } = await import('@core/logger.js');
+    const key = freshKey('inplace');
+    state.set(key, { name: 'A' });
+    const warnings = [];
+    const original = log.warn;
+    log.warn = (...args) => warnings.push(args.join(' '));
+    try {
+      state.update(key, (u) => { u.name = 'B'; return u; });
+    } finally {
+      log.warn = original;
+    }
+    assert.equal(warnings.length, 1);
+    assert.match(warnings[0], /same object/i);
+  });
+});
