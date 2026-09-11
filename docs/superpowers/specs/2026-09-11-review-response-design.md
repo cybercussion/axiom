@@ -21,7 +21,7 @@ Status as of 2026-09-11; hashes are on `main`.
 | C5 | `GRAPHQL_API_KEY` in browser config | Accept | **Shipped** — public `axiom-config.js` (`354098c`); model in SECURITY.md (`adb0cc5`) |
 | C6 | "zero-build" needs qualification | Done | `ce99098` |
 | C7 | README oversells simplicity | Done | `6c3dc49` — rewritten; numbers CI-checked |
-| C8 | App state inside core `state.js` | Accept | **Shipped** `124b2c2`, guarded by a test. **Open:** the router carries app coupling too (F8) |
+| C8 | App state inside core `state.js` | Accept | **Shipped** `124b2c2`, guarded by a test; the router's app coupling followed (F8, `5e90a18`) |
 | C9 | Gateway content-type sniffing | Accept | **Shipped** `b9413f1` |
 | C10 | Router renders errors over `document.body` | Done | `a6390fe` |
 | C11 | No runtime tests | Accept | **Shipped** — node suite (`006c996` onward); browser suite under the production CSP (`abb935a`) |
@@ -42,7 +42,7 @@ Found by verification, absent from the review:
 | F5 | Core copied ×8, one shared bug in all | Measured `698126b`; convergence mechanism `124b2c2`; the decision is the fleet's (specula) |
 | F6 | Every nav click navigated twice — two history entries; Back took two presses | Fixed `dec76fb` — found by the browser suite |
 | F7 | A navigation superseded mid-commit still scrolled and saved — a fast Back lost its position | Fixed `b56bbb7` — found by the browser suite |
-| F8 | Router still carries app coupling (`ROUTE_TITLES`, the `/login` guard redirect) and dead code (an `env-config.js` lookup, `_scrollTimeout`) | Open |
+| F8 | Router still carries app coupling (`ROUTE_TITLES`, the `/login` guard redirect) and dead code (an `env-config.js` lookup, `_scrollTimeout`) | **Fixed** `5e90a18` — titles are route config; `appName` and `loginPath` are init options; the dead code is gone |
 | F9 | `#a11y-announcer` is declared but never written — route changes are not announced to screen readers | Fixed — `@core/announce.js`, reconciled from the fleet's unused announce-bus; the router announces each committed route after the first |
 | F10 | The dock's Login link targets a feature that does not exist in axiom (404) | Fixed — a template `/login`, reconciled from tender; it says so when no provider is configured |
 | F11 | browser-sync carries 3 high advisories (dev-only); the obvious override silently kills live reload | Accepted, documented `39231a7` |

@@ -25,9 +25,12 @@ The second review's claims were tested before anything was built — [the valida
 - **Tests:** the browser suite counts the logger's errors (it prints every level through `console.log`). Each new invariant fails against the code before its fix. (`1314916`)
 - **Added:** runtime events on `window` — `axiom:navigation`, `axiom:request`, `axiom:mutation`, `axiom:auth` — each `start` ending exactly once with the same id; `observe(fn)` from `@core/observe.js`. No detail carries headers, bodies, payloads or tokens. (`c1f87c7`)
 - **Changed:** the core's size budget rises from 13 to 14 KB Brotli; the events cost 0.8 KB (13.1 KB shipped). (`c1f87c7`)
+- **Changed:** the router carries nothing of the app's — page titles are a route's `title`; `appName` and `loginPath` are `router.init()` options; the dead `env-config.js` lookup and `_scrollTimeout` are gone. `router.js` can be borrowed byte-for-byte, and `MANIFEST.toml` declares the runtime core canonical. (`5e90a18`)
 - **Tools:** `tools/types.js` drops top-level exports tagged `@internal` from the declarations — tsc's `stripInternal` leaves them in when the source is JavaScript. (`c1f87c7`)
 
 ### Breaking — for projects that copy the core
+
+- **The router carries no app titles.** `ROUTE_TITLES` is gone: give each route a `title`, and pass `appName` (and `loginPath`, if it isn't `/login`) to `router.init()`. Lazy-route cache-busting is the build's — `tools/minify.js` stamps `path:` values — so the router no longer reads a `?v=` off an `env-config.js` script tag. (`5e90a18`)
 
 - **`BaseComponent` renders only after the theme.** A page that links `theme.css` in its `<head>` sees no change. A page that doesn't now waits for the fetched theme before `render()`, so code after `super.connectedCallback()` that touches the shadow DOM belongs in `onRendered()`. A component that owns its shadow root outright should override `render()` — the default draws a `<slot>`. (`1314916`)
 

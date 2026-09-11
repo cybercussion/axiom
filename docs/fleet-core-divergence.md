@@ -78,3 +78,38 @@ The review response fixed three more defects in axiom's core. Checked against th
 Each fix is small. Hand-porting them seven times deepens the divergence this document measures; they are the strongest argument yet for specula's `accept` path — one core, versioned, consumed.
 
 Method: `defaultPrevented` in `src/core/router.js`; `router.handleIntercept|router.navigate(link` across `src/`, excluding the router; `featureEl.rendered` present with no `_committedNavId`; the literal `${note.message}` in `src/shared/toast-manager.js`.
+
+## The reference — 2026-09-11 (specula #12, step 1)
+
+axiom's core is the reconcile reference, declared CANONICAL in `MANIFEST.toml` (`canonical-runtime-core`, `5e90a18`). Hashes are sha256, first 12 hex — the cut specula's matrices use.
+
+| file | reference hash | lines | a consumer |
+|---|---|---|---|
+| `src/core/router.js` | `6864b1c286a3` | 643 | adopt byte-for-byte; give routes a `title`, pass `appName` (and `loginPath` if not `/login`) to `router.init()` |
+| `src/core/state.js` | `270f7305bc28` | 362 | adopt byte-for-byte; move your app keys into your own `app-state.js` with `state.define()` |
+| `src/core/gateway.js` | `226178011217` | 232 | adopt — or, where your gateway is genuinely your own, take `expect`, `GatewayError`, `{ signal }` and the `axiom:request` events |
+| `src/core/logger.js` | `daf9325dc814` | 32 | adopt (messages are no longer read as format directives) |
+| `src/core/observe.js` | `710eca332ff9` | 61 | new — adopt; router, state and gateway import it |
+| `src/core/announce.js` | `304d8d28d124` | 77 | new — adopt; the router announces route changes through it |
+| `src/core/focus-walker.js` | `012ae4963f9a` | 113 | adopt |
+| `src/shared/base-component.js` | `6e09da395f30` | 273 | adopt; link `theme.css` in your `<head>` before the module scripts |
+| `src/shared/styles/theme.css` | `97a0da3d7a12` | 715 | not byte-adopted — the token set is the contract, with #65's rename map |
+
+**What a consumer provides** — the core imports these, and they stay the app's:
+
+- `@core/config.js` exporting `config` with: `API_BASE`, `BASE_PATH`, `ENV`, `GRAPHQL_API_KEY`, `GRAPHQL_ENDPOINT`, `NAV_STYLE`, `VERSION`.
+- `@core/auth.js` exporting `auth` with: `getAccessToken()`, `isAuthenticated()`. Emitting `axiom:auth` is optional.
+- An `app-state.js` that declares the app's own keys with `state.define()`, imported before anything reads them.
+- `router.init({ routes, appName, loginPath })`, each route with its `title`.
+- `<link rel="stylesheet" href=".../styles/theme.css">` in the `<head>`, ahead of the module scripts — BaseComponent reads the shadow theme from it.
+- If it ships a `dist/`: the canonical build, `tools/minify.js` — it stamps the lazy-route paths the router no longer stamps itself.
+
+What breaks for a copier is listed under "Breaking" in [CHANGELOG.md](../CHANGELOG.md).
+
+**The axiom rows of #11, closed** (in #13's format):
+
+- `reconcile src/core/router.js axiom: adopted — the reference: all four fix islands, plus the double-navigation, superseded-commit, stalled-transition and app-coupling fixes — verify: npm test && AXIOM_ENGINES=chromium,webkit,firefox npm run e2e`
+- `reconcile src/core/state.js axiom: adopted — the reference: the per-key mutate ledger, cancellable query, null-prototype store, no app keys — verify: npm test`
+- `reconcile src/shared/styles/theme.css axiom: adopted — the token set of record (77 tokens); bytes are expected to differ per project — verify: npm run lint:motion`
+
+**#12 (1c), the `localhost` block in six copies of `state.js`:** it does not belong in the core. In tender it is an empty `if (location.hostname === 'localhost') {}` inside the store's `set` trap — dead code on every write. Adopting the reference drops it.
