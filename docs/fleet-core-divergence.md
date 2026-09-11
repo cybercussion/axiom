@@ -55,3 +55,26 @@ which carry `authority:fleet`:
 
 This document records the measurement so whoever holds that authority decides
 against numbers rather than impressions. It deliberately does **not** decide.
+
+## Addendum — 2026-09-11: this session's fixes, across the copies
+
+The review response fixed three more defects in axiom's core. Checked against the seven other copies on this machine. These are **grep-level exposure checks, not executions** — treat each cell as "exposed", not "proven broken".
+
+| project | click handled once (`defaultPrevented`) | components that route their own clicks | superseded-commit re-check | `notify()` renders HTML |
+|---|---|---|---|---|
+| daystra | no | 7 files | missing | yes |
+| kyber | no | 2 | missing | yes |
+| new.cybercussion.com | no | 11 | missing | yes |
+| scobot.cybercussion.com | no | 4 | missing | — |
+| SCOBotPackager | no | 0 | missing | — |
+| STNG | no | 0 | missing | — |
+| tender.cybercussion.com | no | 1 | missing | yes |
+
+- **Double navigation** (axiom `dec76fb`). A copy whose components route their own link clicks *and* keeps the router's document listener navigates twice per click: two history entries, Back takes two presses. Five of seven have self-routing components. All seven also swallow `target="_blank"`, download and shift/alt clicks into in-page navigation.
+- **Fast-Back scroll loss** (`b56bbb7`). Every copy awaits `rendered` without re-checking the navigation id, so a navigation that lost can still scroll and save after a newer one started.
+- **`notify()` HTML sink** (`6564943`). Four copies render toast messages with `innerHTML` — an XSS sink for any caller passing server or URL text.
+- And the `mutate()` rollback bug above, still in all seven.
+
+Each fix is small. Hand-porting them seven times deepens the divergence this document measures; they are the strongest argument yet for specula's `accept` path — one core, versioned, consumed.
+
+Method: `defaultPrevented` in `src/core/router.js`; `router.handleIntercept|router.navigate(link` across `src/`, excluding the router; `featureEl.rendered` present with no `_committedNavId`; the literal `${note.message}` in `src/shared/toast-manager.js`.
