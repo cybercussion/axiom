@@ -37,3 +37,5 @@ tools/.temp/
 # Per-machine session transcripts from rift; regenerable and machine-local,
 # so they never belong in the tree.
 .rift/
+# Fleet-internal notes: this repo is public. Never track these.
+docs/private/
