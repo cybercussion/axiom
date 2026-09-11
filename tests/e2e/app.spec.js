@@ -25,7 +25,8 @@ const BENIGN = /ResizeObserver loop completed with undelivered notifications/;
 const watch = (page) => {
   const problems = [];
   page.on('pageerror', (e) => { if (!BENIGN.test(e.message)) problems.push(`pageerror: ${e.message}`); });
-  page.on('console', (m) => { if (m.type() === 'error') problems.push(`console: ${m.text()}`); });
+  // The logger prints every level through console.log; its errors count too.
+  page.on('console', (m) => { if (m.type() === 'error' || m.text().includes('[Axiom::ERROR]')) problems.push(`console: ${m.text()}`); });
   return problems;
 };
 const violations = (page) => page.evaluate(() => window.__csp);
@@ -277,7 +278,9 @@ for (const phase of ['setup', 'render']) {
     await settled(page, 'counter-ui');
     await expect(page.locator('counter-ui .axiom-component-error')).toHaveAttribute('role', 'alert');
     await expect(page.locator('nav-orchestrator')).toBeAttached();
-    expect(problems, 'contained: nothing uncaught').toEqual([]);
+    const containment = `Axiom Component Error [counter-ui · ${phase}]`;
+    expect(problems.filter((p) => p.includes(containment)), 'the failure is logged, once').toHaveLength(1);
+    expect(problems.filter((p) => !p.includes(containment)), 'contained: nothing else went wrong').toEqual([]);
     await navigateInPage(page, ['/dashboard']);
     await expect(page.locator('#app-container > dashboard-ui')).toBeAttached();
   });
@@ -378,3 +381,121 @@ test('rel="external" opts a same-origin link out of client routing', async ({ pa
   expect(await page.evaluate(() => window.__sameDocument), 'a full document load happened').toBeUndefined();
 });
 
+
+// ---------------------------------------------------------------------------
+// Performance budgets. Layout-shift entries are a Chromium API: the other
+// engines skip the number but still run each invariant beneath it.
+// ---------------------------------------------------------------------------
+const CLS_BUDGET = 0.1; // web.dev's threshold for "good"
+const recordShifts = (page) => page.addInitScript(() => {
+  window.__cls = 0;
+  if (!PerformanceObserver.supportedEntryTypes?.includes('layout-shift')) return;
+  new PerformanceObserver((list) => {
+    for (const e of list.getEntries()) if (!e.hadRecentInput) window.__cls += e.value;
+  }).observe({ type: 'layout-shift', buffered: true });
+});
+
+for (const route of ['components', 'dashboard']) {
+  test(`/${route} loads within the layout-shift budget`, async ({ page, browserName }) => {
+    test.skip(browserName !== 'chromium', 'layout-shift entries are Chromium-only');
+    await recordShifts(page);
+    await page.goto(`/${route}`);
+    await settled(page, `${route}-ui`);
+    await stable(page);
+    expect(await page.evaluate(() => window.__cls)).toBeLessThan(CLS_BUDGET);
+  });
+}
+
+test("the shadow theme is read from the page's own <link>: one request, not two", async ({ page }) => {
+  const requests = [];
+  page.on('request', (r) => { if (/\/styles\/theme\.css/.test(r.url())) requests.push(r.resourceType()); });
+  await page.goto('/components');
+  await settled(page, 'components-ui');
+  expect(requests).toEqual(['stylesheet']);
+});
+
+test('without a theme <link>, a late theme still never paints a component unstyled', async ({ page, browserName }) => {
+  // A page that does not link theme.css makes BaseComponent fetch it, and every
+  // component waits. Hold that fetch: nothing may render before it lands, and the
+  // dock must survive (the default render once landed after it and erased it).
+  // Before the wait, /components painted unstyled and shifted 0.19 when it landed.
+  await recordShifts(page);
+  await page.route((url) => url.pathname === '/components', async (route) => {
+    const response = await route.fetch();
+    await route.fulfill({ response, body: (await response.text()).replace(/<link[^>]*theme\.css[^>]*>/, '') });
+  });
+  await page.route('**/styles/theme.css*', async (route) => {
+    await new Promise((r) => setTimeout(r, 1200));
+    await route.continue();
+  });
+  await page.addInitScript(() => {
+    window.__unstyled = new Set();
+    const visit = (root) => {
+      for (const el of root.querySelectorAll('*')) {
+        const shadow = el.shadowRoot;
+        if (!shadow) continue;
+        const theme = shadow.adoptedStyleSheets[0];
+        // Content that paints: not a <style>, not another component (each is visited itself).
+        const paints = [...shadow.children].some((c) => c.localName !== 'style' && !c.localName.includes('-'));
+        if (paints && theme && !theme.cssRules.length) window.__unstyled.add(el.localName);
+        visit(shadow);
+      }
+    };
+    const tick = () => { visit(document); if (performance.now() < 5000) requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+  });
+  await page.goto('/components');
+  expect(await page.locator('link[href*="theme.css"]').count(), 'the page must really lack the link').toBe(0);
+  await settled(page, 'components-ui');
+  await stable(page);
+  await expect(page.locator('nav-dock')).toBeAttached();
+  expect(await page.evaluate(() => [...window.__unstyled])).toEqual([]);
+  if (browserName === 'chromium') expect(await page.evaluate(() => window.__cls)).toBeLessThan(CLS_BUDGET);
+});
+
+test('a view transition that never starts does not hold the navigation', async ({ page }) => {
+  // WebKit on Linux CI went 6 s without calling a transition's update: the
+  // address changed and the old page stayed (run 34629597306). Stub the worst
+  // case in every engine — the update is never called, and skipping does not
+  // call it — and the router must commit on its own.
+  await page.addInitScript(() => {
+    const never = new Promise(() => {});
+    document.startViewTransition = () => ({ ready: never, finished: never, updateCallbackDone: never, skipTransition() {} });
+  });
+  const problems = watch(page);
+  const logged = []; // the logger prints every level through console.log
+  page.on('console', (m) => logged.push(m.text()));
+  await page.goto('/');
+  await settled(page, 'home-ui');
+  await page.locator('nav-dock a[href="contact"]').click();
+  await expect(page.locator('#app-container > contact-ui')).toBeAttached({ timeout: 3000 });
+  await settled(page, 'contact-ui');
+  expect(page.url()).toMatch(/\/contact$/);
+  expect(logged.join('\n')).toContain('View transition did not start');
+  expect(problems).toEqual([]);
+});
+
+test('a late dock stylesheet does not reflow the page', async ({ page, browserName }) => {
+  // The orchestrator pads the content by the nav's measured size, and it measured
+  // the dock before the dock had drawn: unstyled at the top of the page, the dock
+  // read as a sidebar, the content was padded 1280px to the left, and /components
+  // collapsed to one column until the real dock landed. Holding the dock's
+  // stylesheet makes that window certain instead of a race.
+  await recordShifts(page);
+  await page.route('**/features/navigation/navigation.css*', (route) => setTimeout(() => route.continue(), 1000));
+  await page.addInitScript(() => {
+    window.__leftPads = new Set();
+    const tick = () => {
+      const pad = document.documentElement.style.getPropertyValue('--nav-left-pad');
+      if (pad && pad !== '0px') window.__leftPads.add(pad);
+      if (performance.now() < 5000) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+  await page.goto('/components');
+  await settled(page, 'components-ui');
+  await expect.poll(() => page.evaluate(() => document.documentElement.style.getPropertyValue('--nav-bottom-pad'))).toMatch(/px$/);
+  await stable(page);
+  expect(await page.evaluate(() => [...window.__leftPads]), 'a dock never pads the left').toEqual([]);
+  if (browserName === 'chromium') expect(await page.evaluate(() => window.__cls)).toBeLessThan(CLS_BUDGET);
+});

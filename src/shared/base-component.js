@@ -6,18 +6,43 @@ import { state } from '@state';
 import { log } from '@core/logger.js';
 
 const themeSheet = new CSSStyleSheet();
+const themeUrl = new URL('./styles/theme.css', import.meta.url);
+const HOST_DEFAULTS = ':host { display: block; contain: none; }'; // after the theme, so it wins
 
-// Fetch the shared theme and populate the sheet so it pierces Shadow DOM
-(async () => {
+// The theme has to reach every shadow root, which a document <link> cannot do,
+// so its rules are copied into one constructed sheet that every component adopts.
+//
+// First choice: the page's own <link> to theme.css. Module scripts do not run
+// until the head's stylesheets have loaded, so when index.html links the theme
+// its rules are parsed before any component connects — the sheet fills
+// synchronously, at no second request.
+//
+// Otherwise (no link, or one this origin may not read) the theme is fetched and
+// components wait for it before rendering. Rendering into the still-empty sheet
+// painted shadow roots unstyled — a custom element is display:inline until
+// `:host` says otherwise — and the restyle when it landed moved the page: CLS
+// 0.19 on /components with the fetch held 900 ms.
+let themeLoaded = false;
+const fillTheme = (css) => {
+  themeSheet.replaceSync(`${css}\n${HOST_DEFAULTS}`);
+  themeLoaded = true;
+};
+const linkedTheme = () => {
+  for (const sheet of document.styleSheets ?? []) {
+    try {
+      if (sheet.href && new URL(sheet.href).pathname === themeUrl.pathname) {
+        return [...sheet.cssRules].map((rule) => rule.cssText).join('\n');
+      }
+    } catch { /* a sheet this origin may not read: fall back to fetching */ }
+  }
+  return null;
+};
+const linked = linkedTheme();
+if (linked !== null) fillTheme(linked);
+const themeReady = themeLoaded ? Promise.resolve() : (async () => {
   try {
-    const themeUrl = new URL('./styles/theme.css', import.meta.url).href;
-    const res = await fetch(themeUrl);
-    const css = await res.text();
-    themeSheet.replaceSync(`
-      ${css}
-      /* Ensure host display is set, overriding if needed */
-      :host { display: block; contain: none; }
-    `);
+    const res = await fetch(themeUrl.href);
+    fillTheme(await res.text());
   } catch (e) {
     log.error('[BaseComponent] Failed to load theme.css', e);
   }
@@ -182,6 +207,11 @@ export class BaseComponent extends HTMLElement {
     // `axiom:component-error`: any ancestor is a boundary — preventDefault() and
     // the fallback is yours. Unhandled, the component draws a notice inside its
     // own shadow root. Either way `rendered` resolves, so the router commits.
+    // Never render into an empty theme sheet (see themeReady). When the page links
+    // the theme it is already full and the lifecycle stays synchronous; only a
+    // page that has to fetch it waits here.
+    if (!themeLoaded) await themeReady;
+
     let phase = 'setup';
     try {
       if (this.setup) await this.setup();

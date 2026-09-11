@@ -18,7 +18,8 @@
     "types": "node tools/types.js",
     "types:check": "node tools/types.js --check",
     "e2e": "playwright test",
-    "weigh": "node tools/weigh.js"
+    "weigh": "node tools/weigh.js",
+    "bench": "node --import ./tests/helpers/setup.js tools/bench.js"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

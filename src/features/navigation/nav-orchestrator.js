@@ -28,6 +28,11 @@ class NavOrchestrator extends BaseComponent {
     if (this._cleanup) this._cleanup();
   }
 
+  // The shadow root holds whichever nav switchNav() mounted. The default render
+  // replaces it with a <slot>, and when BaseComponent has to wait for the theme
+  // that render lands after the dock has mounted — and erased it.
+  render() {}
+
   async switchNav(style) {
     const tagName = `nav-${style}`;
 
@@ -48,7 +53,14 @@ class NavOrchestrator extends BaseComponent {
     if (current?.tagName.toLowerCase() === tagName) return;
 
     this.shadowRoot.innerHTML = `<${tagName}></${tagName}>`;
-    this._observeNav(this.shadowRoot.firstElementChild);
+    const nav = this.shadowRoot.firstElementChild;
+    // Measure the nav only once it has drawn itself. Measured earlier, the dock
+    // was still unstyled at the top of the page, read as a sidebar, and padded
+    // the content 1280px to the left: /components collapsed to one column, then
+    // reflowed back when the dock landed (CLS up to 1.2 at 4x CPU).
+    Promise.resolve(nav.rendered).then(() => {
+      if (this.shadowRoot.firstElementChild === nav) this._observeNav(nav);
+    });
   }
 
   _observeNav(target) {

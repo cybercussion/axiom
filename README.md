@@ -14,7 +14,7 @@ Axiom is a small application runtime built from what browsers already ship — E
 | | |
 |---|---|
 | Runtime dependencies | <!-- claim:runtime-deps -->0<!-- /claim --> |
-| Runtime core (`src/core/` + `BaseComponent`) | <!-- claim:core-lines -->~2,200<!-- /claim --> lines |
+| Runtime core (`src/core/` + `BaseComponent`) | <!-- claim:core-lines -->~2,200<!-- /claim --> lines · <!-- claim:core-brotli-kb -->~12<!-- /claim --> KB Brotli as shipped, held under a 13 KB budget |
 | Built-in UI controls | <!-- claim:controls -->25<!-- /claim --> |
 | The entire app — every feature, every control — minified, compressed per file as a browser fetches it | <!-- claim:gzip-kb -->~87<!-- /claim --> KB gzip · <!-- claim:brotli-kb -->~73<!-- /claim --> KB Brotli |
 | Browser floor | Chrome/Edge 111+, Safari 16.4+, Firefox 113+ (import maps, `adoptedStyleSheets`, `ElementInternals`, `color-mix()`) · tested in Chromium, WebKit and Firefox on every deploy |
@@ -35,7 +35,7 @@ About <!-- claim:router-lines -->600<!-- /claim --> lines. You can read all of i
 - **Parallel loading.** The route's module and its data load at the same time. No waterfall.
 - **Race-safe.** Click A, B, C in quick succession; whichever request finishes last, you land on C.
 - **Error contract.** A failed route falls back to your 404. If *that* fails, the router emits a cancelable `axiom:router-error` — `preventDefault()` and the outcome is yours. Unhandled, it draws a minimal notice in the app container, never over `document.body`.
-- **View Transitions** where the browser has them; an instant swap where it doesn't.
+- **View Transitions** where the browser has them; an instant swap where it doesn't — or where the browser hasn't started one within a second.
 - **Focus and scroll.** Focus moves to the new page without yanking the viewport; a new page starts at the top, back/forward returns you to where you were.
 
 ### 3. Gateway — `src/core/gateway.js`
@@ -87,7 +87,7 @@ npm test              # tool tests + core tests, in node
 
 ## 🧪 Tests
 
-`npm test` runs the tool tests and the core tests; `npm run e2e` runs the browser suite (Playwright) with the app under its production CSP — Chromium by default, `AXIOM_ENGINES=chromium,webkit,firefox` for the matrix the deploy runs. The core's browser modules run under node through a resolve hook that applies the same import map the browser uses — tests import `@state` exactly as the app does, with no build step and no second module graph to drift. The deploy runs every test before anything ships, and one of them checks the numbers in this README.
+`npm test` runs the tool tests and the core tests; `npm run e2e` runs the browser suite (Playwright) with the app under its production CSP — Chromium by default, `AXIOM_ENGINES=chromium,webkit,firefox` for the matrix the deploy runs. The core's browser modules run under node through a resolve hook that applies the same import map the browser uses — tests import `@state` exactly as the app does, with no build step and no second module graph to drift. The deploy runs every test before anything ships, and one of them checks the numbers in this README. Two budgets fail the deploy: the runtime core past 13 KB Brotli, and a layout shift past 0.1 loading the heaviest pages. `npm run bench` reports how fast the state layer is without gating on it — timings move with the machine; bytes and layout do not.
 
 ---
 
@@ -216,6 +216,6 @@ The rules the runtime keeps — component lifecycle, state and router guarantees
 
 ## Reviewed, not trusted
 
-Two external reviews have been worked through. The first graded this README 6/10 for accuracy; every criticism has a written disposition in [the ledger](docs/superpowers/specs/2026-09-11-review-response-design.md), and the second review's claims were tested before anything was built — [the validation](docs/superpowers/specs/2026-09-11-review-2-validation.md). The counts and sizes on this page are checked on every deploy: line counts within 10% by `tools/readme-claims.test.js`, shipped bytes against the real build by `tools/weigh.js`. The browser floor was checked against MDN's compatibility data on 2026-09-11, and the full browser suite runs in Chromium, WebKit and Firefox on every deploy.
+Two external reviews have been worked through. The first graded this README 6/10 for accuracy; every criticism has a written disposition in [the ledger](docs/superpowers/specs/2026-09-11-review-response-design.md), and the second review's claims were tested before anything was built — [the validation](docs/superpowers/specs/2026-09-11-review-2-validation.md). The counts and sizes on this page are checked on every deploy: line counts within 10% by `tools/readme-claims.test.js`, shipped bytes against the real build, and the core against its budget, by `tools/weigh.js`. The browser floor was checked against MDN's compatibility data on 2026-09-11, and the full browser suite runs in Chromium, WebKit and Firefox on every deploy.
 
 Enjoy your retrieved sanity.

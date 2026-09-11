@@ -28,7 +28,7 @@ const TOLERANCE = 0.10;
 
 test('every checked claim is still marked in the README', () => {
   // The weight claims are checked against a real build by tools/weigh.js (CI).
-  for (const name of ['runtime-deps', 'core-lines', 'router-lines', 'controls', 'source-kb', 'minified-kb', 'gzip-kb', 'brotli-kb']) {
+  for (const name of ['runtime-deps', 'core-lines', 'router-lines', 'controls', 'source-kb', 'minified-kb', 'gzip-kb', 'brotli-kb', 'core-brotli-kb']) {
     assert.ok(name in claims, `README lost its <!-- claim:${name} --> marker`);
   }
 });

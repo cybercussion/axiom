@@ -49,6 +49,9 @@ const ROUTE_TITLES = {
  *   basePath?: string
  * }} RouterOptions
  */
+/** How long a navigation waits for the browser to begin its view transition. */
+const VT_STALL_MS = 1000;
+
 export const router = {
   _activeTransition: null,
   _currentController: null,
@@ -499,7 +502,23 @@ export const router = {
     // 4. View Transition Orchestration
     if (document.startViewTransition) {
       if (this._activeTransition) this._activeTransition.skipTransition();
-      const transition = document.startViewTransition(() => performUpdate());
+      // The browser calls the update only once it has captured the old page. A
+      // capture that stalls must not hold the navigation: WebKit on Linux CI went
+      // 6 s without calling it — the address already /contact, the old page still
+      // on screen. Past VT_STALL_MS the transition is skipped and the update runs
+      // anyway. `update` starts performUpdate once; a late call is a no-op.
+      let updating = null;
+      let stallTimer;
+      const update = () => (updating ??= performUpdate());
+      const transition = document.startViewTransition(() => { clearTimeout(stallTimer); return update(); });
+      const stalled = new Promise(resolve => {
+        stallTimer = setTimeout(() => {
+          if (updating) return;
+          log.warn(`[Router] View transition did not start within ${VT_STALL_MS}ms; updating without it`);
+          transition.skipTransition();
+          resolve(update());
+        }, VT_STALL_MS);
+      });
       // `ready` rejects whenever the animation is skipped — a hidden tab
       // (InvalidStateError) or a superseding navigation (AbortError). The router
       // never awaits it, so every background-tab navigation raised an unhandled
@@ -507,7 +526,7 @@ export const router = {
       transition.ready.catch(() => {});
       this._activeTransition = transition;
       try {
-        await transition.finished;
+        await Promise.race([transition.finished, stalled]);
       } catch (e) {
         // Silently handle AbortError from skipTransition()
         if (e.name !== 'AbortError') log.error('ViewTransition error:', e);

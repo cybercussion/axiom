@@ -3,7 +3,23 @@ import { motionMs } from './motion.js';
 import { state } from '@state';
 
 class RouteProgress extends BaseComponent {
+  // Listen from connect, draw through the lifecycle: BaseComponent renders once
+  // the theme has landed, and the boot navigation starts before that.
   connectedCallback() {
+    super.connectedCallback();
+    this._timer = null;
+    this._unsub = state.subscribe(({ key, value }) => {
+      if (key === 'transitioning') {
+        if (value) {
+          this.show();
+        } else {
+          this.hide();
+        }
+      }
+    });
+  }
+
+  render() {
     this.shadowRoot.innerHTML = `
       <style>
         :host {
@@ -50,23 +66,16 @@ class RouteProgress extends BaseComponent {
       </style>
       <div class="bar"></div>
     `;
+  }
 
-    this._timer = null;
-
-    this._unsub = state.subscribe(({ key, value }) => {
-      if (key === 'transitioning') {
-        if (value) {
-          this.show();
-        } else {
-          this.hide();
-        }
-      }
-    });
+  onRendered() {
+    if (state.get('transitioning')) this.show(); // a navigation already under way
   }
 
   show() {
     clearTimeout(this._timer);
     const bar = this.shadowRoot.querySelector('.bar');
+    if (!bar) return; // not drawn yet: onRendered catches up
 
     // 1. Hard Reset: Snap to start immediately
     bar.style.transition = 'none';
@@ -91,6 +100,7 @@ class RouteProgress extends BaseComponent {
   hide() {
     const bar = this.shadowRoot.querySelector('.bar');
     clearTimeout(this._timer);
+    if (!bar) return;
 
     // 4. Final Snap: Quick move to 100%
     bar.style.transition = 'transform var(--duration-base) var(--ease-out-soft)';
@@ -102,6 +112,8 @@ class RouteProgress extends BaseComponent {
   }
 
   disconnectedCallback() {
+    super.disconnectedCallback();
+    clearTimeout(this._timer);
     if (this._unsub) this._unsub();
   }
 }
