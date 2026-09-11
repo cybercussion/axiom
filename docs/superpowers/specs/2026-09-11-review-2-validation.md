@@ -70,5 +70,6 @@ Decisions (Mark, 2026-09-11): work the plan in order, pushing back where it isn'
 | "When NOT to use Axiom" (#9) | **Shipped** — README |
 | CodeQL + Dependabot | **On.** CodeQL's first three findings are fixed (`a791a69`); the one Dependabot alert is the documented browser-sync advisory, dismissed as accepted risk |
 | Benchmarks vs other frameworks (#8), Lab demo | **Pushed back** — they make Axiom more convincing, not more defensible; revisit once P1 is done |
-| P1 remaining | Observability events, performance budgets (core size, layout shift, transition), route announcements, `/login`, `rel="external"` |
+| Route announcements, `/login`, `rel="external"` | **Shipped** — each reconciled from the fleet (announce-bus, tender, ev) |
+| P1 remaining | Observability events; performance budgets (core size, layout shift, transition) |
 

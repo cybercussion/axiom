@@ -43,8 +43,8 @@ Found by verification, absent from the review:
 | F6 | Every nav click navigated twice — two history entries; Back took two presses | Fixed `dec76fb` — found by the browser suite |
 | F7 | A navigation superseded mid-commit still scrolled and saved — a fast Back lost its position | Fixed `b56bbb7` — found by the browser suite |
 | F8 | Router still carries app coupling (`ROUTE_TITLES`, the `/login` guard redirect) and dead code (an `env-config.js` lookup, `_scrollTimeout`) | Open |
-| F9 | `#a11y-announcer` is declared but never written — route changes are not announced to screen readers | Open |
-| F10 | The dock's Login link targets a feature that does not exist in axiom (404) | Open |
+| F9 | `#a11y-announcer` is declared but never written — route changes are not announced to screen readers | Fixed — `@core/announce.js`, reconciled from the fleet's unused announce-bus; the router announces each committed route after the first |
+| F10 | The dock's Login link targets a feature that does not exist in axiom (404) | Fixed — a template `/login`, reconciled from tender; it says so when no provider is configured |
 | F11 | browser-sync carries 3 high advisories (dev-only); the obvious override silently kills live reload | Accepted, documented `39231a7` |
 
 ## §C4 — token storage, stated honestly

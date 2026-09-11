@@ -18,6 +18,7 @@ The second review's claims were tested before anything was built — [the valida
 - **Tests:** a seeded property test for concurrent mutations (50,000 sequences checked); invariant tests for the navigation race and component containment; the full browser suite on Chromium, WebKit and Firefox in CI. (`dc5b7e0`, `6bf5ba0`)
 - **Docs:** a contract per primitive (`docs/contracts.md`); a threat model and "Axiom does not make your application secure" (`SECURITY.md`); "When NOT to use Axiom" (README); auth documented as a placeholder.
 - **Repository:** Dependabot alerts and security updates, and CodeQL default setup, are on.
+- **Added:** route changes are announced to screen readers (`@core/announce.js`, reconciled from the fleet's never-imported announce-bus); a template `/login` (reconciled from tender) that says so when no provider is configured — the dock's Login link no longer lands on the 404; `rel="external"` opts a same-origin link out of client routing (reconciled from ev).
 
 ### Breaking — for projects that copy the core
 
