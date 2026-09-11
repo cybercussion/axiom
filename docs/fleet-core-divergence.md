@@ -85,7 +85,7 @@ axiom's core is the reconcile reference, declared CANONICAL in `MANIFEST.toml` (
 
 | file | reference hash | lines | a consumer |
 |---|---|---|---|
-| `src/core/router.js` | `6864b1c286a3` | 643 | adopt byte-for-byte; give routes a `title`, pass `appName` (and `loginPath` if not `/login`) to `router.init()` |
+| `src/core/router.js` | `d13dd2347965` | 643 | adopt byte-for-byte; give routes a `title`, pass `appName` (and `loginPath` if not `/login`) to `router.init()` |
 | `src/core/state.js` | `270f7305bc28` | 362 | adopt byte-for-byte; move your app keys into your own `app-state.js` with `state.define()` |
 | `src/core/gateway.js` | `226178011217` | 232 | adopt — or, where your gateway is genuinely your own, take `expect`, `GatewayError`, `{ signal }` and the `axiom:request` events |
 | `src/core/logger.js` | `daf9325dc814` | 32 | adopt (messages are no longer read as format directives) |
@@ -113,3 +113,5 @@ What breaks for a copier is listed under "Breaking" in [CHANGELOG.md](../CHANGEL
 - `reconcile src/shared/styles/theme.css axiom: adopted — the token set of record (77 tokens); bytes are expected to differ per project — verify: npm run lint:motion`
 
 **#12 (1c), the `localhost` block in six copies of `state.js`:** it does not belong in the core. In tender it is an empty `if (location.hostname === 'localhost') {}` inside the store's `set` trap — dead code on every write. Adopting the reference drops it.
+
+**Correction, ba2d961:** the router's title rule no longer ignores a default route's own `title` (it showed `appName` alone). The reference router is now `d13dd2347965`; the row above carries it. Consumers whose home page has a title of its own — ev.cybercussion.com — keep it.
