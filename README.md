@@ -66,10 +66,10 @@ You need one thing: a static server that falls back to `index.html` for deep lin
 ```bash
 git clone https://github.com/cybercussion/axiom.git
 cd axiom
-npx serve -s .        # any SPA-aware static server works — this one is `npm start`
+node tools/serve.js   # zero-dependency SPA server that ships in the repo (`npm start`)
 ```
 
-Open `http://localhost:3000`. That's it. You're developing.
+Open the URL it prints (`http://127.0.0.1:3000`). That's it. You're developing. Any other static server with SPA fallback works too.
 
 Want live reload, lint and tests? That's the optional toolchain:
 

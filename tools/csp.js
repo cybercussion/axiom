@@ -79,6 +79,16 @@ export const buildPolicy = ({ importMapHash = null, connect = [], turnstile = fa
   // Framing protection needs a real header (X-Frame-Options in _headers).
 ].filter(Boolean).map((d) => d.filter(Boolean).join(' ')).join('; ');
 
+/** The policy for a page: its import map's hash, config-derived connect-src, plus extra origins. */
+export const policyFor = (html, cfg = {}, extraConnect = []) => {
+  const map = importMapText(html);
+  return buildPolicy({
+    importMapHash: map === null ? null : sha256(map),
+    connect: [...new Set([...connectOrigins(cfg), ...extraConnect])].sort(),
+    turnstile: Boolean(cfg.TURNSTILE_SITE_KEY || cfg.AUTH?.TURNSTILE_SITE_KEY),
+  });
+};
+
 /** The policy currently in the file, or null. */
 export const currentPolicy = (html) => html.match(/<meta\s+http-equiv=["']Content-Security-Policy["']\s+content="([^"]*)"/i)?.[1] ?? null;
 
@@ -122,12 +132,7 @@ export const main = (argv) => {
 
   let cfg;
   try { cfg = readConfig(valueOf('--config')); } catch (e) { console.error(`csp: cannot evaluate config: ${e.message}`); return 2; }
-  const map = importMapText(html);
-  const policy = buildPolicy({
-    importMapHash: map === null ? null : sha256(map),
-    connect: [...new Set([...connectOrigins(cfg), ...extra])].sort(),
-    turnstile: Boolean(cfg.TURNSTILE_SITE_KEY || cfg.AUTH?.TURNSTILE_SITE_KEY),
-  });
+  const policy = policyFor(html, cfg, extra);
 
   if (mode === '--print') { console.log(policy); return 0; }
   if (mode === '--write') {

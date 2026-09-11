@@ -4,7 +4,7 @@
   "description": "High-performance, zero-build web architecture.",
   "type": "module",
   "scripts": {
-    "start": "npx serve -s .",
+    "start": "node tools/serve.js",
     "dev": "browser-sync start --server --files 'src/**/*' --single --no-notify",
     "build": "node tools/motion-gate.js && node tools/minify.js",
     "feature": "node tools/create-feature.js",
