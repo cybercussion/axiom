@@ -435,6 +435,11 @@ export const router = {
     if (document.startViewTransition) {
       if (this._activeTransition) this._activeTransition.skipTransition();
       const transition = document.startViewTransition(() => performUpdate());
+      // `ready` rejects whenever the animation is skipped — a hidden tab
+      // (InvalidStateError) or a superseding navigation (AbortError). The router
+      // never awaits it, so every background-tab navigation raised an unhandled
+      // rejection. The DOM update still runs either way; mark it handled.
+      transition.ready.catch(() => {});
       this._activeTransition = transition;
       try {
         await transition.finished;
