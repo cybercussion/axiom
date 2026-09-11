@@ -140,7 +140,11 @@ test('a push lands at the top; back returns to the saved offset (f970f5e)', asyn
   await settled(page, 'components-ui');
   const target = await page.evaluate(() => Math.min(1200, document.documentElement.scrollHeight - innerHeight - 10));
   expect(target, 'the page must actually scroll for this test to mean anything').toBeGreaterThan(300);
-  await page.evaluate((y) => window.scrollTo(0, y), target);
+  // Instant, and wait for it: the theme sets scroll-behavior: smooth, so a plain
+  // scrollTo animates — Firefox was still mid-animation when the test clicked
+  // away, and the router correctly saved the offset the page was actually at.
+  await page.evaluate((y) => window.scrollTo({ top: y, behavior: 'instant' }), target);
+  await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(target);
   await page.locator('nav-dock a[href="contact"]').click();
   await expect(page.locator('#app-container > contact-ui')).toBeAttached();
   // The ordinary Back: the contact navigation has finished. The in-flight case
@@ -159,7 +163,11 @@ test('Back during an in-flight navigation still restores the offset', async ({ p
   await page.goto('/components');
   await settled(page, 'components-ui');
   const target = await page.evaluate(() => Math.min(1200, document.documentElement.scrollHeight - innerHeight - 10));
-  await page.evaluate((y) => window.scrollTo(0, y), target);
+  // Instant, and wait for it: the theme sets scroll-behavior: smooth, so a plain
+  // scrollTo animates — Firefox was still mid-animation when the test clicked
+  // away, and the router correctly saved the offset the page was actually at.
+  await page.evaluate((y) => window.scrollTo({ top: y, behavior: 'instant' }), target);
+  await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(target);
   await page.route('**/features/contact/*.css*', (route) => setTimeout(() => route.continue(), 800));
   await page.locator('nav-dock a[href="contact"]').click();
   await expect(page.locator('#app-container > contact-ui')).toBeAttached();

@@ -15,7 +15,11 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['list'], ['github']] : 'list',
   use: { baseURL: `http://127.0.0.1:${PORT}`, trace: 'retain-on-failure' },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  // AXIOM_ENGINES=chromium,webkit,firefox — the matrix the README's browser floor claims.
+  projects: (process.env.AXIOM_ENGINES || 'chromium').split(',').map((name) => ({
+    name,
+    use: { ...{ chromium: devices['Desktop Chrome'], webkit: devices['Desktop Safari'], firefox: devices['Desktop Firefox'] }[name.trim()] },
+  })),
   webServer: {
     command: `node tools/serve.js --port ${PORT} --csp`,
     url: `http://127.0.0.1:${PORT}/`,
