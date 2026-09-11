@@ -553,7 +553,17 @@ test('three navigations, the middle one resolving last: only the last commits', 
   const out = await page.evaluate(async () => {
     const { router } = await import('/src/core/router.js');
     const { state } = await import('/src/core/state.js');
-    const tick = (ms) => new Promise((r) => setTimeout(r, ms));
+    const settle = (ms) => new Promise((r) => setTimeout(r, ms));
+    // Wait on the condition, never on a clock: on a slow engine the first
+    // navigation's update was still queued when a fixed sleep expired, so its
+    // loader had never run, no gate existed, and the test — not the router — failed.
+    const until = async (label, pred, ms = 5000) => {
+      const t0 = Date.now();
+      while (!pred()) {
+        if (Date.now() - t0 > ms) throw new Error(`timed out waiting for ${label}`);
+        await settle(20);
+      }
+    };
     const gates = {};
     const writes = [];
     const navs = [];
@@ -564,12 +574,12 @@ test('three navigations, the middle one resolving last: only the last commits', 
       dataKey: 'item',
       api: (params) => new Promise((resolve) => { gates[params.id] = () => resolve({ id: params.id }); }),
     };
-    router.navigate('/item/1'); await tick(60);
-    router.navigate('/item/2'); await tick(60);
-    router.navigate('/item/3'); await tick(60);
-    gates['1'](); await tick(150);   // A resolves
-    gates['3'](); await tick(250);   // then C
-    gates['2'](); await tick(400);   // then B, last
+    router.navigate('/item/1'); await until('A to start loading', () => gates['1']);
+    router.navigate('/item/2'); await until('B to start loading', () => gates['2']);
+    router.navigate('/item/3'); await until('C to start loading', () => gates['3']);
+    gates['1'](); await settle(50);                                        // A resolves first
+    gates['3'](); await until('C to commit', () => navs.includes('/item/3:commit'));
+    gates['2'](); await settle(400);                                       // then B, last: it must land nothing
     return { url: location.pathname, shows: state.get('item')?.data?.id, writes, navs };
   });
 
