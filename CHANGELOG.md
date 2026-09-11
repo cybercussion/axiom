@@ -23,6 +23,9 @@ The second review's claims were tested before anything was built — [the valida
 - **Fixed:** WebKit on Linux CI went 6 s without starting a view transition, holding a navigation whose address had already changed. The router now waits at most 1 s, then skips the transition and commits. (`1314916`)
 - **Added:** a budget for the runtime core — `tools/weigh.js --check` fails past 13 KB Brotli (12.2 KB today), and the README states it; a layout-shift ceiling and layout invariants in the browser suite; `npm run bench`, reported and never gated. (`1314916`)
 - **Tests:** the browser suite counts the logger's errors (it prints every level through `console.log`). Each new invariant fails against the code before its fix. (`1314916`)
+- **Added:** runtime events on `window` — `axiom:navigation`, `axiom:request`, `axiom:mutation`, `axiom:auth` — each `start` ending exactly once with the same id; `observe(fn)` from `@core/observe.js`. No detail carries headers, bodies, payloads or tokens. (`c1f87c7`)
+- **Changed:** the core's size budget rises from 13 to 14 KB Brotli; the events cost 0.8 KB (13.1 KB shipped). (`c1f87c7`)
+- **Tools:** `tools/types.js` drops top-level exports tagged `@internal` from the declarations — tsc's `stripInternal` leaves them in when the source is JavaScript. (`c1f87c7`)
 
 ### Breaking — for projects that copy the core
 

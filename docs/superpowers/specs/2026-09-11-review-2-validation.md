@@ -63,7 +63,7 @@ Decisions (Mark, 2026-09-11): work the plan in order, pushing back where it isn'
 | Aborted-navigation data race (#1, #2) | **Shipped** `00e8f70` — cancellable `query()` and `gateway`; invariant tests in both loader modes (`6bf5ba0`) |
 | Failure containment (#5) | **Shipped** `188a660` — `axiom:component-error`, fallback, `rendered` always resolves |
 | Prototype pollution (#3) | **Shipped** `00e8f70` — null-prototype store |
-| Browser matrix in CI (#7) | **Shipped** `6bf5ba0` — Chromium, WebKit, Firefox. The scroll-test flake was the test scrolling before `/components` finished laying out; the router was right. The WebKit-on-Linux flake, read from its trace: WebKit did not start a view transition for 6 s after a click (run 34629597306). The router now bounds that wait at 1 s (`1314916`) |
+| Browser matrix in CI (#7) | **Shipped** `6bf5ba0` — Chromium, WebKit, Firefox. The scroll-test flake was the test scrolling before `/components` finished laying out; the router was right. The WebKit-on-Linux flake, read from its trace: WebKit did not start a view transition for 6 s after a click (run 34629597306). The router now bounds that wait at 1 s (`1314916`). A second, on the next deploy — Back during an in-flight navigation, passed on retry: WebKit held the Back transition's update 804 ms behind the one in flight, then the scroll restore landed at 0. Not yet explained; the router now logs where each restore lands and how tall the page was (`c1f87c7`) — **open** |
 | Contract per primitive (#1) | **Shipped** — `docs/contracts.md`, including the A/B answer and the test behind each guarantee |
 | Threat model (#3) | **Shipped** — `SECURITY.md` |
 | Auth default (#4) | **Declined** — auth is a placeholder; documented in SECURITY.md, `docs/auth-readme.md` and the contracts |
@@ -72,5 +72,6 @@ Decisions (Mark, 2026-09-11): work the plan in order, pushing back where it isn'
 | Benchmarks vs other frameworks (#8), Lab demo | **Pushed back** — they make Axiom more convincing, not more defensible; revisit once P1 is done |
 | Route announcements, `/login`, `rel="external"` | **Shipped** — each reconciled from the fleet (announce-bus, tender, ev) |
 | Performance budgets (#8) | **Shipped** `1314916` — the core's shipped size (13 KB Brotli) and layout shift (CLS < 0.1, plus race invariants) fail the deploy; the state bench is reported, not gated. Found on the way: `/components` at CLS 1.09 live — two races, both fixed, each pinned by a test that fails on the previous code |
-| P1 remaining | Observability events |
+| Observability events (#6) | **Shipped** `c1f87c7` — `axiom:navigation`, `axiom:request`, `axiom:mutation`, `axiom:auth`; every start ends exactly once; `observe()`; no headers, bodies or tokens. The core's budget rose to 14 KB to carry it |
+| Next | Fleet propagation — re-borrow the core per project: tender → cybercussion.com → scobot → daystra → ev → SCOBotPackager |
 
