@@ -506,25 +506,27 @@ export const router = {
 
   /** @param {MouseEvent} e */
   handleIntercept(e) {
+    // A click is handled ONCE. nav-dock and nav-sidebar route their own clicks
+    // (preventDefault + navigate), and the same event then bubbles to the
+    // document listener installed by init(). Without this guard every such click
+    // navigated twice and pushed two history entries: Back needed two presses,
+    // and the second navigation skipped the first one's view transition.
+    if (e.defaultPrevented) return;
+    // Leave the browser's own affordances alone: a new tab or window, a
+    // download, an explicit target, any button but the primary one.
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+
     // composedPath, not closest: clicks inside Shadow DOM are retargeted to the
     // shadow host, so e.target.closest('a') misses anchors rendered in a
     // component's shadow root → full page reload instead of a view transition.
     const link = e.composedPath().find(el => el && el.tagName === 'A' && el.href);
-    if (link && link.origin === location.origin && !e.metaKey && !e.ctrlKey) {
-      // Must start with our base to be an internal link
-      const href = link.getAttribute('href');
+    if (!link || link.origin !== location.origin) return;
+    if ((link.target && link.target !== '_self') || link.hasAttribute('download')) return;
 
-      // If the href is absolute (starts with /), checking if it matches base context is tricky
-      // But typically internal links are written as /home or just home
-      // Let's rely on standard navigation which will resolve the relative path
-      // Against the current location.
-
-      // Actually, safest is to let the browser resolve the full URL,
-      // then check if it starts with our base URI.
-      if (link.href.startsWith(location.origin + this.base) || this.base === '/') {
-        e.preventDefault();
-        this.navigate(href);
-      }
+    // Internal only: the browser-resolved URL must sit under our base.
+    if (link.href.startsWith(location.origin + this.base) || this.base === '/') {
+      e.preventDefault();
+      this.navigate(link.getAttribute('href'));
     }
   },
 
