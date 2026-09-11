@@ -9,22 +9,11 @@ import { auth } from '@core/auth.js';
 import { announce } from '@core/announce.js';
 import { emit, elapsed, reason } from '@core/observe.js';
 
-const ROUTE_TITLES = {
-  home: 'Axiom',
-  login: 'Sign In',
-  dashboard: 'Dashboard',
-  about: 'About',
-  contact: 'Contact',
-  privacy: 'Privacy Policy',
-  terms: 'Terms of Service',
-  profile: 'Profile',
-  'not-found': 'Not Found'
-};
-
 /**
  * A route. `path` is the feature module; `api` loads its data in parallel with it.
  * @typedef {{
  *   path: string,
+ *   title?: string,
  *   guard?: () => boolean|Promise<boolean>,
  *   api?: string | ((params: Record<string, string>, signal: AbortSignal) => Promise<any>),
  *   dataKey?: string
@@ -47,7 +36,9 @@ const ROUTE_TITLES = {
  *   depths?: Record<string, number>,
  *   order?: string[],
  *   defaultRoute?: string,
- *   basePath?: string
+ *   basePath?: string,
+ *   appName?: string,
+ *   loginPath?: string
  * }} RouterOptions
  */
 /** How long a navigation waits for the browser to begin its view transition. */
@@ -56,7 +47,6 @@ const VT_STALL_MS = 1000;
 export const router = {
   _activeTransition: null,
   _currentController: null,
-  _scrollTimeout: null,
   // Path of the last COMMITTED route — the page the user is actually on.
   // location.pathname is unreliable for this during popstate handling.
   _activePath: null,
@@ -85,6 +75,10 @@ export const router = {
     this.depths = options.depths || { 'default': 1 };
     this.order = options.order || [];
     this.defaultRoute = options.defaultRoute || 'home';
+    // The app's, not the router's: the name in every page title, and where a
+    // failed guard sends the user.
+    this.appName = options.appName ?? '';
+    this.loginPath = options.loginPath || '/login';
 
     this.base = options.basePath || config.BASE_PATH;
     if (!this.base.endsWith('/')) this.base += '/';
@@ -166,7 +160,6 @@ export const router = {
    * @returns {Promise<void>}
    */
   async navigate(path, push = true, customDirection = null) {
-    if (this._scrollTimeout) clearTimeout(this._scrollTimeout);
 
     // Force Save: Capture final scroll position before leaving (if pushing new state)
     // The debounce listener might lose the last few milliseconds of scrolling.
@@ -344,20 +337,15 @@ export const router = {
             state.notify('Authentication Required', 'warning');
 
             // Redirect to login
-            return this.navigate('/login', true, 'fade');
+            return this.navigate(this.loginPath, true, 'fade');
           }
         }
 
         if (signal.aborted || navigationId !== this._activeNavId) return; // Guard
-
-        // Extract version hash from DOM to bust immutable cache on dynamic imports
-        const vMatch = document.querySelector('script[src*="env-config.js"]')?.src.match(/v=([^&]+)/);
-        const buildHash = vMatch ? `?v=${vMatch[1]}` : '';
-        const importPath = config.path.includes('?') ? config.path : config.path + buildHash;
-
+        // Cache-busting is the build's: tools/minify.js stamps every lazy-route path.
         // Parallelize: Load Code + Fetch Data
         await Promise.all([
-          import(importPath),
+          import(config.path),
           config.api ? state.query(config.dataKey, async () => {
             if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
 
@@ -382,17 +370,13 @@ export const router = {
         state.set('query', queryObject);
         state.set('params', params);
 
-        // Update document title — include subroute for history differentiation
-        const pageTitle = ROUTE_TITLES[slug];
+        // Document title: the route's `title`, a sub-view when the URL has one (so
+        // history entries differ), and the app's name — all three the app's to set.
         const subView = params.view || pathSegments[1] || '';
-        if (subView) {
-          const subLabel = subView.charAt(0).toUpperCase() + subView.slice(1).replace(/-/g, ' ');
-          document.title = `${subLabel} — ${pageTitle || slug} — Axiom`;
-        } else {
-          document.title = pageTitle && slug !== 'home'
-            ? `${pageTitle} — Axiom`
-            : 'Axiom';
-        }
+        const heading = subView
+          ? [subView.charAt(0).toUpperCase() + subView.slice(1).replace(/-/g, ' '), config.title || slug]
+          : (config.title && slug !== this.defaultRoute ? [config.title] : []);
+        document.title = [...heading, this.appName].filter(Boolean).join(' — ') || config.title || slug;
 
         // Emit a navigation "commit" signal after state is updated,
         // providing a unique event even when slug stays the same.

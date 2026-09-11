@@ -525,3 +525,17 @@ test('every navigation that starts ends exactly once — only the last of a burs
   expect(ends.every((e) => typeof e.ms === 'number')).toBe(true);
   expect(nav.find((e) => e.phase === 'abort').supersededBy).toBeGreaterThan(0);
 });
+
+test("a page's title comes from its route; the default route is the app's name", async ({ page }) => {
+  // The router used to carry this app's titles and name in a table of its own,
+  // so every project that borrowed it either showed Axiom's titles or edited it.
+  await page.goto('/');
+  await settled(page, 'home-ui');
+  expect(await page.title()).toBe('Axiom');
+  await navigateInPage(page, ['/dashboard']);
+  await settled(page, 'dashboard-ui');
+  expect(await page.title()).toBe('Dashboard — Axiom');
+  await navigateInPage(page, ['/components']);
+  await settled(page, 'components-ui');
+  expect(await page.title()).toBe('Components — Axiom');
+});

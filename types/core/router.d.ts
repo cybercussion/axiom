@@ -49,6 +49,7 @@ export namespace router {
  */
 export type RouteConfig = {
     path: string;
+    title?: string;
     guard?: () => boolean | Promise<boolean>;
     api?: string | ((params: Record<string, string>, signal: AbortSignal) => Promise<any>);
     dataKey?: string;
@@ -75,4 +76,6 @@ export type RouterOptions = {
     order?: string[];
     defaultRoute?: string;
     basePath?: string;
+    appName?: string;
+    loginPath?: string;
 };

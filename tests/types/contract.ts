@@ -21,6 +21,7 @@ const cancellable: Promise<number> = state.query('n', async () => 1, 1000, { sig
 state.notify('saved', 'success');
 const off: () => void = state.subscribe(({ key, value }) => void [key, value]);
 router.navigate('/dashboard');
+router.init({ routes: { a: { path: 'a.js', title: 'A' } }, defaultRoute: 'a', appName: 'App', loginPath: '/signin' });
 const offNav = router.onNavigation((nav) => void nav?.phase);
 const offMatch = router.onMatch(({ route: r, params }) => void [r, params.id]);
 const flows = async () => {
@@ -42,6 +43,8 @@ class Demo extends BaseComponent {
 const stopWatching: () => void = observe((name, detail) => void [name, detail.phase], EVENTS);
 
 // ---- misuse does not compile ---------------------------------------------------
+// @ts-expect-error — a route's title is text
+router.init({ routes: { a: { path: 'a.js', title: 42 } } });
 // @ts-expect-error — observe takes a handler, not an event name
 observe('axiom:request');
 // @ts-expect-error — emit is the core's own voice, not part of the contract

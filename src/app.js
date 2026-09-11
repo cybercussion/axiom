@@ -37,6 +37,7 @@ router.init({
   routes: ROUTES,
   depths: ROUTE_DEPTHS,
   order: ROUTE_ORDER,
-  defaultRoute: DEFAULT_ROUTE
+  defaultRoute: DEFAULT_ROUTE,
+  appName: 'Axiom'
 });
 log.info(`Bootstrapped [${config.ENV}]`);
