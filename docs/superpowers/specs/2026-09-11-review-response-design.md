@@ -10,34 +10,42 @@ Litmus: a reader holding only the original review can tell from this page what h
 
 ## Ledger
 
+Status as of 2026-09-11; hashes are on `main`.
+
 | # | Criticism | Verdict | Disposition |
 |---|---|---|---|
-| C1 | Shallow reactivity — `state.data.user.name = x` never notifies | Accept | T3 `state.update(key, fn)`; rule documented |
-| C2 | `mutate()` rollback not transactional under concurrency | Accept — worse than stated | T2 pending ledger. Today a concurrent *successful* mutation's data is lost |
-| C3 | README: router "200 lines" | Done | `ce99098` |
-| C4 | Full token set in localStorage | Accept in part (§C4) | T1 + T6 + T7 |
-| C5 | `GRAPHQL_API_KEY` in browser config | Accept | T6 + T7: config declared public, model documented |
+| C1 | Shallow reactivity — `state.data.user.name = x` never notifies | Accept | **Shipped** `76b25b0` — `state.update()`; the rule is pinned by a characterization test |
+| C2 | `mutate()` rollback not transactional under concurrency | Accept — worse than stated | **Shipped** `5e0b135` — per-key pending ledger; a concurrent *successful* write was being lost |
+| C3 | README: router "200 lines" | Done | `ce99098`; README numbers now CI-checked (`6c3dc49`) |
+| C4 | Full token set in localStorage | Accept in part (§C4) | **Shipped** — sinks `6564943`, CSP `354098c`, `tokenStore` `76f0a99`, SECURITY.md `adb0cc5`. **Open:** the BFF step — a worker change, outside this repo |
+| C5 | `GRAPHQL_API_KEY` in browser config | Accept | **Shipped** — public `axiom-config.js` (`354098c`); model in SECURITY.md (`adb0cc5`) |
 | C6 | "zero-build" needs qualification | Done | `ce99098` |
-| C7 | README oversells simplicity | Done, continued | `ce99098`, T10 |
-| C8 | App state inside core `state.js` | Accept — it is also the fleet-divergence mechanism | T4 |
-| C9 | Gateway content-type sniffing | Accept | T5 `expect` + `GatewayError`; auto stays default |
+| C7 | README oversells simplicity | Done | `6c3dc49` — rewritten; numbers CI-checked |
+| C8 | App state inside core `state.js` | Accept | **Shipped** `124b2c2`, guarded by a test. **Open:** the router carries app coupling too (F8) |
+| C9 | Gateway content-type sniffing | Accept | **Shipped** `b9413f1` |
 | C10 | Router renders errors over `document.body` | Done | `a6390fe` |
-| C11 | No runtime tests | Partly done | `006c996`, `a6390fe` (node, 22 tests); T9 browser |
-| C12 | JS-only public contracts | Accept (P2) | T8 declarations generated from source, drift-checked |
-| C13 | "What is Axiom trying to be?" | Answered: B | §C13, T10 |
+| C11 | No runtime tests | Accept | **Shipped** — node suite (`006c996` onward); browser suite under the production CSP (`abb935a`) |
+| C12 | JS-only public contracts | Accept (P2) | **Shipped** `0351282` — generated `types/`; misuse pinned in a contract |
+| C13 | "What is Axiom trying to be?" | Answered: B | §C13; [docs/contracts.md](../../contracts.md) |
 | C14 | Benchmarks vs React/Vue/Preact | Defer | §C14 |
 | C15 | Restructure into core/browser/security/app dirs | Contest the move, take the intent | §C15 |
-| C16 | "Don't become the thing it replaced" | Adopted as a constraint | §Constraints |
+| C16 | "Don't become the thing it replaced" | Adopted as a constraint | Held: every change was a function, an option or an event |
 
 Found by verification, absent from the review:
 
 | # | Defect | Disposition |
 |---|---|---|
-| F1 | `mutate()` destroyed primitive backups; threw on null inside its catch | Done `b9fa5a6` |
-| F2 | Latent XSS sinks: `notify()` renders messages as HTML; dashboard error text; nav avatar/email attributes; 2 inline handlers that also block any CSP | T1 |
-| F3 | 404 recovery rewrote the URL out of the deployment base path | Done `a6390fe` |
-| F4 | Lockfile ignored while CI gated on `npm ci`; gates had never run | Done `bd43e52` |
-| F5 | Core copied ×8, one shared bug in all | Measured `698126b`; T4 is the structural fix |
+| F1 | `mutate()` destroyed primitive backups; threw on null inside its catch | Fixed `b9fa5a6` |
+| F2 | Latent XSS sinks: `notify()` rendered HTML; dashboard error text; nav avatar/email attributes; inline handlers | Fixed `6564943` |
+| F3 | 404 recovery rewrote the URL out of the base path | Fixed `a6390fe` |
+| F4 | Lockfile ignored while CI gated on `npm ci`; the gates had never run | Fixed `bd43e52` |
+| F5 | Core copied ×8, one shared bug in all | Measured `698126b`; convergence mechanism `124b2c2`; the decision is the fleet's (specula) |
+| F6 | Every nav click navigated twice — two history entries; Back took two presses | Fixed `dec76fb` — found by the browser suite |
+| F7 | A navigation superseded mid-commit still scrolled and saved — a fast Back lost its position | Fixed `b56bbb7` — found by the browser suite |
+| F8 | Router still carries app coupling (`ROUTE_TITLES`, the `/login` guard redirect) and dead code (an `env-config.js` lookup, `_scrollTimeout`) | Open |
+| F9 | `#a11y-announcer` is declared but never written — route changes are not announced to screen readers | Open |
+| F10 | The dock's Login link targets a feature that does not exist in axiom (404) | Open |
+| F11 | browser-sync carries 3 high advisories (dev-only); the obvious override silently kills live reload | Accepted, documented `39231a7` |
 
 ## §C4 — token storage, stated honestly
 

@@ -85,7 +85,7 @@ npm test              # tool tests + core tests, in node
 
 ## 🧪 Tests
 
-`npm test` runs the tool tests and the core tests. The core's browser modules run under node through a resolve hook that applies the same import map the browser uses — tests import `@state` exactly as the app does, with no build step and no second module graph to drift. The deploy runs every test before anything ships, and one of them checks the numbers in this README.
+`npm test` runs the tool tests and the core tests; `npm run e2e` runs the browser suite (Playwright, Chromium) with the app under its production CSP. The core's browser modules run under node through a resolve hook that applies the same import map the browser uses — tests import `@state` exactly as the app does, with no build step and no second module graph to drift. The deploy runs every test before anything ships, and one of them checks the numbers in this README.
 
 ---
 
@@ -197,6 +197,8 @@ On 2026-09-11 that turned 363 KB of source into 250 KB minified, ~57 KB gzipped 
 - **Variables:** CSS custom properties. Not Sass variables.
 - **Modules:** ES modules. Not CommonJS `require()`.
 - **State:** a `Proxy`. Not a specialized reducer-store library.
+
+The rules the runtime keeps — component lifecycle, state and router guarantees, accessibility, the browser floor, versioning — are written down in [docs/contracts.md](docs/contracts.md).
 
 And what Axiom deliberately **isn't**:
 
