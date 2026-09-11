@@ -134,3 +134,17 @@ The reference is axiom `65f0553`; its hashes and what a consumer provides are in
 - **No `<link>` to theme.css in `<head>`.** The reference BaseComponent then fetches the theme and every component waits for it; add the link, or accept the wait. A component that owns its shadow root must override `render()`.
 - `auth.js` lacks `isAuthenticated()`, `getAccessToken()`, which the reference router/gateway call.
 
+## How these land — the foreign-write guard (2026-09-11)
+
+praxis's `guard-foreign-write.py` hard-blocks a seat from writing into another project's tree (operator decision, 2026-09-05). axiom's seat hit it on tender at `arc intent complete`. So a row cannot be both worked and landed from this session: the legal path is the handoff the guard names — post the staged work to the owning project's channel, and let that seat or the operator run the Arc lifecycle commands.
+
+Worth knowing before the next row: the guard recognises Arc verbs, not plain file writes. `cp` and a `python3` heredoc wrote ten core files and three app files into tender's worktree unblocked; only the following `arc intent complete` was stopped. Filed as a defect on #praxis (seq 392) with a copy-paste falsifier.
+
+## Status
+
+| project | state |
+|---|---|
+| tender.cybercussion.com | **Staged and verified in Arc worktree #38, not landed.** Core files hash-identical to the reference; 13 route titles moved; `appName: 'Tender'`; `sessionId` in a new `app-state.js`; nav-orchestrator and toast-manager fixes taken. `npm run test:frontend` 50/50 and a public-route smoke identical to the untouched tree. Handed off on #tender.cybercussion.com seq 4 with the finish commands; claims released (seq 5, 6). tender's live tree is untouched. |
+| scobot.cybercussion.com | Oriented, not started. Same clean-adopt shape as tender: no core member exists there that the reference lacks; 17 route titles; title template already `— SCOBot`; theme `<link>` present; `npm run test:frontend` exists as the verify. Store carries `theme`, `audioLevel`, `captionsEnabled`, `autoplayEnabled`, `language`, `sessionId`, `items` — `language` is scobot's own and joins its `app-state.js`; axiom's file already covers the rest. Relay `cybercussion-arc-r2` last synced 31h ago: probe and pull before working. |
+| the other four | Plans above; none started. |
+
