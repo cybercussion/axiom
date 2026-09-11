@@ -375,7 +375,7 @@ export const router = {
         const subView = params.view || pathSegments[1] || '';
         const heading = subView
           ? [subView.charAt(0).toUpperCase() + subView.slice(1).replace(/-/g, ' '), config.title || slug]
-          : (config.title && slug !== this.defaultRoute ? [config.title] : []);
+          : (config.title ? [config.title] : []);
         document.title = [...heading, this.appName].filter(Boolean).join(' — ') || config.title || slug;
 
         // Emit a navigation "commit" signal after state is updated,
