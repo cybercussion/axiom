@@ -48,8 +48,8 @@ jobs:
         run: |
           npx playwright install --with-deps chromium
           npm run e2e
-      - name: Build + verify dist
-        run: npm run build && npm run verify-dist
+      - name: Build + verify dist + README weight claims
+        run: npm run build && npm run verify-dist && node tools/weigh.js --check
       - name: PWA contract
         run: npm run check-pwa
 

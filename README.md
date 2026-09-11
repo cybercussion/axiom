@@ -7,14 +7,16 @@ We once believed a `node_modules` folder the size of a small moon, a build step 
 
 We were wrong.
 
-Axiom is a small application runtime built from what browsers already ship — ES modules, import maps, Custom Elements, Shadow DOM, `Proxy`, `EventTarget`, `fetch`, the History API, View Transitions. **Zero runtime dependencies**: the source you write is the source the browser executes, unbuilt. The dev toolchain (lint, tests, minify) is optional and never reaches a user.
+Axiom is a small application runtime built from what browsers already ship — ES modules, import maps, Custom Elements, Shadow DOM, `Proxy`, `EventTarget`, `fetch`, the History API, View Transitions.
+
+**Zero runtime dependencies. No framework build step required.** Optional tooling is provided for development, testing, validation, and production asset optimization.
 
 | | |
 |---|---|
 | Runtime dependencies | <!-- claim:runtime-deps -->0<!-- /claim --> |
-| Runtime core (`src/core/` + `BaseComponent`) | <!-- claim:core-lines -->~2,000<!-- /claim --> lines |
+| Runtime core (`src/core/` + `BaseComponent`) | <!-- claim:core-lines -->~2,200<!-- /claim --> lines |
 | Built-in UI controls | <!-- claim:controls -->25<!-- /claim --> |
-| The entire app — every feature, every control — minified + gzipped | ~57 KB (measured 2026-09-11) |
+| The entire app — every feature, every control — minified, compressed per file as a browser fetches it | <!-- claim:gzip-kb -->~87<!-- /claim --> KB gzip · <!-- claim:brotli-kb -->~73<!-- /claim --> KB Brotli |
 | Browser floor | Chrome/Edge 111+, Safari 16.4+, Firefox 113+ (import maps, `adoptedStyleSheets`, `ElementInternals`, `color-mix()`) |
 
 ---
@@ -29,7 +31,7 @@ Not a store library. A `Proxy` and an `EventTarget`.
 - **Declared keys.** `state.define()` declares a key and where it persists. Core declares only its own keys; your app declares its own, in its own module — so nobody ever has to edit the framework file. (Eight projects that did are why eight copies of it stopped matching.)
 
 ### 2. Router — `src/core/router.js`
-About <!-- claim:router-lines -->550<!-- /claim --> lines. You can read all of it before your current router's changelog finishes loading.
+About <!-- claim:router-lines -->600<!-- /claim --> lines. You can read all of it before your current router's changelog finishes loading.
 - **Parallel loading.** The route's module and its data load at the same time. No waterfall.
 - **Race-safe.** Click A, B, C in quick succession; whichever request finishes last, you land on C.
 - **Error contract.** A failed route falls back to your 404. If *that* fails, the router emits a cancelable `axiom:router-error` — `preventDefault()` and the outcome is yours. Unhandled, it draws a minimal notice in the app container, never over `document.body`.
@@ -186,17 +188,20 @@ npm run build                                                        # Terser + 
 node tools/csp.js dist/index.html --write --config axiom-config.js   # then add the Content-Security-Policy
 ```
 
-On 2026-09-11 that turned 363 KB of source into 250 KB minified, ~57 KB gzipped — the whole app. It's non-destructive: it reads your source and writes `dist/`.
+That turns <!-- claim:source-kb -->~350<!-- /claim --> KB of source JS + CSS into <!-- claim:minified-kb -->~230<!-- /claim --> KB minified — ~87 KB gzipped, ~73 KB with Brotli, compressed per file the way a browser fetches it. That's the whole app; any one page loads a subset. It's non-destructive: it reads your source and writes `dist/`.
 
 ---
 
 ## 📝 Philosophy
 
-**If the platform can do it, use the platform.**
+**Use browser primitives, add only the missing application-level contracts, and make those contracts small, observable, cancellable, testable, and explicit.**
 
-- **Variables:** CSS custom properties. Not Sass variables.
-- **Modules:** ES modules. Not CommonJS `require()`.
-- **State:** a `Proxy`. Not a specialized reducer-store library.
+- **Browser primitives.** CSS custom properties, not Sass variables. ES modules, not CommonJS. A `Proxy` and an `EventTarget`, not a reducer-store library.
+- **Small.** See the table at the top: the runtime core is an afternoon's reading.
+- **Observable.** `state.subscribe()` for every change, `router.onNavigation()` for each navigation's start and commit, `axiom:router-error` for a failure the app should render.
+- **Cancellable.** A newer navigation aborts the one in flight: its route loader receives the `AbortSignal` (`api(params, signal)`), and a navigation that loses never commits, focuses or scrolls. `axiom:router-error` is cancelable — `preventDefault()` and the outcome is yours.
+- **Testable.** Node tests import the same specifiers the browser resolves; the browser suite runs under the production CSP; misuse of the public types is pinned so it cannot compile.
+- **Explicit.** `expect` turns a response-type assumption into an assertion; `state.define()` is the one place a key's persistence is decided; where tokens persist is an option you pass, with what it does and doesn't protect written down.
 
 The rules the runtime keeps — component lifecycle, state and router guarantees, accessibility, the browser floor, versioning — are written down in [docs/contracts.md](docs/contracts.md).
 
@@ -204,6 +209,6 @@ And what Axiom deliberately **isn't**:
 
 - **Server-rendered.** It's a client runtime, by design. If you need SSR, you need a different tool.
 - **An ecosystem.** No stores, providers, middleware or plugins — and it won't grow them. Every addition is a function, an option, or an event on something that already exists.
-- **Beyond review.** An external review graded this README 6/10 for accuracy. Every criticism now has a written disposition — [the ledger](docs/superpowers/specs/2026-09-11-review-response-design.md) — and the numbers at the top of this page are checked by `tools/readme-claims.test.js`.
+- **Beyond review.** An external review graded this README 6/10 for accuracy. Every criticism now has a written disposition — [the ledger](docs/superpowers/specs/2026-09-11-review-response-design.md) — and the counts and sizes on this page are checked on every deploy: line counts within 10% by `tools/readme-claims.test.js`, shipped bytes against the real build by `tools/weigh.js`. The browser floor was checked against MDN's compatibility data on 2026-09-11.
 
 Enjoy your retrieved sanity.

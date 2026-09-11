@@ -41,6 +41,10 @@ Every criticism in the external review, and what happened to it: [the ledger](do
 - Router: a new page landed where an earlier visit had been scrolled, and focus scrolled the viewport. (`f970f5e`)
 - CI: the lockfile was ignored while the deploy gated on `npm ci`, so no gate had ever run. (`bd43e52`)
 
+### Docs
+
+- README numbers re-measured and enforced: line counts within 10% (was 15%), shipped bytes checked against the real build by `tools/weigh.js` on every deploy. The first "~57 KB gzipped" was measured as one concatenated archive; compressed per file, as browsers fetch modules, the app is ~87 KB gzip / ~73 KB Brotli.
+
 ### Security
 
 - Deploy-time Content-Security-Policy: `script-src 'self'` plus the import map's hash — no `'unsafe-inline'`, no `eval`. (`354098c`)
