@@ -513,10 +513,12 @@ export const router = {
     if (document.startViewTransition) {
       if (this._activeTransition) this._activeTransition.skipTransition();
       // The browser calls the update only once it has captured the old page. A
-      // capture that stalls must not hold the navigation: WebKit on Linux CI went
-      // 6 s without calling it — the address already /contact, the old page still
-      // on screen. Past VT_STALL_MS the transition is skipped and the update runs
-      // anyway. `update` starts performUpdate once; a late call is a no-op.
+      // browser that never gets there must not hold the navigation: past
+      // VT_STALL_MS the transition is skipped and the update runs anyway.
+      // `update` starts performUpdate once; a late call is a no-op. (Prompted by
+      // WebKit on Linux CI going 6 s without calling it — but there the whole main
+      // thread was blocked and no timer could fire, this one included. No engine
+      // has been seen to trip this bound; if none ever does, it can go.)
       let updating = null;
       let stallTimer;
       const update = () => (updating ??= performUpdate());

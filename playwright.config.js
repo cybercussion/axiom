@@ -19,6 +19,13 @@ export default defineConfig({
   projects: (process.env.AXIOM_ENGINES || 'chromium').split(',').map((name) => ({
     name,
     use: { ...{ chromium: devices['Desktop Chrome'], webkit: devices['Desktop Safari'], firefox: devices['Desktop Firefox'] }[name.trim()] },
+    // WebKit on the GPU-less Linux runner blocks its main thread for 5–9 s when a
+    // navigation starts a view transition from /components: in the traces of runs
+    // 34629597306 and 34635441704 no timer fires in that window, not even the
+    // router's 1 s stall bound. Local WebKit takes milliseconds. The router is
+    // right and the runner is slow, so WebKit's assertions get room — the tests
+    // stay on the real view-transition path instead of stubbing it away.
+    ...(name.trim() === 'webkit' ? { timeout: 60_000, expect: { timeout: 15_000 } } : {}),
   })),
   webServer: {
     command: `node tools/serve.js --port ${PORT} --csp`,

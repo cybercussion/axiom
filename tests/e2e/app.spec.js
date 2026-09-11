@@ -454,10 +454,9 @@ test('without a theme <link>, a late theme still never paints a component unstyl
 });
 
 test('a view transition that never starts does not hold the navigation', async ({ page }) => {
-  // WebKit on Linux CI went 6 s without calling a transition's update: the
-  // address changed and the old page stayed (run 34629597306). Stub the worst
-  // case in every engine — the update is never called, and skipping does not
-  // call it — and the router must commit on its own.
+  // A browser that never calls a transition's update must not hold the
+  // navigation. Stub the worst case in every engine — the update is never
+  // called, and skipping does not call it — and the router must commit on its own.
   await page.addInitScript(() => {
     const never = new Promise(() => {});
     document.startViewTransition = () => ({ ready: never, finished: never, updateCallbackDone: never, skipTransition() {} });
