@@ -176,13 +176,41 @@ export class BaseComponent extends HTMLElement {
       if (key === 'theme') applyTheme(value);
     });
 
-    // If the child (HomeUI) has a setup phase, wait for it
-    if (this.setup) await this.setup();
-    this.render();
-    if (this.onRendered) await this.onRendered();
+    // Failure containment. A component that throws in setup(), render() or
+    // onRendered() must not hang the navigation waiting on it, nor take anything
+    // else down. Its failure is announced as a bubbling, composed, cancelable
+    // `axiom:component-error`: any ancestor is a boundary — preventDefault() and
+    // the fallback is yours. Unhandled, the component draws a notice inside its
+    // own shadow root. Either way `rendered` resolves, so the router commits.
+    let phase = 'setup';
+    try {
+      if (this.setup) await this.setup();
+      phase = 'render';
+      this.render();
+      phase = 'onRendered';
+      if (this.onRendered) await this.onRendered();
+    } catch (error) {
+      this._contain(error, phase);
+    } finally {
+      // Signal to the router that the house is built — or safely condemned.
+      this._resolveRendered();
+    }
+  }
 
-    // Signal to the router that the house is built
-    this._resolveRendered();
+  /** @internal Announce a failure; draw the fallback unless an ancestor took it. */
+  _contain(error, phase) {
+    const component = this.tagName.toLowerCase();
+    log.error(`Axiom Component Error [${component} · ${phase}]`, error);
+    const handled = !this.dispatchEvent(new CustomEvent('axiom:component-error', {
+      bubbles: true, composed: true, cancelable: true,
+      detail: { error, phase, component }
+    }));
+    if (handled) return;
+    const notice = document.createElement('div');
+    notice.className = 'axiom-component-error';
+    notice.setAttribute('role', 'alert');
+    notice.textContent = 'This part of the page failed to load.';
+    this.shadowRoot.replaceChildren(notice);
   }
 
   /**
