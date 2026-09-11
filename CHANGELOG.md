@@ -19,8 +19,14 @@ The second review's claims were tested before anything was built — [the valida
 - **Docs:** a contract per primitive (`docs/contracts.md`); a threat model and "Axiom does not make your application secure" (`SECURITY.md`); "When NOT to use Axiom" (README); auth documented as a placeholder.
 - **Repository:** Dependabot alerts and security updates, and CodeQL default setup, are on.
 - **Added:** route changes are announced to screen readers (`@core/announce.js`, reconciled from the fleet's never-imported announce-bus); a template `/login` (reconciled from tender) that says so when no provider is configured — the dock's Login link no longer lands on the 404; `rel="external"` opts a same-origin link out of client routing (reconciled from ev).
+- **Fixed:** `/components` reflowed its whole layout on load — CLS 1.09 measured on the live site. Two races: shadow roots rendered before the fetched theme arrived, and the nav orchestrator measured the dock before it had drawn, read it as a sidebar and padded the content 1280 px. The shared theme is now read from the page's own `<link>` (no second request; full before any component connects), and the orchestrator measures after `rendered`. (`1314916`)
+- **Fixed:** WebKit on Linux CI went 6 s without starting a view transition, holding a navigation whose address had already changed. The router now waits at most 1 s, then skips the transition and commits. (`1314916`)
+- **Added:** a budget for the runtime core — `tools/weigh.js --check` fails past 13 KB Brotli (12.2 KB today), and the README states it; a layout-shift ceiling and layout invariants in the browser suite; `npm run bench`, reported and never gated. (`1314916`)
+- **Tests:** the browser suite counts the logger's errors (it prints every level through `console.log`). Each new invariant fails against the code before its fix. (`1314916`)
 
 ### Breaking — for projects that copy the core
+
+- **`BaseComponent` renders only after the theme.** A page that links `theme.css` in its `<head>` sees no change. A page that doesn't now waits for the fetched theme before `render()`, so code after `super.connectedCallback()` that touches the shadow DOM belongs in `onRendered()`. A component that owns its shadow root outright should override `render()` — the default draws a `<slot>`. (`1314916`)
 
 - **`core/state.js` declares no application keys.** `audioLevel`, `captionsEnabled`, `autoplayEnabled`, `sessionId` and `items` are gone from core. Declare yours with `state.define()` in your own module and import it from whatever reads those keys — `src/app-state.js` is the pattern, and it keeps the historical storage keys so saved settings survive. (`124b2c2`)
 - **`auth.logout()` no longer clears `sessionId`.** Clear application session state when `user` becomes `null`. (`124b2c2`)

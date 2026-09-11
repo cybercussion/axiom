@@ -63,7 +63,7 @@ Decisions (Mark, 2026-09-11): work the plan in order, pushing back where it isn'
 | Aborted-navigation data race (#1, #2) | **Shipped** `00e8f70` — cancellable `query()` and `gateway`; invariant tests in both loader modes (`6bf5ba0`) |
 | Failure containment (#5) | **Shipped** `188a660` — `axiom:component-error`, fallback, `rendered` always resolves |
 | Prototype pollution (#3) | **Shipped** `00e8f70` — null-prototype store |
-| Browser matrix in CI (#7) | **Shipped** `6bf5ba0` — Chromium, WebKit, Firefox. The scroll-test flake was the test scrolling before `/components` finished laying out; the router was right. **Open:** WebKit on Linux flaked once in 72 (back/forward; passed on retry) — traces are now uploaded so the next one can be read |
+| Browser matrix in CI (#7) | **Shipped** `6bf5ba0` — Chromium, WebKit, Firefox. The scroll-test flake was the test scrolling before `/components` finished laying out; the router was right. The WebKit-on-Linux flake, read from its trace: WebKit did not start a view transition for 6 s after a click (run 34629597306). The router now bounds that wait at 1 s (`1314916`) |
 | Contract per primitive (#1) | **Shipped** — `docs/contracts.md`, including the A/B answer and the test behind each guarantee |
 | Threat model (#3) | **Shipped** — `SECURITY.md` |
 | Auth default (#4) | **Declined** — auth is a placeholder; documented in SECURITY.md, `docs/auth-readme.md` and the contracts |
@@ -71,5 +71,6 @@ Decisions (Mark, 2026-09-11): work the plan in order, pushing back where it isn'
 | CodeQL + Dependabot | **On.** CodeQL's first three findings are fixed (`a791a69`); the one Dependabot alert is the documented browser-sync advisory, dismissed as accepted risk |
 | Benchmarks vs other frameworks (#8), Lab demo | **Pushed back** — they make Axiom more convincing, not more defensible; revisit once P1 is done |
 | Route announcements, `/login`, `rel="external"` | **Shipped** — each reconciled from the fleet (announce-bus, tender, ev) |
-| P1 remaining | Observability events; performance budgets (core size, layout shift, transition) |
+| Performance budgets (#8) | **Shipped** `1314916` — the core's shipped size (13 KB Brotli) and layout shift (CLS < 0.1, plus race invariants) fail the deploy; the state bench is reported, not gated. Found on the way: `/components` at CLS 1.09 live — two races, both fixed, each pinned by a test that fails on the previous code |
+| P1 remaining | Observability events |
 
