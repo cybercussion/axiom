@@ -58,6 +58,7 @@ export const router = {
   _lastIndex: 0,
   _navSeq: 0,
   _activeNavId: null,
+  _committedNavId: null,
 
   // Configurable state
   /** @type {Record<string, RouteConfig>} */
@@ -178,7 +179,10 @@ export const router = {
     // the top" bug). Null until the first commit — nothing to save on boot,
     // which also stops the boot pass writing scrollY=0 over a same-session
     // refresh-restore target.
-    if (this._activePath) this._saveScroll(this._activePath);
+    // Only when the previous navigation COMMITTED: while one is still in flight
+    // the page on screen is mid-swap and window.scrollY belongs to no route —
+    // saving it would overwrite the offset of the page Back is about to restore.
+    if (this._activePath && this._committedNavId === this._activeNavId) this._saveScroll(this._activePath);
 
     // Abort previous pending request
     if (this._currentController) {
@@ -406,11 +410,17 @@ export const router = {
           if (featureEl.rendered) await featureEl.rendered;
         }
 
+        // Superseded while its page rendered? Then it must not touch the active
+        // path, focus or scroll: a late commit here scrolled to its own target
+        // after Back had already restored the offset.
+        if (signal.aborted || navigationId !== this._activeNavId) return;
+
         // Scroll Restoration
         // The URL is final here (pushState already ran on the push branch) —
         // record the committed path as the page any FUTURE navigation is
         // departing from.
         this._activePath = location.pathname;
+        this._committedNavId = navigationId;
 
         // A PUSH is a new arrival and lands at the TOP. Only a POP restores the
         // offset saved when that page was left — back/forward, and the boot pass,
@@ -430,6 +440,7 @@ export const router = {
         // unnecessary now the cause is fixed below.
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
+            if (navigationId !== this._activeNavId) return; // superseded during these frames
             const feature = document.getElementById('app-container')?.firstElementChild;
             // preventScroll: BaseComponent attaches its shadow root with
             // delegatesFocus on by default, so a bare focus() lands on the page's
