@@ -39,6 +39,15 @@ jobs:
         run: npm run lint
       - name: Tests (tools + core)
         run: npm test
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - name: Browser tests (Chromium, production CSP)
+        run: |
+          npx playwright install --with-deps chromium
+          npm run e2e
       - name: Build + verify dist
         run: npm run build && npm run verify-dist
       - name: PWA contract

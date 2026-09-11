@@ -24,6 +24,10 @@ npm-debug.log*
 
 # --- Build Output ---
 dist/
+# Playwright writes out of tree (playwright.config.js outputDir); these only
+# catch a run that overrides it.
+test-results/
+playwright-report/
 
 # --- Project Specific ---
 # If your feature tool generates temp files

@@ -16,7 +16,8 @@
     "lint": "eslint src tools tests",
     "lint:motion": "node tools/motion-gate.js",
     "types": "node tools/types.js",
-    "types:check": "node tools/types.js --check"
+    "types:check": "node tools/types.js --check",
+    "e2e": "playwright test"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
