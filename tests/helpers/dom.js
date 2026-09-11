@@ -49,6 +49,7 @@ export const installDom = () => {
   if (!globalThis.window) {
     const win = new EventTarget();
     win.scrollTo = () => {};
+    win.location = globalThis.location; // auth.init reads window.location.search
     // AXIOM_CONFIG intentionally absent — that is the "no injected runtime
     // config" case config.js is meant to fall through.
     globalThis.window = win;

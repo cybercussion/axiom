@@ -23,6 +23,34 @@ const PROFILE_KEY = 'axiom_profile';           // last-known-good sub/email/name
 const AVATAR_KEY = 'axiom-avatar';             // { key, url, data } data-URL cache
 const GOOGLE_AUTHORIZE = 'https://accounts.google.com/o/oauth2/v2/auth';
 
+// Identity that persists across reloads — the token bundle and the last-known
+// profile/avatar — goes through ONE store the app chooses: init({ tokenStore }).
+// The OAuth flow's one-shot keys (PKCE verifier, CSRF state, provider) stay in
+// localStorage whatever the choice: some in-app browsers finish the redirect in
+// a fresh tab where sessionStorage is empty.
+const IDENTITY_KEYS = [STORAGE_KEY, PROFILE_KEY, AVATAR_KEY];
+
+const memoryStore = () => {
+  const m = new Map();
+  return {
+    getItem: (k) => (m.has(k) ? m.get(k) : null),
+    setItem: (k, v) => { m.set(k, String(v)); },
+    removeItem: (k) => { m.delete(k); },
+  };
+};
+
+/** 'local' | 'session' | 'memory' | { getItem, setItem, removeItem } -> a store. */
+const resolveStore = (choice) => {
+  if (choice && typeof choice === 'object') {
+    if (['getItem', 'setItem', 'removeItem'].every((m) => typeof choice[m] === 'function')) return choice;
+    throw new TypeError('auth.init: a custom tokenStore needs getItem, setItem and removeItem');
+  }
+  if (choice === 'local') return localStorage;
+  if (choice === 'session') return sessionStorage;
+  if (choice === 'memory') return memoryStore();
+  throw new TypeError(`auth.init: unknown tokenStore '${choice}' — use 'local' | 'session' | 'memory' | an adapter`);
+};
+
 // One window for both paths: an on-demand call inside it refreshes, and the keep-alive
 // timer fires at its leading edge so an idle tab never meets an expired token.
 const REFRESH_WINDOW_MS = 10 * 60 * 1000;
@@ -36,16 +64,27 @@ export const auth = {
   _keepAlive: true,    // init({ keepAlive }) — proactive refresh timer + visibility hook
   _refreshTimer: null,
   _onVisible: null,
+  _store: null,        // init({ tokenStore }) — where persisted identity lives
+
+  /** The identity store; localStorage until init() says otherwise. */
+  get _s() { return this._store || localStorage; },
 
   /**
    * Initialize auth state from storage or handle the OAuth callback.
    * Call this BEFORE router.init().
-   * @param {{ keepAlive?: boolean }} [options] — keepAlive (default true) arms the
-   *   proactive refresh timer + visibility hook. An app that prefers to refresh only
-   *   on demand (route guards / gateway calls) passes { keepAlive: false }.
+   * @param {{ keepAlive?: boolean, tokenStore?: 'local'|'session'|'memory'|Storage }} [options]
+   *   keepAlive (default true) arms the proactive refresh timer + visibility hook;
+   *   an app that prefers to refresh only on demand passes { keepAlive: false }.
+   *   tokenStore (default 'local') is where the token bundle and profile persist:
+   *   'session' ends with the tab, 'memory' with the page, or pass an adapter.
+   *   No store protects a token from script running in the page — SECURITY.md.
    */
-  async init({ keepAlive = true } = {}) {
+  async init({ keepAlive = true, tokenStore = 'local' } = {}) {
     this._keepAlive = keepAlive;
+    this._store = resolveStore(tokenStore);
+    // Choosing a shorter-lived store must actually retire the long-lived copy:
+    // identity left in localStorage by an earlier session would outlive it.
+    if (this._store !== localStorage) for (const k of IDENTITY_KEYS) localStorage.removeItem(k);
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
 
@@ -57,7 +96,7 @@ export const auth = {
     }
 
     // Hydrate from storage
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = this._s.getItem(STORAGE_KEY);
     if (!stored) return;
     try {
       this._tokens = JSON.parse(stored);
@@ -345,7 +384,7 @@ export const auth = {
   },
 
   _persistTokens() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(this._tokens));
+    this._s.setItem(STORAGE_KEY, JSON.stringify(this._tokens));
   },
 
   /**
@@ -374,11 +413,11 @@ export const auth = {
   },
 
   _readProfile() {
-    try { return JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null'); } catch { return null; }
+    try { return JSON.parse(this._s.getItem(PROFILE_KEY) || 'null'); } catch { return null; }
   },
 
   _writeProfile({ sub, email, name, picture }) {
-    try { localStorage.setItem(PROFILE_KEY, JSON.stringify({ sub, email, name, picture })); } catch { /* quota */ }
+    try { this._s.setItem(PROFILE_KEY, JSON.stringify({ sub, email, name, picture })); } catch { /* quota */ }
   },
 
   _parseIdToken(idToken) {
@@ -425,7 +464,7 @@ export const auth = {
     const url = normalizeAvatarUrl(user.picture);
     const key = user.sub || url;
     try {
-      const cached = JSON.parse(localStorage.getItem(AVATAR_KEY) || 'null');
+      const cached = JSON.parse(this._s.getItem(AVATAR_KEY) || 'null');
       if (cached?.key === key && cached.data) return; // Already cached
     } catch { /* corrupt, re-fetch */ }
     try {
@@ -439,8 +478,8 @@ export const auth = {
         reader.onerror = reject;
         reader.readAsDataURL(blob);
       });
-      localStorage.setItem(AVATAR_KEY, JSON.stringify({ key, url, data: dataUrl }));
-      log.debug('Avatar cached to localStorage');
+      this._s.setItem(AVATAR_KEY, JSON.stringify({ key, url, data: dataUrl }));
+      log.debug('Avatar cached');
       // Trigger re-render of nav so the avatar appears
       state.set('user', { ...this._user });
     } catch (e) {
@@ -452,7 +491,8 @@ export const auth = {
     this._stopKeepAlive();
     this._tokens = null;
     this._user = null;
-    for (const k of [STORAGE_KEY, PKCE_VERIFIER_KEY, STATE_KEY, AVATAR_KEY, PROFILE_KEY]) localStorage.removeItem(k);
+    for (const k of IDENTITY_KEYS) this._s.removeItem(k);
+    for (const k of [PKCE_VERIFIER_KEY, STATE_KEY]) localStorage.removeItem(k);
   },
 
   _getConfig() {

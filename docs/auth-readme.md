@@ -58,6 +58,8 @@ old "message contains 400/401" heuristic logged users out on worker cold starts.
 | `axiom_profile` | last-known-good `sub/email/name/picture` — a refreshed Google id_token omits name + picture | logout / rejection |
 | `axiom-avatar` | `{ key: sub, url, data }` data-URL cache; fetched `no-referrer`, size pinned to `=s96-c` | logout / rejection |
 
+**Choosing the store.** The identity keys — `axiom_auth`, `axiom_profile`, `axiom-avatar` — live in the store the app picks with `auth.init({ tokenStore })`: `'local'` (default, as above), `'session'` (gone when the tab closes), `'memory'` (gone on reload; the user signs in again), or any `{ getItem, setItem, removeItem }` adapter. Picking anything but `'local'` also deletes identity an earlier session left in localStorage, so the long-lived copy does not outlive the choice. The flow keys (`axiom_pkce_verifier`, `axiom_oauth_state`, `axiom_auth_provider`) stay in localStorage whatever the choice — some in-app browsers complete the redirect in a fresh tab. No store protects a token from script running in the page; SECURITY.md says what the choice does and does not buy.
+
 ## Why these exist (the reload bug, 2026-06/07)
 
 "Google auth doesn't survive a reload" had four causes, fixed separately in tender, ev and
