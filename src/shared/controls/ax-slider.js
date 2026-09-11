@@ -52,37 +52,44 @@ const CSS = `
      Value reads from the fill's rounded leading edge; no floating knob.
      Fill color overridable via --ax-slider-fill (white-on-glass default
      works both themes because the rail carries the contrast). ===== */
-  :host([variant="fill"]) .wrap { min-height: 48px; }
-  :host([variant="fill"]) input[type="range"] { height: 48px; }
+  /* --ax-slider-height sets the VISIBLE thickness (default 48px). The hit area
+     never drops below 44px, so a thin pill keeps a full-size touch target; icon
+     size and inset derive from the height unless --ax-slider-icon-size is set. */
+  :host([variant="fill"]) {
+    --_h: var(--ax-slider-height, 48px);
+    --_icon: var(--ax-slider-icon-size, clamp(12px, calc(var(--_h) * 0.5), 18px));
+  }
+  :host([variant="fill"]) .wrap { min-height: max(44px, var(--_h)); }
+  :host([variant="fill"]) input[type="range"] { height: max(44px, var(--_h)); }
   :host([variant="fill"]) input::-webkit-slider-runnable-track {
-    height: 48px; border-radius: 999px;
+    height: var(--_h); border-radius: 999px;
     background: linear-gradient(to right,
       var(--ax-slider-fill, rgba(255, 255, 255, 0.9)) var(--fill, 0%),
       var(--control-track) var(--fill, 0%));
   }
   :host([variant="fill"]) input::-webkit-slider-thumb {
-    width: 24px; height: 48px; margin-top: 0;
+    width: 24px; height: var(--_h); margin-top: 0;
     background: transparent; box-shadow: none; border-radius: 999px;
   }
   :host([variant="fill"]) input:active::-webkit-slider-thumb { transform: none; }
   :host([variant="fill"]) input::-moz-range-track {
-    height: 48px; border-radius: 999px; background: var(--control-track);
+    height: var(--_h); border-radius: 999px; background: var(--control-track);
   }
   :host([variant="fill"]) input::-moz-range-progress {
-    height: 48px; border-radius: 999px;
+    height: var(--_h); border-radius: 999px;
     background: var(--ax-slider-fill, rgba(255, 255, 255, 0.9));
   }
   :host([variant="fill"]) input::-moz-range-thumb {
-    width: 24px; height: 48px; background: transparent; box-shadow: none; border: none;
+    width: 24px; height: var(--_h); background: transparent; box-shadow: none; border: none;
   }
   :host([variant="fill"]) input:active::-moz-range-thumb { transform: none; }
   .track-icon {
-    position: absolute; left: 16px; top: 50%; translate: 0 -50%;
+    position: absolute; left: calc(var(--_h, 48px) / 3); top: 50%; translate: 0 -50%;
     display: none; align-items: center; pointer-events: none;
     /* Dark icon: it sits on the white fill except at near-zero values. */
     color: #333;
   }
-  .track-icon ::slotted(svg) { width: 18px; height: 18px; }
+  .track-icon ::slotted(svg) { width: var(--_icon, 18px); height: var(--_icon, 18px); }
   :host([variant="fill"]) .track-icon { display: inline-flex; }
 
   /* ===== surface="neu" — inset groove + aurora fill (composes with variant="fill") ===== */

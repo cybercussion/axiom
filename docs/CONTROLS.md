@@ -23,7 +23,7 @@ is a live setting that applies immediately; a checkbox is a form choice submitte
 |-----|-----------|------------|-----------------|-------|----------|
 | ax-toggle ⚑ | checked, disabled, label, name, value | checked | change ({checked}) | — | surface="neu" (slide switch) |
 | ax-dipswitch ⚑ | switches="A,B"†, on="A"†, label†, name, surface† | value → {label:bool}; setAll(map,{stagger}) | change ({label, checked, value}) | — | surface="neu" (rocker bank, forwards to toggles) |
-| ax-slider ⚑ | min†, max†, step†, value, label, name, disabled, variant, surface | value (number) | input/change ({value}) | icon (variant="fill") | variant="fill", surface="neu" |
+| ax-slider ⚑ | min†, max†, step†, value, label, name, disabled, variant, surface | value (number) | input/change ({value}) | icon (variant="fill") | variant="fill" (sizing: `--ax-slider-height` visible thickness, default 48px, hit area stays ≥44px; `--ax-slider-icon-size`; color: `--ax-slider-fill`), surface="neu" |
 | ax-progress | value, max, indeterminate, label, surface | value | — | — | surface="neu"; absent value → indeterminate |
 | ax-button ⚑ | variant†(fill\|outline\|ghost), tone†(primary\|secondary\|success\|warning\|danger), type(button\|submit), name, loading, disabled, surface, shape | — | click (native) | default label | surface="neu" (raised key); shape="round" (only has effect combined with surface="neu") |
 | ax-popover | open (reflected), aria-label (consumer-set; internals.role="group") | open (getter); show(invoker)/hide()/toggle(invoker) | popover-open, popover-close | default | surface="neu" |

@@ -129,7 +129,9 @@ ax-popover {
   min-width: 200px;
 }
 
-.settings-row ax-slider { flex: 1; }
+/* The popover's rows are ~24px controls; a 48px pill dwarfed them. Thinner
+   visible track — the slider keeps its 44px hit area regardless. */
+.settings-row ax-slider { flex: 1; --ax-slider-height: 28px; }
 
 /* Sliding active pill */
 .dock-pill {
