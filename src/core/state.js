@@ -51,8 +51,11 @@ const applyPayload = (base, payload) => {
  *   [key: string]: any
  * }} StateData
  */
+// No prototype: '__proto__' and 'constructor' are ordinary keys or nothing, so a
+// key from untrusted input can neither swap the store's prototype nor shadow a
+// built-in (threat model: prototype pollution).
 /** @type {StateData} */
-const store = {
+const store = Object.assign(Object.create(null), {
   route: null,
   query: {},
   params: {},
@@ -60,7 +63,7 @@ const store = {
   navStyle: config.NAV_STYLE,
   transition: { type: 'fade', direction: 'forward' },
   notifications: []
-};
+});
 
 /** key -> { storage, storageKey, serialize } for keys declared with storage. */
 const persisted = new Map();
@@ -179,10 +182,16 @@ export const state = {
    * @param {string} key - The state key to populate
    * @param {() => Promise<T>} fetcher - Async function returning the data
    * @param {number} [ttl] - Time to live in ms (default 30s)
+   * @param {{ signal?: AbortSignal }} [options] - an ABORTED query writes no result —
+   *   neither its data nor an error. If nothing else wrote the key meanwhile, the
+   *   value from before the query comes back. It rejects with an AbortError.
    * @returns {Promise<T>}
    */
-  async query(key, fetcher, ttl = 30000) {
-    const current = this.get(key) || {};
+  async query(key, fetcher, ttl = 30000, { signal } = {}) {
+    const aborted = () => new DOMException('The query was aborted', 'AbortError');
+    if (signal?.aborted) throw aborted();
+    const prior = this.get(key);
+    const current = prior || {};
     const now = Date.now();
 
     // Stale Check: If we have data and it's fresh, return it
@@ -191,10 +200,17 @@ export const state = {
     }
 
     // Set Loading (preserve existing data for UI continuity)
-    this.set(key, { ...current, status: 'loading', error: null });
+    const loading = { ...current, status: 'loading', error: null };
+    this.set(key, loading);
+
+    // Cancellation leaves no trace: put back what was there — unless something
+    // else has written the key since (a newer query, a mutation, a push).
+    const retract = () => { if (this.get(key) === loading) this.set(key, prior); };
 
     try {
       const data = await fetcher();
+      // A result that arrives after its navigation lost is not the page's data.
+      if (signal?.aborted) throw aborted();
       this.set(key, {
         data,
         status: 'success',
@@ -203,6 +219,10 @@ export const state = {
       });
       return data;
     } catch (err) {
+      if (signal?.aborted) {
+        retract();
+        throw err?.name === 'AbortError' ? err : aborted();
+      }
       log.error(`Axiom Query Error [${key}]:`, err);
       this.set(key, {
         ...current,

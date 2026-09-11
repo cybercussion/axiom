@@ -13,7 +13,7 @@ import { auth } from '@core/auth.js';
 
 /**
  * @typedef {'auto'|'json'|'text'|'blob'|'xml'|'response'} Expect
- * @typedef {{ expect?: Expect }} GatewayOptions
+ * @typedef {{ expect?: Expect, signal?: AbortSignal }} GatewayOptions
  * @typedef {{ status?: number, statusText?: string, contentType?: string, url?: string, method?: string, body?: string, errors?: Array<{ message: string }>, data?: any, expect?: string, cause?: unknown }} GatewayFacts
  */
 
@@ -67,7 +67,7 @@ export const gateway = {
    *   is an assertion (see the file header); 'response' returns the raw Response.
    * @returns {Promise<any>}
    */
-  async request(method, endpoint, body = null, customHeaders = {}, { expect = 'auto' } = {}) {
+  async request(method, endpoint, body = null, customHeaders = {}, { expect = 'auto', signal } = {}) {
     if (!EXPECT.includes(expect)) {
       throw new GatewayError(`Gateway: unknown expect '${expect}' — use ${EXPECT.join(' | ')}`, { method, expect });
     }
@@ -87,7 +87,10 @@ export const gateway = {
 
     const options = {
       method,
-      headers
+      headers,
+      // Cancellation is the caller's: an aborted request rejects as the
+      // AbortError itself — never a GatewayError, never data.
+      ...(signal ? { signal } : {})
     };
 
     if (body) {
@@ -101,7 +104,7 @@ export const gateway = {
       const response = await fetch(url, options);
       return await this._read(response, { method, url, expect });
     } catch (err) {
-      log.error(`Gateway Request Failed: ${method} ${url}`, err);
+      if (err?.name !== 'AbortError') log.error(`Gateway Request Failed: ${method} ${url}`, err);
       throw err;
     }
   },
@@ -121,8 +124,9 @@ export const gateway = {
    * @param {string} operation - The query/mutation string
    * @param {Object} [variables] - Operation variables
    * @param {Object} [customHeaders] - Custom headers
+   * @param {{ signal?: AbortSignal }} [options]
    */
-  async graphql(operation, variables = {}, customHeaders = {}) {
+  async graphql(operation, variables = {}, customHeaders = {}, { signal } = {}) {
     const url = config.GRAPHQL_ENDPOINT;
 
     const token = await auth.getAccessToken();
@@ -142,7 +146,8 @@ export const gateway = {
       body: JSON.stringify({
         query: operation,
         variables
-      })
+      }),
+      ...(signal ? { signal } : {})
     };
 
     try {
@@ -160,7 +165,7 @@ export const gateway = {
       return result.data;
 
     } catch (err) {
-      log.error('Gateway GraphQL Request Failed', err);
+      if (err?.name !== 'AbortError') log.error('Gateway GraphQL Request Failed', err);
       throw err;
     }
   },

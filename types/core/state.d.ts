@@ -54,9 +54,14 @@ export namespace state {
      * @param {string} key - The state key to populate
      * @param {() => Promise<T>} fetcher - Async function returning the data
      * @param {number} [ttl] - Time to live in ms (default 30s)
+     * @param {{ signal?: AbortSignal }} [options] - an ABORTED query writes no result —
+     *   neither its data nor an error. If nothing else wrote the key meanwhile, the
+     *   value from before the query comes back. It rejects with an AbortError.
      * @returns {Promise<T>}
      */
-    function query<T>(key: string, fetcher: () => Promise<T>, ttl?: number): Promise<T>;
+    function query<T>(key: string, fetcher: () => Promise<T>, ttl?: number, { signal }?: {
+        signal?: AbortSignal;
+    }): Promise<T>;
     /**
      * Optimistic Mutation
      * Updates local state immediately, then runs the remote task. Safe to call

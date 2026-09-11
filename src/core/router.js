@@ -355,7 +355,7 @@ export const router = {
             return (typeof config.api === 'function')
               ? config.api(params, signal)
               : fetch(config.api, { signal }).then(r => r.json());
-          }).catch(err => {
+          }, undefined, { signal }).catch(err => {
             if (err.name === 'AbortError') throw err; // Re-throw to catch block
             log.error('Data Fetch Failed', err);
           }) : null

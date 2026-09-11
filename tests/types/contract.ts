@@ -15,13 +15,14 @@ state.data.route = 'home';
 const volume: number = state.define('volume', { initial: 80, storage: localStorage, parse: (raw) => parseInt(raw, 10) });
 const renamed = state.update<{ name: string }>('user', (u) => ({ ...u, name: 'x' }));
 const rows: Promise<number[]> = state.query('rows', async () => [1, 2]);
+const cancellable: Promise<number> = state.query('n', async () => 1, 1000, { signal: new AbortController().signal });
 state.notify('saved', 'success');
 const off: () => void = state.subscribe(({ key, value }) => void [key, value]);
 router.navigate('/dashboard');
 const offNav = router.onNavigation((nav) => void nav?.phase);
 const offMatch = router.onMatch(({ route: r, params }) => void [r, params.id]);
 const flows = async () => {
-  await gateway.get('/me', {}, { expect: 'json' });
+  await gateway.get('/me', {}, { expect: 'json', signal: new AbortController().signal });
   try {
     await gateway.post('/orders', { sku: 'a' });
   } catch (e) {
@@ -39,6 +40,8 @@ class Demo extends BaseComponent {
 // ---- misuse does not compile ---------------------------------------------------
 // @ts-expect-error — 'jsn' is not an expect mode
 gateway.get('/me', {}, { expect: 'jsn' });
+// @ts-expect-error — a signal must be an AbortSignal
+gateway.get('/me', {}, { signal: 'stop' });
 // @ts-expect-error — there is no cookie token store
 auth.init({ tokenStore: 'cookie' });
 // @ts-expect-error — route is string | null
@@ -54,4 +57,4 @@ void auth._refreshToken;
 // @ts-expect-error — state internals are not part of the contract
 void state._rebase;
 
-void [route, volume, renamed, rows, off, offNav, offMatch, flows, basePath, Demo];
+void [route, volume, renamed, rows, cancellable, off, offNav, offMatch, flows, basePath, Demo];
