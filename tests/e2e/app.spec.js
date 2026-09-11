@@ -197,9 +197,12 @@ test('Back during an in-flight navigation still restores the offset', async ({ p
   await page.locator('nav-dock a[href="contact"]').click();
   await expect(page.locator('#app-container > contact-ui')).toBeAttached();
   await page.goBack();
-  await expect(page.locator('#app-container > components-ui')).toBeAttached();
-  await page.waitForTimeout(1300); // outlast the held stylesheet and any late frames
-  expect(await page.evaluate(() => Math.round(window.scrollY))).toBeGreaterThan(target - 60);
+  // Wait for Back's own commit. On WebKit's slow runner its restore came after the
+  // old fixed wait: the test read the offset before any restore had run, and the
+  // router's scroll log had no entry yet (run 34636301415). The router was right.
+  await settled(page, 'components-ui');
+  await page.waitForTimeout(1300); // outlast the held stylesheet: the navigation that lost must not scroll
+  await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBeGreaterThan(target - 60);
 });
 
 test('router-error: a handled terminal failure is left to the app', async ({ page }) => {
