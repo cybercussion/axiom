@@ -7,6 +7,27 @@ import { log } from './logger.js';
 
 const bus = new EventTarget();
 
+// --- Optimistic ledger --------------------------------------------------------
+// A key with writes in flight is displayed as
+//     confirmed ⊕ pending[0] ⊕ pending[1] ⊕ …          (in issue order)
+// `confirmed` is the last value the server acknowledged, or the value from
+// before the first optimistic write. A success folds into `confirmed` only once
+// every EARLIER write has settled; a failure excises its own patch and nothing
+// else. So no failure can resurrect a value that a later, successful write
+// replaced — which a plain "restore the backup" rollback does.
+const ledgers = new Map();
+
+const isSmart = (v) => !!v && typeof v === 'object' && 'data' in v;
+
+/** One mutate() payload: an object merges into data; anything else replaces it. */
+const applyPayload = (base, payload) => {
+  const current = isSmart(base) ? base : { data: base, status: 'idle' };
+  const data = (typeof payload === 'object' && payload !== null)
+    ? { ...current.data, ...payload }
+    : payload;
+  return { ...current, data };
+};
+
 export const state = {
   data: new Proxy({
     route: null,
@@ -104,46 +125,76 @@ export const state = {
 
   /**
    * Optimistic Mutation
-   * Updates local state immediately, then runs the remote task.
+   * Updates local state immediately, then runs the remote task. Safe to call
+   * again on the same key while an earlier call is still in flight — see the
+   * ledger at the top of this file. Resolves (never rejects) once THIS write has
+   * settled; a failure is reported through notify() and the log.
+   *
+   * Contract: a failure removes exactly its own change. It never restores a
+   * value some other, successful write has since replaced.
    */
   async mutate(key, payload, remoteTask) {
-    const raw = this.get(key);
-    // Normalize to smart structure if needed
-    const current = (raw && typeof raw === 'object' && 'data' in raw)
-      ? raw
-      : { data: raw, status: 'idle' };
+    let ledger = ledgers.get(key);
+    if (ledger) this._rebase(key, ledger);
+    else {
+      ledger = { confirmed: this.get(key), pending: [], projected: undefined };
+      ledgers.set(key, ledger);
+    }
 
-    const backup = raw; // Keep exact backup (primitive or object)
-
-    // Calculate new data: If payload is object merge, else replace
-    const newData = (typeof payload === 'object' && payload !== null)
-      ? { ...current.data, ...payload }
-      : payload;
-
-    // 1. Optimistic Update (Always promotes to Smart Object)
-    this.set(key, { ...current, data: newData, status: 'syncing' });
+    const entry = { payload, done: false };
+    ledger.pending.push(entry);
+    this._project(key, ledger);                                   // 1. optimistic
 
     try {
       await remoteTask();
-      // Keep distinct 'success' status
-      const succ = this.get(key);
-      this.set(key, { ...succ, status: 'success' });
+      this._rebase(key, ledger);
+      entry.done = true;                                          // 2a. acknowledged
     } catch (err) {
-      // 2. Rollback to the EXACT backup. Only a SMART OBJECT carries a status
-      // worth sanitizing: a stacked mutation can leave the backup 'syncing', so
-      // force 'success' there to avoid a UI stuck in limbo. A primitive or null
-      // backup is restored untouched — spreading one gave {} for a number and a
-      // char map for a string, and `backup.status` THREW on null, inside this
-      // catch, replacing the real error, skipping the notify below and pinning
-      // status at 'syncing': the exact limbo this guard exists to prevent.
-      const isSmart = backup && typeof backup === 'object' && 'data' in backup;
-      const safeBackup = (isSmart && backup.status === 'syncing')
-        ? { ...backup, status: 'success' }
-        : backup;
-      this.set(key, safeBackup);
+      this._rebase(key, ledger);
+      ledger.pending.splice(ledger.pending.indexOf(entry), 1);    // 2b. excised
       this.notify(`Mutation Failed: Rolling back.`, 'error');
       log.error(`Axiom Mutation Failed [${key}]: Rolling back.`, err);
     }
+
+    // Fold every acknowledged write at the FRONT. A later success waits behind an
+    // earlier write that is still in flight, so it is applied in issue order.
+    while (ledger.pending[0]?.done) {
+      const { payload: acked } = ledger.pending.shift();
+      ledger.confirmed = { ...applyPayload(ledger.confirmed, acked), status: 'success' };
+    }
+
+    if (ledger.pending.length) {
+      this._project(key, ledger);
+      return;
+    }
+
+    ledgers.delete(key);
+    // Nothing in flight: show exactly what is confirmed. A primitive or null
+    // stays itself; only a smart object carries a status, and a 'syncing' one
+    // (set directly, outside mutate) is settled rather than left in limbo.
+    const settled = (isSmart(ledger.confirmed) && ledger.confirmed.status === 'syncing')
+      ? { ...ledger.confirmed, status: 'success' }
+      : ledger.confirmed;
+    this.set(key, settled);
+  },
+
+  /** Show confirmed ⊕ every pending patch, marked syncing. */
+  _project(key, ledger) {
+    let value = ledger.confirmed;
+    for (const { payload } of ledger.pending) value = applyPayload(value, payload);
+    value = { ...value, status: 'syncing' };
+    ledger.projected = value;
+    this.set(key, value);
+  },
+
+  /**
+   * A write to this key from OUTSIDE the ledger — a query refetch, a socket push,
+   * a direct set — is newer truth than anything the ledger holds. It becomes the
+   * confirmed base, and the still-pending patches layer on top of it.
+   */
+  _rebase(key, ledger) {
+    const current = this.get(key);
+    if (current !== ledger.projected) ledger.confirmed = current;
   },
 
   // Features just call: state.subscribe(({ key, value }) => { ... })

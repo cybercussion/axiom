@@ -144,3 +144,84 @@ describe('subscriptions', () => {
     assert.deepEqual(seen, [1, 2]);
   });
 });
+
+describe('mutate() under concurrency — no failure resurrects a replaced value', () => {
+  // The external review's scenario: A; m1 -> B, m2 -> C; m1 fails, m2 succeeds.
+  // A rollback that restores "the value before m1" discards m2, which the server
+  // accepted. Each case below controls settlement order explicitly.
+  const deferred = () => {
+    let resolve, reject;
+    const promise = new Promise((res, rej) => { resolve = res; reject = rej; });
+    return { promise, resolve, reject };
+  };
+
+  test('replace: m1 fails then m2 succeeds — lands on m2', async () => {
+    const key = freshKey('race_replace');
+    state.set(key, 'A');
+    const d1 = deferred(), d2 = deferred();
+    const p1 = state.mutate(key, 'B', () => d1.promise);
+    const p2 = state.mutate(key, 'C', () => d2.promise);
+    d1.reject(new Error('m1 rejected')); await p1;
+    d2.resolve(); await p2;
+    assert.equal(state.get(key)?.data, 'C');
+    assert.equal(state.get(key)?.status, 'success');
+  });
+
+  test('replace: m2 succeeds then m1 fails — still lands on m2', async () => {
+    const key = freshKey('race_replace_rev');
+    state.set(key, 'A');
+    const d1 = deferred(), d2 = deferred();
+    const p1 = state.mutate(key, 'B', () => d1.promise);
+    const p2 = state.mutate(key, 'C', () => d2.promise);
+    d2.resolve(); await p2;
+    d1.reject(new Error('m1 rejected')); await p1;
+    assert.equal(state.get(key)?.data, 'C');
+  });
+
+  test('merge: m1 fails, m2 succeeds — m2 field kept, m1 field excised', async () => {
+    const key = freshKey('race_merge');
+    state.set(key, { data: { a: 1 }, status: 'idle' });
+    const d1 = deferred(), d2 = deferred();
+    const p1 = state.mutate(key, { b: 2 }, () => d1.promise);
+    const p2 = state.mutate(key, { c: 3 }, () => d2.promise);
+    d1.reject(new Error('m1 rejected')); await p1;
+    d2.resolve(); await p2;
+    assert.deepEqual(state.get(key).data, { a: 1, c: 3 });
+  });
+
+  test('merge: both succeed out of order — both fields committed', async () => {
+    const key = freshKey('race_both');
+    state.set(key, { data: { a: 1 }, status: 'idle' });
+    const d1 = deferred(), d2 = deferred();
+    const p1 = state.mutate(key, { b: 2 }, () => d1.promise);
+    const p2 = state.mutate(key, { c: 3 }, () => d2.promise);
+    d2.resolve(); await p2;
+    d1.resolve(); await p1;
+    assert.deepEqual(state.get(key).data, { a: 1, b: 2, c: 3 });
+    assert.equal(state.get(key).status, 'success');
+  });
+
+  test('status reads syncing while ANY write on the key is still pending', async () => {
+    const key = freshKey('race_status');
+    state.set(key, { data: {}, status: 'idle' });
+    const d1 = deferred(), d2 = deferred();
+    const p1 = state.mutate(key, { b: 2 }, () => d1.promise);
+    const p2 = state.mutate(key, { c: 3 }, () => d2.promise);
+    d1.resolve(); await p1;
+    assert.equal(state.get(key).status, 'syncing', 'm2 is still in flight');
+    d2.resolve(); await p2;
+    assert.equal(state.get(key).status, 'success');
+  });
+
+  test('an external write during a pending mutation becomes the new base', async () => {
+    // e.g. a query refetch lands while the optimistic write is in flight: a
+    // rollback must return to that fresher value, not to the pre-mutation one.
+    const key = freshKey('race_external');
+    state.set(key, { data: { a: 1 }, status: 'idle' });
+    const d1 = deferred();
+    const p1 = state.mutate(key, { b: 2 }, () => d1.promise);
+    state.set(key, { data: { a: 9, z: 1 }, status: 'success' });
+    d1.reject(new Error('m1 rejected')); await p1;
+    assert.deepEqual(state.get(key).data, { a: 9, z: 1 });
+  });
+});
