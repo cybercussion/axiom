@@ -18,10 +18,12 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "1.63.0",
     "browser-sync": "^3.0.0",
     "csso": "^5.0.5",
     "eslint": "^10.4.1",
     "globals": "^17.6.0",
-    "terser": "^5.46.0"
+    "terser": "^5.46.0",
+    "typescript": "6.0.3"
   }
 }
