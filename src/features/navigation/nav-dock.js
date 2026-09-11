@@ -73,6 +73,18 @@ export class NavDock extends BaseComponent {
   }
 
   render() {
+    // Avatar fallback without an inline handler — CSP's script-src blocks those.
+    // One capture-phase listener on the shadow root: image error events do not
+    // bubble, but capture still reaches them, and it survives every re-render.
+    if (!this._avatarFallback) {
+      this._avatarFallback = (e) => {
+        const img = e.target;
+        if (!img?.classList?.contains('avatar-img')) return;
+        img.style.display = 'none';
+        if (img.nextElementSibling) img.nextElementSibling.style.display = 'block';
+      };
+      this.shadowRoot.addEventListener('error', this._avatarFallback, true);
+    }
     const isAuthenticated = auth.isAuthenticated();
     const user = auth.getUser();
     const isDark = state.data.theme === 'dark';
@@ -108,9 +120,9 @@ export class NavDock extends BaseComponent {
       </a>
       
       ${isAuthenticated ? `
-        <a class="nav-link profile-link" href="profile" title="${user?.email || 'Profile'}" aria-label="Profile">
+        <a class="nav-link profile-link" href="profile" title="${this._esc(user?.email || 'Profile')}" aria-label="Profile">
           ${user?.picture ? `
-            <img class="avatar-img" src="${user.picture}" alt="Profile" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            <img class="avatar-img" src="${this._esc(user.picture)}" alt="Profile">
             <svg class="icon fallback-avatar" style="display:none;" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
               <circle cx="12" cy="7" r="4"></circle>

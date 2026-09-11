@@ -24,13 +24,21 @@ class ToastManager extends BaseComponent {
     const el = document.createElement('div');
     el.className = `toast ${note.type}`;
     el.dataset.id = note.id;
-    el.innerHTML = `
-      <span class="message">${note.message}</span>
-      <button class="close-btn" aria-label="Close">&times;</button>
-    `;
+    // textContent, never markup. notify() is public API: a consumer passing an
+    // API error message or anything URL-derived must get text on screen, not a
+    // parsed and executed fragment. This was the one HTML sink every caller of
+    // notify() shared.
+    const message = document.createElement('span');
+    message.className = 'message';
+    message.textContent = String(note.message ?? '');
 
-    // Manual Close
-    el.querySelector('.close-btn').onclick = () => state.dismissToast(note.id);
+    const close = document.createElement('button');
+    close.className = 'close-btn';
+    close.setAttribute('aria-label', 'Close');
+    close.textContent = '\u00d7';
+    close.onclick = () => state.dismissToast(note.id);
+
+    el.append(message, close);
     return el;
   }
 

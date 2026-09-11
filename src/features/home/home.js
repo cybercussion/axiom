@@ -62,7 +62,7 @@ class HomeUI extends BaseComponent {
           <button slot="actions" class="btn btn-success btn-outline" id="confirm-no-engine" autofocus>
             I accept my fate as a real developer
           </button>
-          <button slot="actions" class="btn btn-primary btn-fill" onclick="window.location.href='http://vanilla-js.com/'">
+          <button slot="actions" class="btn btn-primary btn-fill" id="go-vanilla">
             Go back to my safety blanket
           </button>
       </axiom-modal>
@@ -74,6 +74,12 @@ class HomeUI extends BaseComponent {
 
     this.shadowRoot.getElementById('confirm-no-engine').onclick = () => {
       this.shadowRoot.getElementById('engine-modal').close();
+    };
+
+    // Bound here, not inline: an inline handler is blocked by any CSP without
+    // 'unsafe-inline' (script-src-attr).
+    this.shadowRoot.getElementById('go-vanilla').onclick = () => {
+      window.location.href = 'http://vanilla-js.com/';
     };
   }
 }

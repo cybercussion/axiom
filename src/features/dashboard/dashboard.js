@@ -57,7 +57,7 @@ class DashboardUI extends BaseComponent {
           <div class="glass-card panel error-panel">
             <h2 class="text-danger">Signal Lost</h2>
             <p>Unable to fetch dashboard telemetry.</p>
-            <code class="error-code">${errorMsg}</code>
+            <code class="error-code">${this._esc(errorMsg)}</code>
             <button class="btn btn-secondary" id="retry-uplink">Retry Uplink</button>
           </div>
         </div>
