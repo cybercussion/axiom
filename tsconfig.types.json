@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "declarationDir": "types",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "target": "ES2022",
+    "lib": [
+      "ES2023",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "paths": {
+      "@state": [
+        "./src/core/state.js"
+      ],
+      "@core/*": [
+        "./src/core/*"
+      ],
+      "@shared/*": [
+        "./src/shared/*"
+      ]
+    },
+    "skipLibCheck": true,
+    "stripInternal": true,
+    "types": [],
+    "rootDir": "./src"
+  },
+  "include": [
+    "src/core/*.js",
+    "src/shared/base-component.js"
+  ]
+}

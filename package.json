@@ -14,7 +14,9 @@
     "test:core": "node --import ./tests/helpers/setup.js --test 'tests/**/*.test.js'",
     "test": "npm run test:tools && npm run test:core",
     "lint": "eslint src tools tests",
-    "lint:motion": "node tools/motion-gate.js"
+    "lint:motion": "node tools/motion-gate.js",
+    "types": "node tools/types.js",
+    "types:check": "node tools/types.js --check"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

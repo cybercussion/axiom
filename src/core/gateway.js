@@ -12,12 +12,32 @@ import { log } from '@core/logger.js';
 import { auth } from '@core/auth.js';
 
 /**
+ * @typedef {'auto'|'json'|'text'|'blob'|'xml'|'response'} Expect
+ * @typedef {{ expect?: Expect }} GatewayOptions
+ * @typedef {{ status?: number, statusText?: string, contentType?: string, url?: string, method?: string, body?: string, errors?: Array<{ message: string }>, data?: any, expect?: string, cause?: unknown }} GatewayFacts
+ */
+
+/**
  * A request that did not produce what the caller needed. Carries the facts a
  * handler branches on, so nobody parses a message string: status, statusText,
  * contentType, url, method, body (first 2 KB of the response text) — and for
  * GraphQL, errors[] and data.
  */
 export class GatewayError extends Error {
+  /** @type {number|undefined} */ status;
+  /** @type {string|undefined} */ statusText;
+  /** @type {string|undefined} */ contentType;
+  /** @type {string|undefined} */ url;
+  /** @type {string|undefined} */ method;
+  /** @type {string|undefined} first 2 KB of the response text */ body;
+  /** @type {Array<{ message: string }>|undefined} GraphQL errors[] */ errors;
+  /** @type {any} GraphQL partial data */ data;
+  /** @type {string|undefined} the refused expect value */ expect;
+
+  /**
+   * @param {string} message
+   * @param {GatewayFacts} [facts]
+   */
   constructor(message, { cause, ...facts } = {}) {
     super(message, cause ? { cause } : undefined);
     this.name = 'GatewayError';
@@ -42,9 +62,10 @@ export const gateway = {
    * @param {string} endpoint
    * @param {Object} [body]
    * @param {Object} [customHeaders]
-   * @param {{ expect?: 'auto'|'json'|'text'|'blob'|'xml'|'response' }} [options]
+   * @param {GatewayOptions} [options]
    *   'auto' (default) reads by content type, exactly as before. Any other value
    *   is an assertion (see the file header); 'response' returns the raw Response.
+   * @returns {Promise<any>}
    */
   async request(method, endpoint, body = null, customHeaders = {}, { expect = 'auto' } = {}) {
     if (!EXPECT.includes(expect)) {
@@ -85,9 +106,13 @@ export const gateway = {
     }
   },
 
+  /** @param {string} endpoint @param {Record<string, string>} [headers] @param {GatewayOptions} [options] @returns {Promise<any>} */
   get(endpoint, headers, options) { return this.request('GET', endpoint, null, headers, options); },
+  /** @param {string} endpoint @param {any} [body] @param {Record<string, string>} [headers] @param {GatewayOptions} [options] @returns {Promise<any>} */
   post(endpoint, body, headers, options) { return this.request('POST', endpoint, body, headers, options); },
+  /** @param {string} endpoint @param {any} [body] @param {Record<string, string>} [headers] @param {GatewayOptions} [options] @returns {Promise<any>} */
   put(endpoint, body, headers, options) { return this.request('PUT', endpoint, body, headers, options); },
+  /** @param {string} endpoint @param {Record<string, string>} [headers] @param {GatewayOptions} [options] @returns {Promise<any>} */
   delete(endpoint, headers, options) { return this.request('DELETE', endpoint, null, headers, options); },
 
   /**
@@ -140,7 +165,7 @@ export const gateway = {
     }
   },
 
-  /** Turn a Response into what `expect` asks for — or a GatewayError saying why not. */
+  /** @internal Turn a Response into what `expect` asks for — or a GatewayError saying why not. */
   async _read(response, { method, url, expect = 'auto', label = 'Gateway Error' }) {
     const contentType = response.headers.get('content-type') || '';
     const facts = { status: response.status, statusText: response.statusText, contentType, url, method };

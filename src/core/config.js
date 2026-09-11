@@ -7,6 +7,27 @@ const isLocal = location.hostname === 'localhost' || location.hostname === '127.
 // Runtime configuration injected during deployment
 const runtimeConfig = window.AXIOM_CONFIG || {};
 
+/**
+ * Runtime configuration. Everything here is PUBLIC — see axiom-config.js.
+ * @typedef {{
+ *   ENV: string,
+ *   DEBUG: boolean,
+ *   GRAPHQL_ENDPOINT: string,
+ *   GRAPHQL_API_KEY: string,
+ *   REST_ENDPOINT: string,
+ *   readonly API_BASE: string,
+ *   NEXUS_URL: string,
+ *   AUTH: { USER_POOL_DOMAIN?: string, CLIENT_ID?: string, GOOGLE_CLIENT_ID?: string, REDIRECT_URI?: string, LOCAL_REDIRECT_URI?: string, TURNSTILE_SITE_KEY?: string },
+ *   BASE_PATH: string,
+ *   VERSION: string,
+ *   NAV_STYLE: string,
+ *   CONTENT_HOST: string,
+ *   FEEDBACK_URL: string,
+ *   TURNSTILE_SITE_KEY: string,
+ *   [key: string]: any
+ * }} AxiomConfig
+ */
+/** @type {Readonly<AxiomConfig>} */
 export const config = Object.freeze({
   ENV: runtimeConfig.ENV || (isLocal ? 'development' : 'production'),
   DEBUG: runtimeConfig.DEBUG !== undefined ? runtimeConfig.DEBUG : isLocal,

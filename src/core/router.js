@@ -19,6 +19,35 @@ const ROUTE_TITLES = {
   'not-found': 'Not Found'
 };
 
+/**
+ * A route. `path` is the feature module; `api` loads its data in parallel with it.
+ * @typedef {{
+ *   path: string,
+ *   guard?: () => boolean|Promise<boolean>,
+ *   api?: string | ((params: Record<string, string>, signal: AbortSignal) => Promise<any>),
+ *   dataKey?: string
+ * }} RouteConfig
+ *
+ * One navigation, as published to state.navigation and onNavigation().
+ * @typedef {{
+ *   phase: 'start'|'commit',
+ *   navigationId: number,
+ *   path: string,
+ *   cleanPath: string,
+ *   slug: string,
+ *   params?: Record<string, string>,
+ *   direction: string,
+ *   timestamp: number
+ * }} Navigation
+ *
+ * @typedef {{
+ *   routes?: Record<string, RouteConfig>,
+ *   depths?: Record<string, number>,
+ *   order?: string[],
+ *   defaultRoute?: string,
+ *   basePath?: string
+ * }} RouterOptions
+ */
 export const router = {
   _activeTransition: null,
   _currentController: null,
@@ -31,13 +60,19 @@ export const router = {
   _activeNavId: null,
 
   // Configurable state
+  /** @type {Record<string, RouteConfig>} */
   routes: {},
+  /** @type {Record<string, number>} */
   depths: {},
+  /** @type {string[]} */
   order: [],
+  /** @type {string} */
   defaultRoute: 'home', // Fallback, but should be overridden by config
 
+  /** @type {string} */
   base: '/',
 
+  /** @param {RouterOptions} [options] */
   init(options = {}) {
     this.routes = options.routes || {};
     this.depths = options.depths || { 'default': 1 };
@@ -76,10 +111,12 @@ export const router = {
     }
   },
 
+  /** @param {string} slug @returns {number} */
   getDepth(slug) {
     return this.depths[slug] ?? this.depths['default'] ?? 1;
   },
 
+  /** @param {string} slug @returns {number} */
   getOrder(slug) {
     const index = this.order.indexOf(slug);
     return index === -1 ? 99 : index;
@@ -90,6 +127,8 @@ export const router = {
    * Callback receives the latest navigation object:
    * { phase: 'start' | 'commit', navigationId, path, cleanPath, slug, params?, direction, timestamp }
    * Returns an unsubscribe function.
+   * @param {(nav: Navigation|null) => void} callback
+   * @returns {() => void}
    */
   onNavigation(callback) {
     return state.subscribe(({ key, value }) => {
@@ -101,6 +140,8 @@ export const router = {
    * Subscribe to route/params matches at commit time.
    * This is a convenience wrapper over navigation events for features
    * that care about the resolved route + params rather than raw paths.
+   * @param {(match: { route: string, params: Record<string, string>, navigation: Navigation }) => void} callback
+   * @returns {() => void}
    */
   onMatch(callback) {
     return this.onNavigation((nav) => {
@@ -111,6 +152,12 @@ export const router = {
     });
   },
 
+  /**
+   * @param {string} path
+   * @param {boolean} [push] - true pushes a history entry; false replaces (back/forward, boot)
+   * @param {string|null} [customDirection] - 'forward' | 'backward' | 'fade'; derived when omitted
+   * @returns {Promise<void>}
+   */
   async navigate(path, push = true, customDirection = null) {
     if (this._scrollTimeout) clearTimeout(this._scrollTimeout);
 
@@ -457,6 +504,7 @@ export const router = {
     }
   },
 
+  /** @param {MouseEvent} e */
   handleIntercept(e) {
     // composedPath, not closest: clicks inside Shadow DOM are retargeted to the
     // shadow host, so e.target.closest('a') misses anchors rendered in a
@@ -480,6 +528,7 @@ export const router = {
     }
   },
 
+  /** @param {string} pattern @param {string} path @returns {Record<string, string>|null} */
   matchRoute(pattern, path) {
     if (!pattern || !path) return null;
     const p = (pattern || '').split('/').filter(Boolean);

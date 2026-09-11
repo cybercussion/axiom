@@ -32,6 +32,26 @@ const applyPayload = (base, payload) => {
 // The framework's own keys live here. An application declares ITS keys in its
 // own module with state.define(), so this file never needs to know that any
 // application exists — and no two projects ever have a reason to edit it.
+/**
+ * @typedef {{ id: string, message: string, type: 'info'|'success'|'warning'|'error', duration: number }} Notification
+ *
+ * The framework's keys. An application adds its own with state.define(), which
+ * is why the index signature is open.
+ * @typedef {{
+ *   route: string|null,
+ *   query: Record<string, string>,
+ *   params: Record<string, string>,
+ *   navigation: import('./router.js').Navigation|null,
+ *   navStyle: string,
+ *   transition: { type: string, direction: string },
+ *   transitioning?: boolean,
+ *   notifications: Notification[],
+ *   theme?: string,
+ *   user?: Object|null,
+ *   [key: string]: any
+ * }} StateData
+ */
+/** @type {StateData} */
 const store = {
   route: null,
   query: {},
@@ -57,6 +77,7 @@ const localOrNothing = () => { try { return globalThis.localStorage; } catch { r
 const announce = (key, value) => bus.dispatchEvent(new CustomEvent('update', { detail: { key, value } }));
 
 export const state = {
+  /** @type {StateData} */
   data: new Proxy(store, {
     set(target, key, value) {
       if (target[key] === value) return true;
@@ -74,6 +95,7 @@ export const state = {
   }),
 
   // Surgical Getter: Because state.data.theme is too many keystrokes
+  /** @param {string} key @returns {any} */
   get(key) {
     return this.data[key];
   },
@@ -94,7 +116,10 @@ export const state = {
    * A stored value wins over `initial`, and declaring a default never writes it.
    * Setting null/undefined removes the stored entry. Idempotent: defining a key
    * again returns its live value and changes nothing.
-   * @returns the key's current value
+   * @template T
+   * @param {string} key
+   * @param {{ initial?: T, storage?: Pick<Storage, 'getItem'|'setItem'|'removeItem'>, storageKey?: string, parse?: (raw: string) => T, serialize?: (value: T) => string }} [options]
+   * @returns {T} the key's current value
    */
   define(key, { initial, storage, storageKey = key, parse = (raw) => raw, serialize = String } = {}) {
     if (declared.has(key)) return store[key];
@@ -114,6 +139,7 @@ export const state = {
   },
 
   // Set Helper: For when you want to feel like you're using a real framework
+  /** @param {string} key @param {any} value */
   set(key, value) {
     this.data[key] = value;
   },
@@ -124,7 +150,10 @@ export const state = {
    * held object in place, the Proxy never sees a set, and nothing re-renders.
    * Return the next value instead of mutating the current one:
    *     state.update('user', u => ({ ...u, name: 'x' }))
-   * @returns the value that was set
+   * @template T
+   * @param {string} key
+   * @param {(current: T) => T} fn
+   * @returns {T} the value that was set
    */
   update(key, fn) {
     const current = this.get(key);
@@ -138,6 +167,7 @@ export const state = {
   },
 
   // Derived state helper
+  /** @template T, R @param {string} key @param {(value: T) => R} selectorFn @returns {R} */
   select(key, selectorFn) {
     return selectorFn(this.get(key));
   },
@@ -145,9 +175,11 @@ export const state = {
   /**
    * Universal Query: Handles async sets with status tracking.
    * Automated "Loading", "Error", "Stale" states.
+   * @template T
    * @param {string} key - The state key to populate
-   * @param {function} fetcher - Async function returning the data
-   * @param {number} ttl - Time to live in ms (default 30s)
+   * @param {() => Promise<T>} fetcher - Async function returning the data
+   * @param {number} [ttl] - Time to live in ms (default 30s)
+   * @returns {Promise<T>}
    */
   async query(key, fetcher, ttl = 30000) {
     const current = this.get(key) || {};
@@ -190,6 +222,10 @@ export const state = {
    *
    * Contract: a failure removes exactly its own change. It never restores a
    * value some other, successful write has since replaced.
+   * @param {string} key
+   * @param {any} payload - an object merges into the current data; anything else replaces it
+   * @param {() => Promise<unknown>} remoteTask
+   * @returns {Promise<void>}
    */
   async mutate(key, payload, remoteTask) {
     let ledger = ledgers.get(key);
@@ -236,7 +272,7 @@ export const state = {
     this.set(key, settled);
   },
 
-  /** Show confirmed ⊕ every pending patch, marked syncing. */
+  /** @internal Show confirmed ⊕ every pending patch, marked syncing. */
   _project(key, ledger) {
     let value = ledger.confirmed;
     for (const { payload } of ledger.pending) value = applyPayload(value, payload);
@@ -249,6 +285,7 @@ export const state = {
    * A write to this key from OUTSIDE the ledger — a query refetch, a socket push,
    * a direct set — is newer truth than anything the ledger holds. It becomes the
    * confirmed base, and the still-pending patches layer on top of it.
+   * @internal
    */
   _rebase(key, ledger) {
     const current = this.get(key);
@@ -256,6 +293,10 @@ export const state = {
   },
 
   // Features just call: state.subscribe(({ key, value }) => { ... })
+  /**
+   * @param {(change: { key: string, value: any }) => void} callback
+   * @returns {() => void} unsubscribe
+   */
   subscribe(callback) {
     const handler = (e) => callback(e.detail);
     bus.addEventListener('update', handler);
@@ -265,6 +306,9 @@ export const state = {
   /**
    * Toast Notification Helper
    * Pushes a notification to state and auto-removes it.
+   * @param {string} message - rendered as text, never markup
+   * @param {'info'|'success'|'warning'|'error'} [type]
+   * @param {number} [duration] - ms; 0 keeps it until dismissed
    */
   notify(message, type = 'info', duration = 3000) {
     const id = Date.now().toString(36) + Math.random().toString(36).substr(2);
@@ -281,6 +325,7 @@ export const state = {
     }
   },
 
+  /** @param {string} id */
   dismissToast(id) {
     const list = this.get('notifications') || [];
     this.set('notifications', list.filter(t => t.id !== id));

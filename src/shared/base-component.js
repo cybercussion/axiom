@@ -71,6 +71,7 @@ export class BaseComponent extends HTMLElement {
     this.shadowRoot.adoptedStyleSheets = [themeSheet];
 
     // Create a deferred promise for the router to wait on
+    /** @type {Promise<void>} Resolves after the first render; the router awaits it. */
     this.rendered = new Promise(resolve => {
       this._resolveRendered = resolve;
     });
@@ -80,6 +81,9 @@ export class BaseComponent extends HTMLElement {
    * AOM: ID Bridge Pattern
    * Generates a unique ID for the internal element and sets
    * aria-labelledby on the host if needed.
+   * @param {Element|null} internalRef
+   * @param {string} [suffix]
+   * @returns {string}
    */
   bridgeID(internalRef, suffix = 'label') {
     const id = `${this.tagName.toLowerCase()}-${suffix}-${Math.random().toString(36).substr(2, 9)}`;
@@ -89,6 +93,8 @@ export class BaseComponent extends HTMLElement {
 
   /**
    * Escape text for interpolation into innerHTML templates.
+   * @param {unknown} str
+   * @returns {string}
    */
   _esc(str) {
     return String(str ?? '').replace(/[&<>"']/g,
@@ -97,6 +103,9 @@ export class BaseComponent extends HTMLElement {
 
   /**
    * Surgical Ref: Returns a cached node or finds it once.
+   * @param {string} name
+   * @param {string} selector
+   * @returns {Element|null}
    */
   ref(name, selector) {
     let el = this._refs.get(name);
@@ -113,6 +122,7 @@ export class BaseComponent extends HTMLElement {
    * Sheets are memoized by CSS text: every control class passes the same
    * module-level constant, so N instances share ONE constructed sheet
    * instead of paying N parses (the same pattern as themeSheet above).
+   * @param {string} cssString
    */
   addStyles(cssString) {
     let sheet = BaseComponent._sheetCache.get(cssString);
@@ -128,6 +138,7 @@ export class BaseComponent extends HTMLElement {
    * Fetches external CSS and adopts it.
    * Workaround for lack of import ... with { type: 'css' } support.
    */
+  /** @param {string} url @returns {Promise<void>} */
   async addExternalStyles(url) {
     // Dedup: don't re-add the same stylesheet on re-mount
     if (!this._loadedStyleUrls) this._loadedStyleUrls = new Set();
@@ -178,7 +189,7 @@ export class BaseComponent extends HTMLElement {
    * Universal Subscription Helper
    * Automatically handles cleanup when the component disconnects.
    * @param {string} targetKey - The state key to watch
-   * @param {function} callback - Function to run on update
+   * @param {(value: any) => void} callback - Function to run on update
    */
   subscribe(targetKey, callback) {
     const unsub = state.subscribe(({ key, value }) => {

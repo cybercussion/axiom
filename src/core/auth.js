@@ -58,21 +58,29 @@ const REFRESH_WINDOW_MS = 10 * 60 * 1000;
 const REFRESH_RETRY_MS = 60 * 1000;
 
 export const auth = {
+  /** @internal */
   _tokens: null,
+  /** @internal */
   _user: null,
+  /** @internal */
   _refreshing: null,   // single in-flight refresh promise
+  /** @internal */
   _keepAlive: true,    // init({ keepAlive }) — proactive refresh timer + visibility hook
+  /** @internal */
   _refreshTimer: null,
+  /** @internal */
   _onVisible: null,
+  /** @internal */
   _store: null,        // init({ tokenStore }) — where persisted identity lives
 
   /** The identity store; localStorage until init() says otherwise. */
+  /** @internal */
   get _s() { return this._store || localStorage; },
 
   /**
    * Initialize auth state from storage or handle the OAuth callback.
    * Call this BEFORE router.init().
-   * @param {{ keepAlive?: boolean, tokenStore?: 'local'|'session'|'memory'|Storage }} [options]
+   * @param {{ keepAlive?: boolean, tokenStore?: 'local'|'session'|'memory'|Pick<Storage, 'getItem'|'setItem'|'removeItem'> }} [options]
    *   keepAlive (default true) arms the proactive refresh timer + visibility hook;
    *   an app that prefers to refresh only on demand passes { keepAlive: false }.
    *   tokenStore (default 'local') is where the token bundle and profile persist:
@@ -135,6 +143,7 @@ export const auth = {
    * Ensure the token is valid, refreshing if inside the refresh window.
    * Concurrent callers (every gateway request calls this) share ONE refresh.
    * Resolves true when the token is usable, false when it is not.
+   * @returns {Promise<boolean>}
    */
   async checkAndRefresh() {
     if (!this._tokens) return false;
@@ -147,19 +156,19 @@ export const auth = {
     return this._refresh();
   },
 
-  /** Get the current Access Token, ensuring it is fresh. */
+  /** Get the current Access Token, ensuring it is fresh. @returns {Promise<string|null>} */
   async getAccessToken() {
     const ok = await this.checkAndRefresh();
     return ok ? this._tokens?.accessToken ?? null : null;
   },
 
-  /** Get the current ID Token (JWT), ensuring it is fresh. */
+  /** Get the current ID Token (JWT), ensuring it is fresh. @returns {Promise<string|null>} */
   async getIdToken() {
     const ok = await this.checkAndRefresh();
     return ok ? this._tokens?.idToken ?? null : null;
   },
 
-  /** Get current user info. */
+  /** Get current user info. @returns {Object|null} */
   getUser() {
     return this._user;
   },
@@ -232,6 +241,7 @@ export const auth = {
 
   // --- Private Methods ---
 
+  /** @internal */
   async _handleCallback(code, returnedState) {
     const verifier = localStorage.getItem(PKCE_VERIFIER_KEY);
     const expectedState = localStorage.getItem(STATE_KEY);
@@ -304,11 +314,13 @@ export const auth = {
   },
 
   /** Single-flight wrapper: concurrent callers await the same refresh. */
+  /** @internal */
   _refresh() {
     this._refreshing ??= this._refreshToken().finally(() => { this._refreshing = null; });
     return this._refreshing;
   },
 
+  /** @internal */
   async _refreshToken() {
     if (!this._tokens?.refreshToken) return false;
 
@@ -368,6 +380,7 @@ export const auth = {
    * Normalize a provider token response into the stored bundle. A refresh response
    * usually OMITS refresh_token — carry the previous one forward; a rotated one wins.
    */
+  /** @internal */
   _bundle(tokens, prev) {
     const bundle = {
       accessToken: tokens.access_token,
@@ -383,6 +396,7 @@ export const auth = {
     return bundle;
   },
 
+  /** @internal */
   _persistTokens() {
     this._s.setItem(STORAGE_KEY, JSON.stringify(this._tokens));
   },
@@ -392,6 +406,7 @@ export const auth = {
    * user and the persisted profile, publish to state, warm the avatar, and arm the
    * keep-alive. The ONE place a user is installed — callback, restore and refresh.
    */
+  /** @internal */
   _installUser() {
     const parsed = this._parseIdToken(this._tokens?.idToken);
     const user = hydrateProfile(parsed, this._user, this._readProfile());
@@ -404,6 +419,7 @@ export const auth = {
     return user;
   },
 
+  /** @internal */
   _applyTokenClaimsToUser(user) {
     if (!user) return user;
     if (this._tokens?.admin != null) user.admin = !!this._tokens.admin;
@@ -412,14 +428,17 @@ export const auth = {
     return user;
   },
 
+  /** @internal */
   _readProfile() {
     try { return JSON.parse(this._s.getItem(PROFILE_KEY) || 'null'); } catch { return null; }
   },
 
+  /** @internal */
   _writeProfile({ sub, email, name, picture }) {
     try { this._s.setItem(PROFILE_KEY, JSON.stringify({ sub, email, name, picture })); } catch { /* quota */ }
   },
 
+  /** @internal */
   _parseIdToken(idToken) {
     try {
       const payload = idToken.split('.')[1];
@@ -433,6 +452,7 @@ export const auth = {
   // Proactive refresh: ONE timer at the leading edge of the refresh window (never a
   // polling interval), plus a visibilitychange hook for laptop sleep / long idle
   // where timers were throttled. Re-armed on every token install.
+  /** @internal */
   _scheduleRefresh(delayMs) {
     clearTimeout(this._refreshTimer);
     this._refreshTimer = null;
@@ -448,6 +468,7 @@ export const auth = {
     }
   },
 
+  /** @internal */
   _stopKeepAlive() {
     clearTimeout(this._refreshTimer);
     this._refreshTimer = null;
@@ -457,6 +478,7 @@ export const auth = {
     }
   },
 
+  /** @internal */
   async _cacheUserAvatar(user) {
     if (!user?.picture) return;
     // Stable URL (size pinned) + identity key: Google rotates the picture URL on its
@@ -487,6 +509,7 @@ export const auth = {
     }
   },
 
+  /** @internal */
   _clear() {
     this._stopKeepAlive();
     this._tokens = null;
@@ -495,6 +518,7 @@ export const auth = {
     for (const k of [PKCE_VERIFIER_KEY, STATE_KEY]) localStorage.removeItem(k);
   },
 
+  /** @internal */
   _getConfig() {
     const authConfig = config.AUTH || {};
     const isLocalHost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
@@ -508,6 +532,7 @@ export const auth = {
     };
   },
 
+  /** @internal */
   async _fetchWithTimeout(url, options, ms) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), ms);
@@ -519,6 +544,7 @@ export const auth = {
   },
 
   /** HTTP failure → Error carrying `.status` and the OAuth `.code` (body.error) for isRefreshRejected(). */
+  /** @internal */
   async _httpError(response, fallback) {
     const body = await response.json().catch(() => ({}));
     const err = new Error(body.error_description || body.error || `${fallback}: ${response.status}`);
@@ -528,6 +554,7 @@ export const auth = {
   },
 
   /** Worker envelope `{ ok:false, error }` → Error carrying `.code` (the worker maps a dead refresh token to 'invalid_grant'). */
+  /** @internal */
   _apiError(result, fallback) {
     const err = new Error(result.error || fallback);
     err.code = typeof result.error === 'string' ? result.error : undefined;
