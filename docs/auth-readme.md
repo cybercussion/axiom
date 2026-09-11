@@ -1,5 +1,8 @@
 # Auth (`src/core/auth.js`)
 
+> **A placeholder, not a security architecture.** This is a working example of wiring an identity provider into Axiom — replace it with whatever your application actually uses. Its default token store stays `local`; the options exist so the example isn't a bad default to copy, and SECURITY.md says what each choice does and doesn't protect.
+
+
 OAuth2 authorization-code flow + PKCE, two providers: **Direct Google** (a worker you run
 holds the client secret and brokers exchange/refresh) or **legacy Cognito** (hosted UI,
 PKCE straight to the token endpoint). The showcase does not use auth; this file is the

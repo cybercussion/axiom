@@ -6,6 +6,19 @@ What changed in the runtime the fleet copies: `src/core/`, `src/shared/base-comp
 
 Every criticism in the external review, and what happened to it: [the ledger](docs/superpowers/specs/2026-09-11-review-response-design.md).
 
+### Second review — defensibility (2026-09-11)
+
+The second review's claims were tested before anything was built — [the validation](docs/superpowers/specs/2026-09-11-review-2-validation.md). What the tests found, and what shipped:
+
+- **Fixed:** a navigation that lost left its data on the page that won — `/item/1` (slow) then `/item/2` showed item 1; a loader honouring its signal flashed an error instead. `state.query()` and `gateway` now take a `signal`; an aborted query writes nothing. (`00e8f70`)
+- **Fixed:** a component that threw in `setup()`/`render()` left its navigation half-committed forever. Contained now: a bubbling, cancelable `axiom:component-error`, a fallback in the component's own shadow root, and `rendered` always resolves. (`188a660`)
+- **Fixed:** `state.set('__proto__', …)` replaced the store's prototype. The store has none now. (`00e8f70`)
+- **Fixed:** the logger read messages as format directives (CodeQL). (`a791a69`)
+- **Added:** `state.query(…, { signal })`, gateway `{ signal }`, `axiom:component-error`. (`00e8f70`, `188a660`)
+- **Tests:** a seeded property test for concurrent mutations (50,000 sequences checked); invariant tests for the navigation race and component containment; the full browser suite on Chromium, WebKit and Firefox in CI. (`dc5b7e0`, `6bf5ba0`)
+- **Docs:** a contract per primitive (`docs/contracts.md`); a threat model and "Axiom does not make your application secure" (`SECURITY.md`); "When NOT to use Axiom" (README); auth documented as a placeholder.
+- **Repository:** Dependabot alerts and security updates, and CodeQL default setup, are on.
+
 ### Breaking — for projects that copy the core
 
 - **`core/state.js` declares no application keys.** `audioLevel`, `captionsEnabled`, `autoplayEnabled`, `sessionId` and `items` are gone from core. Declare yours with `state.define()` in your own module and import it from whatever reads those keys — `src/app-state.js` is the pattern, and it keeps the historical storage keys so saved settings survive. (`124b2c2`)

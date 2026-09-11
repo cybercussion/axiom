@@ -53,3 +53,22 @@ Suggested order, lowest risk first: tender → new.cybercussion.com → scobot �
 - **P0** — query and gateway cancellation (an aborted navigation writes nothing) with router invariant tests for the A/B race; component failure containment; a contract per primitive, including the A/B answer; WebKit and Firefox in CI, the ResizeObserver fix, and a root cause for the scroll-test flake; a null-prototype store.
 - **P1** — `axiom:*` observability events; the threat-model table and "Axiom does not make your application secure"; "When NOT to use Axiom"; a core-size budget in `tools/weigh.js` plus transition and 10k-update budgets; `/login`, route announcements, `rel="external"`.
 - **Stop** when every invariant is green on three engines, the fuzz is green, ten repeated runs show no flake, and the budgets are enforced. Then add nothing.
+
+## Progress
+
+Decisions (Mark, 2026-09-11): work the plan in order, pushing back where it isn't worth it; auth is a placeholder — document it, don't change the default; turn on Dependabot alerts and fixes and CodeQL; propagate by re-borrowing the core per project, after axiom's P0 lands.
+
+| Item | Status |
+|---|---|
+| Aborted-navigation data race (#1, #2) | **Shipped** `00e8f70` — cancellable `query()` and `gateway`; invariant tests in both loader modes (`6bf5ba0`) |
+| Failure containment (#5) | **Shipped** `188a660` — `axiom:component-error`, fallback, `rendered` always resolves |
+| Prototype pollution (#3) | **Shipped** `00e8f70` — null-prototype store |
+| Browser matrix in CI (#7) | **Shipped** `6bf5ba0` — Chromium, WebKit, Firefox. The scroll-test flake was the test scrolling before `/components` finished laying out; the router was right. **Open:** WebKit on Linux flaked once in 72 (back/forward; passed on retry) — traces are now uploaded so the next one can be read |
+| Contract per primitive (#1) | **Shipped** — `docs/contracts.md`, including the A/B answer and the test behind each guarantee |
+| Threat model (#3) | **Shipped** — `SECURITY.md` |
+| Auth default (#4) | **Declined** — auth is a placeholder; documented in SECURITY.md, `docs/auth-readme.md` and the contracts |
+| "When NOT to use Axiom" (#9) | **Shipped** — README |
+| CodeQL + Dependabot | **On.** CodeQL's first three findings are fixed (`a791a69`); the one Dependabot alert is the documented browser-sync advisory, dismissed as accepted risk |
+| Benchmarks vs other frameworks (#8), Lab demo | **Pushed back** — they make Axiom more convincing, not more defensible; revisit once P1 is done |
+| P1 remaining | Observability events, performance budgets (core size, layout shift, transition), route announcements, `/login`, `rel="external"` |
+

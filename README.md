@@ -17,7 +17,7 @@ Axiom is a small application runtime built from what browsers already ship — E
 | Runtime core (`src/core/` + `BaseComponent`) | <!-- claim:core-lines -->~2,200<!-- /claim --> lines |
 | Built-in UI controls | <!-- claim:controls -->25<!-- /claim --> |
 | The entire app — every feature, every control — minified, compressed per file as a browser fetches it | <!-- claim:gzip-kb -->~87<!-- /claim --> KB gzip · <!-- claim:brotli-kb -->~73<!-- /claim --> KB Brotli |
-| Browser floor | Chrome/Edge 111+, Safari 16.4+, Firefox 113+ (import maps, `adoptedStyleSheets`, `ElementInternals`, `color-mix()`) |
+| Browser floor | Chrome/Edge 111+, Safari 16.4+, Firefox 113+ (import maps, `adoptedStyleSheets`, `ElementInternals`, `color-mix()`) · tested in Chromium, WebKit and Firefox on every deploy |
 
 ---
 
@@ -87,7 +87,7 @@ npm test              # tool tests + core tests, in node
 
 ## 🧪 Tests
 
-`npm test` runs the tool tests and the core tests; `npm run e2e` runs the browser suite (Playwright, Chromium) with the app under its production CSP. The core's browser modules run under node through a resolve hook that applies the same import map the browser uses — tests import `@state` exactly as the app does, with no build step and no second module graph to drift. The deploy runs every test before anything ships, and one of them checks the numbers in this README.
+`npm test` runs the tool tests and the core tests; `npm run e2e` runs the browser suite (Playwright) with the app under its production CSP — Chromium by default, `AXIOM_ENGINES=chromium,webkit,firefox` for the matrix the deploy runs. The core's browser modules run under node through a resolve hook that applies the same import map the browser uses — tests import `@state` exactly as the app does, with no build step and no second module graph to drift. The deploy runs every test before anything ships, and one of them checks the numbers in this README.
 
 ---
 
@@ -205,10 +205,17 @@ That turns <!-- claim:source-kb -->~350<!-- /claim --> KB of source JS + CSS int
 
 The rules the runtime keeps — component lifecycle, state and router guarantees, accessibility, the browser floor, versioning — are written down in [docs/contracts.md](docs/contracts.md).
 
-And what Axiom deliberately **isn't**:
+## 🚫 When NOT to use Axiom
 
-- **Server-rendered.** It's a client runtime, by design. If you need SSR, you need a different tool.
-- **An ecosystem.** No stores, providers, middleware or plugins — and it won't grow them. Every addition is a function, an option, or an event on something that already exists.
-- **Beyond review.** An external review graded this README 6/10 for accuracy. Every criticism now has a written disposition — [the ledger](docs/superpowers/specs/2026-09-11-review-response-design.md) — and the counts and sizes on this page are checked on every deploy: line counts within 10% by `tools/readme-claims.test.js`, shipped bytes against the real build by `tools/weigh.js`. The browser floor was checked against MDN's compatibility data on 2026-09-11.
+- **Your team leans on React's ecosystem** — its component libraries, hooks and tooling. Axiom has a small set of built-in controls, not npm's catalog.
+- **You need server rendering** or React Server Components. Axiom is a client runtime, by design.
+- **Your content must render without JavaScript** for search or accessibility. Pages render in the browser; `create-seo` handles meta tags, not content.
+- **You want TypeScript-first authoring.** The source is JavaScript. You get generated declarations to consume, not a compiler in your loop.
+- **You want framework-managed deep state.** State is shallowly reactive on purpose; nested changes go through `state.update()`.
+- **You want an ecosystem.** There are no stores, providers, middleware or plugins, and there won't be. Every addition is a function, an option, or an event on something that already exists.
+
+## Reviewed, not trusted
+
+Two external reviews have been worked through. The first graded this README 6/10 for accuracy; every criticism has a written disposition in [the ledger](docs/superpowers/specs/2026-09-11-review-response-design.md), and the second review's claims were tested before anything was built — [the validation](docs/superpowers/specs/2026-09-11-review-2-validation.md). The counts and sizes on this page are checked on every deploy: line counts within 10% by `tools/readme-claims.test.js`, shipped bytes against the real build by `tools/weigh.js`. The browser floor was checked against MDN's compatibility data on 2026-09-11, and the full browser suite runs in Chromium, WebKit and Firefox on every deploy.
 
 Enjoy your retrieved sanity.
