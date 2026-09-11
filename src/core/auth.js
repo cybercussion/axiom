@@ -10,6 +10,7 @@
 import { state } from '@state';
 import { config } from '@core/config.js';
 import { log } from '@core/logger.js';
+import { emit, reason } from '@core/observe.js';
 import {
   buildAuthorizeUrl, generateCodeVerifier, generateCodeChallenge,
   hydrateProfile, normalizeAvatarUrl, isRefreshRejected, refreshDelayMs
@@ -224,6 +225,7 @@ export const auth = {
 
     this._clear();
     state.set('user', null);
+    emit('axiom:auth', { phase: 'logout' });
 
     // Session context is the application's to clear: it reacts to user -> null
     // (see src/app-state.js). Core auth names no application key.
@@ -304,9 +306,11 @@ export const auth = {
       this._persistTokens();
       this._installUser();
       log.info('Auth successful', { email: this._user?.email, provider: provider || 'cognito' });
+      emit('axiom:auth', { phase: 'login', provider: provider || 'cognito' });
       // Router resumes any pending destination via localStorage in init()
     } catch (err) {
       log.error('OAuth callback failed', err);
+      emit('axiom:auth', { phase: 'login-failed', error: reason(err) });
       state.notify('Login failed. Please try again.', 'error');
     } finally {
       sessionStorage.removeItem('turnstile_auth_token');
@@ -360,9 +364,12 @@ export const auth = {
       this._persistTokens();
       this._installUser();
       log.info('Silent refresh successful');
+      emit('axiom:auth', { phase: 'refresh' });
       return true;
     } catch (err) {
-      if (isRefreshRejected(err)) {
+      const rejected = isRefreshRejected(err);
+      emit('axiom:auth', { phase: 'refresh-failed', rejected });
+      if (rejected) {
         // Explicit rejection (401 / invalid_grant) — the refresh token is dead.
         log.warn('Refresh token rejected — clearing session', err);
         this._clear();

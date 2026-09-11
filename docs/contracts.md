@@ -94,15 +94,24 @@ Not supported: re-render diffing; server rendering or hydration; attribute-to-pr
 
 ## Observability
 
-What can be watched today, and how:
+The core narrates its own work as events on `window` (`@core/observe.js`). One name per kind, with a `phase`. **Every `start` ends exactly once, carrying the same id**, so a consumer pairs them without guessing.
 
-| Signal | How |
-|---|---|
-| Every state change | `state.subscribe(fn)` |
-| Each navigation's start and commit | `router.onNavigation(fn)` |
-| A terminal navigation failure | `axiom:router-error` on `window` (cancelable) |
-| A component failure | `axiom:component-error` — bubbles through shadow roots to `window` (cancelable) |
-| A blocked script or connection | the browser's own `securitypolicyviolation` event |
+| Event | Phases | Detail |
+|---|---|---|
+| `axiom:navigation` | `start` → `commit` \| `abort` \| `error` | `navigationId`, `path` (no query or hash), `slug`; on the end `ms`, plus `supersededBy` (abort) or `error` |
+| `axiom:request` | `start` → `response` \| `error` \| `abort` | `id`, `method`, `url`; on the end `ms` and `status`, plus `error` for a failure. A cancellation is an `abort`, never an `error` |
+| `axiom:mutation` | `start` → `success` \| `rollback` | `id`, `key`; on the end `ms`, plus `error` for a rollback. `success` means the server accepted the write; it lands once every earlier write to that key has settled |
+| `axiom:auth` | `login` · `login-failed` · `refresh` · `refresh-failed` (`rejected`: the session is gone) · `logout` | the phase; `provider` on login |
+| `axiom:router-error` | — | cancelable; see Router |
+| `axiom:component-error` | — | cancelable, bubbles through shadow roots; see Component |
+
+`observe(fn)` hands one function every name above and returns the unsubscribe. A handler that throws is logged, never thrown back into the runtime. Or listen to just the names you want with `addEventListener`.
+
+A detail never carries headers, bodies, payloads or tokens. A request's `url` is the one fetched, query string included: scrub it before it leaves the page.
+
+Also watchable: every state change (`state.subscribe(fn)`), each navigation as state (`router.onNavigation(fn)`), a blocked script or connection (the browser's own `securitypolicyviolation`).
+
+Tested by `tests/core/observe.test.js` — requests, GraphQL, mutations, auth, `observe()` — and `tests/e2e/app.spec.js`: in a burst of navigations only the last commits, every start ends once, and an unknown route ends in `error`.
 
 ## Performance budgets
 
@@ -110,7 +119,7 @@ Enforced where the measurement is deterministic; reported where it is not.
 
 | Budget | Limit | Enforced by |
 |---|---|---|
-| The runtime core as shipped — `src/core/` + `BaseComponent`, minified, Brotli per file | 13 KB (12.1 KB today) | `node tools/weigh.js --check`, on every deploy |
+| The runtime core as shipped — `src/core/` + `BaseComponent`, minified, Brotli per file | 14 KB (13.0 KB today; raised from 13 KB when the core began narrating itself — the events cost 0.8 KB) | `node tools/weigh.js --check`, on every deploy |
 | Layout shift loading `/components` and `/dashboard` | CLS < 0.1, web.dev's "good" | the browser suite, in Chromium — the only engine that reports layout shift |
 | Nothing paints before the theme; a late theme or a late dock stylesheet moves nothing | invariant | the browser suite, all three engines |
 | A view transition the browser does not start | skipped after 1 s | the browser suite, all three engines |

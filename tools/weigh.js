@@ -27,7 +27,7 @@ import { fileURLToPath } from 'node:url';
 
 export const TOLERANCE = 0.10;
 export const WEIGHTS = ['source-kb', 'minified-kb', 'gzip-kb', 'brotli-kb', 'core-brotli-kb'];
-export const BUDGETS = { 'core-brotli-kb': 13 };
+export const BUDGETS = { 'core-brotli-kb': 14 };
 
 const walk = (dir) => (fs.existsSync(dir)
   ? fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : [path.join(dir, e.name)]))

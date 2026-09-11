@@ -54,3 +54,14 @@ test('the contract compiles — and every misuse written into it is rejected', (
   const r = run([tsc, '-p', 'tsconfig.contract.json']);
   assert.equal(r.status, 0, r.stdout + r.stderr);
 });
+
+test('a top-level export tagged @internal stays out of the public types', () => {
+  const out = stripInternal([
+    '/** @internal the core\'s own */',
+    'export function emit(name: string): void;',
+    '/** public */',
+    'export function observe(handler: () => void): () => void;',
+  ].join('\n'));
+  assert.doesNotMatch(out, /function emit/);
+  assert.match(out, /function observe/);
+});

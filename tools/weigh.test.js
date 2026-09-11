@@ -52,7 +52,7 @@ test('CLI: exit 0 when current, 1 when a claim drifted, 2 with no dist/', () => 
 });
 
 test('the runtime core is weighed on its own and held to its budget', () => {
-  const big = crypto.randomBytes(20000).toString('base64'); // incompressible: well over 13 KB
+  const big = crypto.randomBytes(20000).toString('base64'); // incompressible: well over the budget
   const measured = weigh(tree('', { core: big }));
   assert.ok(measured['core-brotli-kb'] > BUDGETS['core-brotli-kb']);
   assert.ok(measured['core-brotli-kb'] < measured['brotli-kb'], 'the core is a subset of the app');

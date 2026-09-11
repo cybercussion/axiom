@@ -7,6 +7,7 @@ import { log } from '@core/logger.js';
 import { config } from '@core/config.js';
 import { auth } from '@core/auth.js';
 import { announce } from '@core/announce.js';
+import { emit, elapsed, reason } from '@core/observe.js';
 
 const ROUTE_TITLES = {
   home: 'Axiom',
@@ -193,6 +194,8 @@ export const router = {
     if (this._currentController) {
       this._currentController.abort();
     }
+    // A navigation still in flight ends here, as an abort: it will never commit.
+    if (this._openNav) this._endNav(this._openNav.navigationId, 'abort', { supersededBy: this._navSeq + 1 });
     this._currentController = new AbortController();
     const signal = this._currentController.signal;
 
@@ -290,6 +293,8 @@ export const router = {
         direction,
         timestamp: Date.now()
       });
+      this._openNav = { navigationId, path: cleanPath, slug, t0: performance.now() };
+      emit('axiom:navigation', { phase: 'start', navigationId, path: cleanPath, slug });
     } catch (e) {
       // Non-fatal; navigation should still proceed even if telemetry fails.
       log.warn('Navigation start signal failed', e);
@@ -406,6 +411,7 @@ export const router = {
         } catch (e) {
           log.warn('Navigation commit signal failed', e);
         }
+        this._endNav(navigationId, 'commit');
 
         // Wait for the specific element to finish its internal setup/render
         const container = document.getElementById('app-container');
@@ -455,6 +461,9 @@ export const router = {
             // Reconciled from daystra / scobot / tender; axiom carried this one.
             if (feature) { feature.tabIndex = -1; feature.focus({ preventScroll: true }); }
             window.scrollTo({ top: targetY, behavior: 'instant' });
+            // Where it landed and how tall the page was — a restore the page is too
+            // short to honour lands short, and this is the line a trace shows it in.
+            log.debug(`[Router] scroll → ${targetY}: landed ${Math.round(window.scrollY)}, page ${document.documentElement.scrollHeight}px`);
             // Announce the new page — focus alone lands on a host with no
             // accessible name. Not on the first load: a screen reader reads a
             // fresh page on its own. A navigation that lost never gets here.
@@ -472,6 +481,7 @@ export const router = {
 
         log.error(`Navigation failed for [${slug}]`, err);
         state.set('transitioning', false);
+        this._endNav(navigationId, 'error', { error: reason(err) });
 
         // Fallback Logic: Try to recover by loading 404
         if (slug !== 'not-found') {
@@ -539,6 +549,17 @@ export const router = {
     } else {
       await performUpdate();
     }
+  },
+
+  /** @internal The navigation in flight: started, and not yet committed, aborted or failed. */
+  _openNav: null,
+
+  /** @internal Close the navigation in flight with its one terminal phase. */
+  _endNav(navigationId, phase, extra) {
+    const open = this._openNav;
+    if (open?.navigationId !== navigationId) return;
+    this._openNav = null;
+    emit('axiom:navigation', { phase, navigationId, path: open.path, slug: open.slug, ms: elapsed(open.t0), ...extra });
   },
 
   /** @param {MouseEvent} e */

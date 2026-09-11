@@ -14,7 +14,7 @@ Axiom is a small application runtime built from what browsers already ship — E
 | | |
 |---|---|
 | Runtime dependencies | <!-- claim:runtime-deps -->0<!-- /claim --> |
-| Runtime core (`src/core/` + `BaseComponent`) | <!-- claim:core-lines -->~2,200<!-- /claim --> lines · <!-- claim:core-brotli-kb -->~12<!-- /claim --> KB Brotli as shipped, held under a 13 KB budget |
+| Runtime core (`src/core/` + `BaseComponent`) | <!-- claim:core-lines -->~2,500<!-- /claim --> lines · <!-- claim:core-brotli-kb -->~13<!-- /claim --> KB Brotli as shipped, held under a 14 KB budget |
 | Built-in UI controls | <!-- claim:controls -->25<!-- /claim --> |
 | The entire app — every feature, every control — minified, compressed per file as a browser fetches it | <!-- claim:gzip-kb -->~87<!-- /claim --> KB gzip · <!-- claim:brotli-kb -->~73<!-- /claim --> KB Brotli |
 | Browser floor | Chrome/Edge 111+, Safari 16.4+, Firefox 113+ (import maps, `adoptedStyleSheets`, `ElementInternals`, `color-mix()`) · tested in Chromium, WebKit and Firefox on every deploy |
@@ -31,7 +31,7 @@ Not a store library. A `Proxy` and an `EventTarget`.
 - **Declared keys.** `state.define()` declares a key and where it persists. Core declares only its own keys; your app declares its own, in its own module — so nobody ever has to edit the framework file. (Eight projects that did are why eight copies of it stopped matching.)
 
 ### 2. Router — `src/core/router.js`
-About <!-- claim:router-lines -->600<!-- /claim --> lines. You can read all of it before your current router's changelog finishes loading.
+About <!-- claim:router-lines -->650<!-- /claim --> lines. You can read all of it before your current router's changelog finishes loading.
 - **Parallel loading.** The route's module and its data load at the same time. No waterfall.
 - **Race-safe.** Click A, B, C in quick succession; whichever request finishes last, you land on C.
 - **Error contract.** A failed route falls back to your 404. If *that* fails, the router emits a cancelable `axiom:router-error` — `preventDefault()` and the outcome is yours. Unhandled, it draws a minimal notice in the app container, never over `document.body`.
@@ -87,7 +87,7 @@ npm test              # tool tests + core tests, in node
 
 ## 🧪 Tests
 
-`npm test` runs the tool tests and the core tests; `npm run e2e` runs the browser suite (Playwright) with the app under its production CSP — Chromium by default, `AXIOM_ENGINES=chromium,webkit,firefox` for the matrix the deploy runs. The core's browser modules run under node through a resolve hook that applies the same import map the browser uses — tests import `@state` exactly as the app does, with no build step and no second module graph to drift. The deploy runs every test before anything ships, and one of them checks the numbers in this README. Two budgets fail the deploy: the runtime core past 13 KB Brotli, and a layout shift past 0.1 loading the heaviest pages. `npm run bench` reports how fast the state layer is without gating on it — timings move with the machine; bytes and layout do not.
+`npm test` runs the tool tests and the core tests; `npm run e2e` runs the browser suite (Playwright) with the app under its production CSP — Chromium by default, `AXIOM_ENGINES=chromium,webkit,firefox` for the matrix the deploy runs. The core's browser modules run under node through a resolve hook that applies the same import map the browser uses — tests import `@state` exactly as the app does, with no build step and no second module graph to drift. The deploy runs every test before anything ships, and one of them checks the numbers in this README. Two budgets fail the deploy: the runtime core past 14 KB Brotli, and a layout shift past 0.1 loading the heaviest pages. `npm run bench` reports how fast the state layer is without gating on it — timings move with the machine; bytes and layout do not.
 
 ---
 
@@ -198,7 +198,7 @@ That turns <!-- claim:source-kb -->~350<!-- /claim --> KB of source JS + CSS int
 
 - **Browser primitives.** CSS custom properties, not Sass variables. ES modules, not CommonJS. A `Proxy` and an `EventTarget`, not a reducer-store library.
 - **Small.** See the table at the top: the runtime core is an afternoon's reading.
-- **Observable.** `state.subscribe()` for every change, `router.onNavigation()` for each navigation's start and commit, `axiom:router-error` for a failure the app should render.
+- **Observable.** The core narrates its own work as events on `window` — `axiom:navigation`, `axiom:request`, `axiom:mutation`, `axiom:auth` — and every `start` ends exactly once; `observe(fn)` takes them all. `state.subscribe()` hears every change.
 - **Cancellable.** A newer navigation aborts the one in flight: its route loader receives the `AbortSignal` (`api(params, signal)`), and a navigation that loses never commits, focuses or scrolls. `axiom:router-error` is cancelable — `preventDefault()` and the outcome is yours.
 - **Testable.** Node tests import the same specifiers the browser resolves; the browser suite runs under the production CSP; misuse of the public types is pinned so it cannot compile.
 - **Explicit.** `expect` turns a response-type assumption into an assertion; `state.define()` is the one place a key's persistence is decided; where tokens persist is an option you pass, with what it does and doesn't protect written down.

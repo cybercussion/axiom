@@ -499,3 +499,30 @@ test('a late dock stylesheet does not reflow the page', async ({ page, browserNa
   expect(await page.evaluate(() => [...window.__leftPads]), 'a dock never pads the left').toEqual([]);
   if (browserName === 'chromium') expect(await page.evaluate(() => window.__cls)).toBeLessThan(CLS_BUDGET);
 });
+
+test('every navigation that starts ends exactly once — only the last of a burst commits', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__nav = [];
+    window.addEventListener('axiom:navigation', (e) => window.__nav.push(e.detail));
+  });
+  await page.goto('/');
+  await settled(page, 'home-ui');
+  await navigateInPage(page, ['/dashboard', '/components', '/contact']);
+  await settled(page, 'contact-ui');
+  await navigateInPage(page, ['/nowhere']);
+  await expect(page.locator('#app-container > not-found-ui')).toBeAttached();
+  await expect.poll(() => page.evaluate(() => window.__nav.at(-1)?.phase)).toBe('error');
+
+  const nav = await page.evaluate(() => window.__nav);
+  const phases = new Map();
+  for (const e of nav) phases.set(e.navigationId, [...(phases.get(e.navigationId) ?? []), e.phase]);
+  for (const [id, p] of phases) expect(p, `navigation ${id}`).toHaveLength(2);
+  expect([...phases.values()].map((p) => p.join('→'))).toEqual([
+    'start→commit', // the boot navigation
+    'start→abort', 'start→abort', 'start→commit', // the burst: only the last commits
+    'start→error', // an unknown route
+  ]);
+  const ends = nav.filter((e) => e.phase !== 'start');
+  expect(ends.every((e) => typeof e.ms === 'number')).toBe(true);
+  expect(nav.find((e) => e.phase === 'abort').supersededBy).toBeGreaterThan(0);
+});

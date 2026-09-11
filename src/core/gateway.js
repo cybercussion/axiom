@@ -10,6 +10,7 @@
 import { config } from '@core/config.js';
 import { log } from '@core/logger.js';
 import { auth } from '@core/auth.js';
+import { emit, begin, elapsed, reason } from '@core/observe.js';
 
 /**
  * @typedef {'auto'|'json'|'text'|'blob'|'xml'|'response'} Expect
@@ -99,12 +100,20 @@ export const gateway = {
         : body;
     }
 
+    const { id, t0 } = begin();
+    emit('axiom:request', { phase: 'start', id, method, url });
     try {
       log.debug(`Gateway: ${method} ${url}`);
       const response = await fetch(url, options);
-      return await this._read(response, { method, url, expect });
+      const data = await this._read(response, { method, url, expect });
+      emit('axiom:request', { phase: 'response', id, method, url, status: response.status, ms: elapsed(t0) });
+      return data;
     } catch (err) {
-      if (err?.name !== 'AbortError') log.error(`Gateway Request Failed: ${method} ${url}`, err);
+      const aborted = err?.name === 'AbortError';
+      if (!aborted) log.error(`Gateway Request Failed: ${method} ${url}`, err);
+      emit('axiom:request', aborted
+        ? { phase: 'abort', id, method, url, ms: elapsed(t0) }
+        : { phase: 'error', id, method, url, status: err?.status, ms: elapsed(t0), error: reason(err) });
       throw err;
     }
   },
@@ -150,6 +159,8 @@ export const gateway = {
       ...(signal ? { signal } : {})
     };
 
+    const { id, t0 } = begin();
+    emit('axiom:request', { phase: 'start', id, method: 'POST', url });
     try {
       log.debug(`Gateway GraphQL: ${url}`, { variables });
       const response = await fetch(url, options);
@@ -162,10 +173,15 @@ export const gateway = {
         });
       }
 
+      emit('axiom:request', { phase: 'response', id, method: 'POST', url, status: response.status, ms: elapsed(t0) });
       return result.data;
 
     } catch (err) {
-      if (err?.name !== 'AbortError') log.error('Gateway GraphQL Request Failed', err);
+      const aborted = err?.name === 'AbortError';
+      if (!aborted) log.error('Gateway GraphQL Request Failed', err);
+      emit('axiom:request', aborted
+        ? { phase: 'abort', id, method: 'POST', url, ms: elapsed(t0) }
+        : { phase: 'error', id, method: 'POST', url, status: err?.status, ms: elapsed(t0), error: reason(err) });
       throw err;
     }
   },

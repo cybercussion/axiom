@@ -4,6 +4,7 @@
  */
 import { config } from './config.js';
 import { log } from './logger.js';
+import { emit, begin, elapsed, reason } from '@core/observe.js';
 
 const bus = new EventTarget();
 
@@ -258,16 +259,20 @@ export const state = {
     const entry = { payload, done: false };
     ledger.pending.push(entry);
     this._project(key, ledger);                                   // 1. optimistic
+    const { id, t0 } = begin();
+    emit('axiom:mutation', { phase: 'start', id, key });
 
     try {
       await remoteTask();
       this._rebase(key, ledger);
       entry.done = true;                                          // 2a. acknowledged
+      emit('axiom:mutation', { phase: 'success', id, key, ms: elapsed(t0) });
     } catch (err) {
       this._rebase(key, ledger);
       ledger.pending.splice(ledger.pending.indexOf(entry), 1);    // 2b. excised
       this.notify(`Mutation Failed: Rolling back.`, 'error');
       log.error(`Axiom Mutation Failed [${key}]: Rolling back.`, err);
+      emit('axiom:mutation', { phase: 'rollback', id, key, ms: elapsed(t0), error: reason(err) });
     }
 
     // Fold every acknowledged write at the FRONT. A later success waits behind an

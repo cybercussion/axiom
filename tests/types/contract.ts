@@ -8,6 +8,8 @@ import { gateway, GatewayError } from '../../types/core/gateway.js';
 import { auth } from '../../types/core/auth.js';
 import { config } from '../../types/core/config.js';
 import { BaseComponent } from '../../types/shared/base-component.js';
+import { observe, EVENTS } from '../../types/core/observe.js';
+import * as observeModule from '../../types/core/observe.js';
 
 // ---- correct use compiles ------------------------------------------------------
 const route: string | null = state.data.route;
@@ -37,7 +39,13 @@ class Demo extends BaseComponent {
   render() { this.shadowRoot!.textContent = this._esc('<b>'); }
 }
 
+const stopWatching: () => void = observe((name, detail) => void [name, detail.phase], EVENTS);
+
 // ---- misuse does not compile ---------------------------------------------------
+// @ts-expect-error — observe takes a handler, not an event name
+observe('axiom:request');
+// @ts-expect-error — emit is the core's own voice, not part of the contract
+observeModule.emit('axiom:auth', { phase: 'login' });
 // @ts-expect-error — 'jsn' is not an expect mode
 gateway.get('/me', {}, { expect: 'jsn' });
 // @ts-expect-error — a signal must be an AbortSignal
@@ -57,4 +65,4 @@ void auth._refreshToken;
 // @ts-expect-error — state internals are not part of the contract
 void state._rebase;
 
-void [route, volume, renamed, rows, cancellable, off, offNav, offMatch, flows, basePath, Demo];
+void [route, volume, renamed, rows, cancellable, off, offNav, offMatch, flows, basePath, Demo, stopWatching];
