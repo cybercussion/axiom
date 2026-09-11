@@ -56,6 +56,10 @@ jobs:
           sed -i 's|<base.*>|<base href="/axiom/">|g' index.html
           sed -i 's|"/src/|"/axiom/src/|g' index.html
           grep -q '"@state": "/axiom/src/core/state.js"' index.html
+          # CSP: admit the REWRITTEN import map by hash (never 'unsafe-inline');
+          # connect-src from the public runtime config. --check proves it current.
+          node tools/csp.js index.html --write --config axiom-config.js
+          node tools/csp.js index.html --check --config axiom-config.js
           rm -rf dist node_modules
           touch .nojekyll
           cp index.html 404.html

@@ -6,6 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Project Axiom</title>
   <base href="/">
+  <!-- Public runtime config (window.AXIOM_CONFIG). A file, never inline: the
+       deployed CSP admits 'self' scripts and the import map by hash, nothing else. -->
+  <script src="axiom-config.js"></script>
   <script type="importmap">
     {
       "imports": {

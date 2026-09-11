@@ -205,6 +205,7 @@ async function main() {
   // 2. Copy Index & Manifest
   copyFile('index.html');
   copyFile('manifest.json');
+  copyFile('axiom-config.js'); // public runtime config — see SECURITY.md (skipped if absent)
   copySw(); // stamps __BUILD_ID__ into the cache name (see tools/templates/sw.js)
   copyFile('_headers'); // Cloudflare Pages/Workers Assets cache policy (no-op on GitHub Pages)
   copyDir('assets');
