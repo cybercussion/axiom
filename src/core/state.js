@@ -28,43 +28,47 @@ const applyPayload = (base, payload) => {
   return { ...current, data };
 };
 
+// --- Declared keys and their persistence -------------------------------------
+// The framework's own keys live here. An application declares ITS keys in its
+// own module with state.define(), so this file never needs to know that any
+// application exists — and no two projects ever have a reason to edit it.
+const store = {
+  route: null,
+  query: {},
+  params: {},
+  navigation: null,
+  navStyle: config.NAV_STYLE,
+  transition: { type: 'fade', direction: 'forward' },
+  notifications: []
+};
+
+/** key -> { storage, storageKey, serialize } for keys declared with storage. */
+const persisted = new Map();
+const declared = new Set();
+
+// Web Storage throws in some private modes, on quota, and in sandboxed frames
+// (an LMS iframe, for one). A preference that cannot persist degrades to
+// memory; it never takes the app down with it.
+const storageGet = (storage, k) => { try { return storage.getItem(k); } catch { return null; } };
+const storageSet = (storage, k, v) => { try { storage.setItem(k, v); } catch { /* memory only */ } };
+const storageRemove = (storage, k) => { try { storage.removeItem(k); } catch { /* memory only */ } };
+const localOrNothing = () => { try { return globalThis.localStorage; } catch { return undefined; } };
+
+const announce = (key, value) => bus.dispatchEvent(new CustomEvent('update', { detail: { key, value } }));
+
 export const state = {
-  data: new Proxy({
-    route: null,
-    query: {},
-    params: {},
-    navigation: null,
-    navStyle: config.NAV_STYLE,
-    transition: { type: 'fade', direction: 'forward' },
-    theme: localStorage.getItem('axiom-theme') || 'dark',
-    audioLevel: parseInt(localStorage.getItem('axiom-audioLevel') ?? '80', 10),
-    captionsEnabled: localStorage.getItem('axiom-captionsEnabled') === 'true',
-    autoplayEnabled: localStorage.getItem('axiom-autoplayEnabled') !== 'false',
-    sessionId: localStorage.getItem('axiom-sessionId') || null,
-    items: [],
-    notifications: []
-  }, {
+  data: new Proxy(store, {
     set(target, key, value) {
       if (target[key] === value) return true;
       target[key] = value;
 
-      // Persistence bridge
-      if (key === 'theme') localStorage.setItem('axiom-theme', value);
-      if (key === 'audioLevel') localStorage.setItem('axiom-audioLevel', value);
-      if (key === 'captionsEnabled') localStorage.setItem('axiom-captionsEnabled', value);
-      if (key === 'autoplayEnabled') localStorage.setItem('axiom-autoplayEnabled', value);
-      if (key === 'sessionId') {
-        if (value) localStorage.setItem('axiom-sessionId', value);
-        else localStorage.removeItem('axiom-sessionId');
-      }
-      if (key === 'redirectAfterAuth') {
-        if (value) sessionStorage.setItem('axiom_auth_redirect', value);
-        else sessionStorage.removeItem('axiom_auth_redirect');
+      const p = persisted.get(key);
+      if (p) {
+        if (value === null || value === undefined) storageRemove(p.storage, p.storageKey);
+        else storageSet(p.storage, p.storageKey, p.serialize(value));
       }
 
-      bus.dispatchEvent(new CustomEvent('update', {
-        detail: { key, value }
-      }));
+      announce(key, value);
       return true;
     }
   }),
@@ -72,6 +76,41 @@ export const state = {
   // Surgical Getter: Because state.data.theme is too many keystrokes
   get(key) {
     return this.data[key];
+  },
+
+  /**
+   * Declare a key: its initial value and, optionally, where it persists. The one
+   * place a key's storage is decided — core declares the framework's keys, and
+   * an application declares its own from its own module.
+   *
+   *   state.define('volume', {
+   *     initial: 80,
+   *     storage: localStorage,              // or sessionStorage; omit = memory only
+   *     storageKey: 'myapp-volume',         // default: the key itself
+   *     parse: (raw) => parseInt(raw, 10),  // stored string -> value (default: as-is)
+   *     serialize: String                   // value -> stored string (default)
+   *   });
+   *
+   * A stored value wins over `initial`, and declaring a default never writes it.
+   * Setting null/undefined removes the stored entry. Idempotent: defining a key
+   * again returns its live value and changes nothing.
+   * @returns the key's current value
+   */
+  define(key, { initial, storage, storageKey = key, parse = (raw) => raw, serialize = String } = {}) {
+    if (declared.has(key)) return store[key];
+    declared.add(key);
+
+    let value = initial;
+    if (storage) {
+      persisted.set(key, { storage, storageKey, serialize });
+      const raw = storageGet(storage, storageKey);
+      if (raw !== null) {
+        try { value = parse(raw); } catch { value = initial; } // corrupt entry -> default
+      }
+    }
+    store[key] = value; // direct: declaring must not write the default back
+    announce(key, value);
+    return value;
   },
 
   // Set Helper: For when you want to feel like you're using a real framework
@@ -247,3 +286,7 @@ export const state = {
     this.set('notifications', list.filter(t => t.id !== id));
   }
 };
+
+// The design system reads `theme` in every component (BaseComponent), which
+// makes it a framework key rather than an application preference.
+state.define('theme', { initial: 'dark', storage: localOrNothing(), storageKey: 'axiom-theme' });

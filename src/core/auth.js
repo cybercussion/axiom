@@ -177,9 +177,8 @@ export const auth = {
     this._clear();
     state.set('user', null);
 
-    // Clear session context so the next user who logs in starts fresh
-    localStorage.removeItem('axiom-sessionId');
-    state.set('sessionId', null);
+    // Session context is the application's to clear: it reacts to user -> null
+    // (see src/app-state.js). Core auth names no application key.
 
     if (USER_POOL_DOMAIN) {
       const logoutUrl = new URL(`https://${USER_POOL_DOMAIN}/logout`);

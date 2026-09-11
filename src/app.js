@@ -1,3 +1,4 @@
+import './app-state.js'; // this app's own state keys — declared before anything reads them
 import { router } from '@core/router.js';
 import { state } from '@state';
 import { log } from '@core/logger.js';
@@ -25,7 +26,6 @@ state.subscribe(({ key, value }) => {
 
   if (key === 'theme') {
     document.documentElement.setAttribute('data-theme', value);
-    localStorage.setItem('axiom-theme', value);
     log.debug(`Theme set to ${value}`);
   }
 });

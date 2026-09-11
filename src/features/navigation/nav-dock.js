@@ -1,6 +1,7 @@
 import { BaseComponent } from '@shared/base-component.js';
 import { router } from '@core/router.js';
 import { state } from '@state';
+import '../../app-state.js'; // audioLevel / captionsEnabled are app keys, not core's
 import { auth } from '@core/auth.js';
 import '@shared/controls/ax-popover.js';
 import '@shared/controls/ax-toggle.js';
