@@ -25,12 +25,18 @@ import vm from 'node:vm';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
-const IMPORT_MAP_RE = /<script\s+type=["']importmap["'][^>]*>([\s\S]*?)<\/script>/i;
+const IMPORT_MAP_RE = /<script\s+type=["']importmap["'][^>]*>([\s\S]*?)<\/script\b[^>]*>/i;
 const CSP_META_RE = /<meta\s+http-equiv=["']Content-Security-Policy["'][^>]*>/i;
 const TURNSTILE = 'https://challenges.cloudflare.com';
 
 // Comments are not markup: a comment that MENTIONS <script> must not read as one.
-const stripComments = (html) => html.replace(/<!--[\s\S]*?-->/g, '');
+// Repeat until nothing changes — one pass over "<!<!-- -->-- -->" leaves a new
+// "<!--" behind (CodeQL js/incomplete-multi-character-sanitization).
+const stripComments = (html) => {
+  let before;
+  do { before = html; html = html.replace(/<!--[\s\S]*?-->/g, ''); } while (html !== before);
+  return html;
+};
 
 export const sha256 = (text) => createHash('sha256').update(text, 'utf8').digest('base64');
 
@@ -39,7 +45,8 @@ export const importMapText = (html) => stripComments(html).match(IMPORT_MAP_RE)?
 
 /** Inline <script> elements other than the import map — each would be blocked. */
 export const strayInlineScripts = (html) =>
-  [...stripComments(html).matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)]
+  // An end tag may carry whitespace or junk before '>' (CodeQL js/bad-tag-filter).
+  [...stripComments(html).matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\b[^>]*>/gi)]
     .filter(([, attrs, body]) => !/\bsrc\s*=/i.test(attrs) && !/type=["']importmap["']/i.test(attrs) && body.trim())
     .map(([tag]) => tag.slice(0, 80).replace(/\s+/g, ' '));
 

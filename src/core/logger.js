@@ -12,10 +12,14 @@ const THRESHOLD = config.ENV === 'production' ? LEVELS.WARN : LEVELS.DEBUG;
 const print = (level, label, color, msg, args) => {
   if (level < THRESHOLD) return;
   // Unified Prefix: All logs now start with [Axiom::LABEL]
+  // The message is an ARGUMENT, never part of the format string: one carrying
+  // %c, %s or %o (a route slug, a server error) would be read as directives and
+  // restyle or swallow the arguments after it (CodeQL js/tainted-format-string).
   console.log(
-    `%c[Axiom::${label}] %c${msg}`,
+    `%c[Axiom::${label}]%c %s`,
     `color: ${color}; font-weight: bold;`,
     'color: inherit;',
+    String(msg),
     ...args
   );
 };
