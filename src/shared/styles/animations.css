@@ -1,130 +1,191 @@
-commit fe4efd1870e68e7757b946baaa5e7f23ede326be
-Author: Mark Statkus <mark@cybercussion.com>
-Date:   Fri Jul 17 12:42:03 2026 -0700
+/* View Transitions Animations */
 
-    feat(motion): motion token layer with linear() springs + global reduced-motion collapse
+:root {
+  /* Route-transition aliases — consume the shared motion tokens */
+  --transition-easing: var(--ease-cinematic);
+  --transition-duration: var(--duration-base);
+}
 
-diff --git a/src/shared/styles/animations.css b/src/shared/styles/animations.css
-index e529f98..bc2698f 100644
---- a/src/shared/styles/animations.css
-+++ b/src/shared/styles/animations.css
-@@ -1,8 +1,9 @@
- /* View Transitions Animations */
- 
- :root {
--  --transition-easing: cubic-bezier(0.4, 0.0, 0.2, 1);
--  --transition-duration: 300ms;
-+  /* Route-transition aliases — consume the shared motion tokens */
-+  --transition-easing: var(--ease-cinematic);
-+  --transition-duration: var(--duration-base);
- }
- 
- ::view-transition-old(root),
-@@ -141,11 +142,11 @@
-  * 4. FADE (Neutral / Tab switch)
-  */
- [data-transition="fade"]::view-transition-old(main-content) {
--  animation: fade-out 250ms ease both;
-+  animation: fade-out var(--duration-fast) var(--ease-out-soft) both;
- }
- 
- [data-transition="fade"]::view-transition-new(main-content) {
--  animation: fade-in 250ms ease both;
-+  animation: fade-in var(--duration-fast) var(--ease-out-soft) both;
- }
- 
- @keyframes fade-out {
-@@ -172,11 +173,11 @@
- 
-   /* Fallback to simple cross-fade */
-   ::view-transition-old(main-content) {
--    animation: fade-out 200ms ease both !important;
-+    animation: fade-out var(--duration-fast) var(--ease-out-soft) both !important;
-   }
- 
-   ::view-transition-new(main-content) {
--    animation: fade-in 200ms ease both !important;
-+    animation: fade-in var(--duration-fast) var(--ease-out-soft) both !important;
-   }
- 
-   /* Ensure the dock and orchestrator are explicitly visible and unaffected */
-diff --git a/src/shared/styles/theme.css b/src/shared/styles/theme.css
-index efdda0d..c145505 100644
---- a/src/shared/styles/theme.css
-+++ b/src/shared/styles/theme.css
-@@ -55,8 +55,25 @@
-   --space-l: clamp(1.5rem, 0.28vi + 1.43rem, 1.66rem);
-   --space-xl: clamp(2rem, 0.38vi + 1.91rem, 2.21rem);
- 
--  /* Animation */
--  --ease-elastic: cubic-bezier(0.68, -0.55, 0.27, 1.55);
-+  /* ============ MOTION TOKENS ============
-+     The ONLY place literal easings/durations may appear.
-+     Rule: every transition/animation in src/ consumes these vars.
-+     Exceptions (infinite ambient loops, route-progress 10s crawl)
-+     are marked "motion-gate: allow" at their use site. */
-+
-+  --duration-instant: 100ms;
-+  --duration-fast: 200ms;
-+  --duration-base: 300ms;
-+  --duration-slow: 500ms;
-+
-+  /* snappy, ~8% overshoot — toggles, buttons, dock pill */
-+  --ease-spring: var(--ease-out-soft);
-+  /* softer settle, minimal overshoot — menus, popovers */
-+  --ease-spring-gentle: var(--ease-out-soft);
-+  /* decelerating glide — hovers, color/opacity changes */
-+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
-+  /* route transitions / large surface moves */
-+  --ease-cinematic: cubic-bezier(0.4, 0, 0.2, 1);
- 
-   /* --- COMPONENT TOKENS (DARK DEFAULT) --- */
- 
-@@ -91,6 +108,17 @@
-   --danger-color: #ef4444;
- }
- 
-+/* After the :root block — real springs where linear() is supported */
-+@supports (transition-timing-function: linear(0, 1)) {
-+  :root {
-+    --ease-spring: linear(0, 0.006, 0.025 2.8%, 0.101 6.1%, 0.539 18.9%, 0.721 25.3%,
-+        0.849 31.5%, 0.937 38.1%, 0.968 41.8%, 0.991 45.7%, 1.006 50.1%, 1.015 55%,
-+        1.017 63.9%, 1.001);
-+    --ease-spring-gentle: linear(0, 0.013, 0.054 3.9%, 0.219 8.7%, 0.42 13.3%, 0.596 17.9%,
-+        0.744 22.6%, 0.863 27.8%, 0.945 33.4%, 0.997 40%, 1.021 48.3%, 1.016 61.4%, 1.003);
-+  }
-+}
-+
- :root[data-theme="light"] {
-   --hue-bg: 240;
-   --color-bg: #f1f5f9;
-@@ -537,4 +565,28 @@ input::placeholder,
- textarea::placeholder {
-   color: var(--input-placeholder);
-   opacity: 1;
-+}
-+
-+/* ============ REDUCED MOTION ============
-+   Because ALL motion consumes the tokens above, collapsing the tokens
-+   collapses every spring/slide in the app to a near-instant change.
-+   [data-motion="reduced"] is the showcase page's preview hook. */
-+@media (prefers-reduced-motion: reduce) {
-+  :root {
-+    --duration-instant: 1ms;
-+    --duration-fast: 1ms;
-+    --duration-base: 1ms;
-+    --duration-slow: 1ms;
-+    --ease-spring: linear;
-+    --ease-spring-gentle: linear;
-+  }
-+}
-+
-+:root[data-motion="reduced"] {
-+  --duration-instant: 1ms;
-+  --duration-fast: 1ms;
-+  --duration-base: 1ms;
-+  --duration-slow: 1ms;
-+  --ease-spring: linear;
-+  --ease-spring-gentle: linear;
- }
-\ No newline at end of file
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--transition-duration);
+  animation-timing-function: var(--transition-easing);
+  mix-blend-mode: normal;
+  /* Fix for dark mode artifacts */
+}
+
+/*
+ * Scoping: Only animate the content, not the entire root (which includes Nav)
+ */
+#app-container {
+  view-transition-name: main-content;
+}
+
+/* nav-orchestrator {
+  view-transition-name: navigation;
+} */
+
+/*
+ * 1. SLIDE FORWARD (Navigating deeper/forward)
+ * Cinematic: Slide + Subtle Scale + Blur
+ */
+[data-transition="forward"]::view-transition-old(main-content) {
+  animation: slide-out-to-left var(--transition-duration) var(--transition-easing) both,
+    scale-out var(--transition-duration) var(--transition-easing) both;
+}
+
+[data-transition="forward"]::view-transition-new(main-content) {
+  animation: slide-in-from-right var(--transition-duration) var(--transition-easing) both,
+    scale-in-from-side var(--transition-duration) var(--transition-easing) both;
+}
+
+/*
+ * 2. SLIDE BACKWARD (Navigating back)
+ */
+[data-transition="backward"]::view-transition-old(main-content) {
+  animation: slide-out-to-right var(--transition-duration) var(--transition-easing) both,
+    scale-out-to-side var(--transition-duration) var(--transition-easing) both;
+  z-index: 100;
+}
+
+[data-transition="backward"]::view-transition-new(main-content) {
+  animation: slide-in-from-left var(--transition-duration) var(--transition-easing) both,
+    scale-in-back var(--transition-duration) var(--transition-easing) both;
+}
+
+/*
+ * 3. SCALE (Zoom In/Out - Movie Style)
+ */
+[data-transition="scale"]::view-transition-old(main-content) {
+  animation: scale-out-cinematic var(--transition-duration) var(--transition-easing) both,
+    fade-out var(--transition-duration) var(--transition-easing) both;
+}
+
+[data-transition="scale"]::view-transition-new(main-content) {
+  animation: scale-in-cinematic var(--transition-duration) var(--transition-easing) both,
+    fade-in var(--transition-duration) var(--transition-easing) both;
+}
+
+/* Keyframes */
+
+@keyframes slide-out-to-left {
+  to {
+    transform: translateX(-20%);
+  }
+}
+
+@keyframes slide-in-from-right {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes slide-out-to-right {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes slide-in-from-left {
+  from {
+    transform: translateX(-20%);
+  }
+}
+
+@keyframes scale-out {
+  to {
+    transform: scale(0.95);
+    opacity: 0;
+    filter: blur(5px);
+  }
+}
+
+@keyframes scale-in-from-side {
+  from {
+    transform: scale(1.05);
+    opacity: 0;
+  }
+}
+
+@keyframes scale-out-to-side {
+  to {
+    transform: scale(1.05);
+    opacity: 0;
+  }
+}
+
+@keyframes scale-in-back {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+    filter: blur(5px);
+  }
+}
+
+@keyframes scale-in-cinematic {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+    filter: blur(10px);
+  }
+}
+
+@keyframes scale-out-cinematic {
+  to {
+    transform: scale(1.2);
+    opacity: 0;
+    filter: blur(10px);
+  }
+}
+
+/*
+ * 4. FADE (Neutral / Tab switch)
+ */
+[data-transition="fade"]::view-transition-old(main-content) {
+  animation: fade-out var(--duration-fast) var(--ease-out-soft) both;
+}
+
+[data-transition="fade"]::view-transition-new(main-content) {
+  animation: fade-in var(--duration-fast) var(--ease-out-soft) both;
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* WCAG: Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+
+  /* Target specific view transition groups to kill motion but allow fades */
+  ::view-transition-group(main-content),
+  ::view-transition-old(main-content),
+  ::view-transition-new(main-content) {
+    animation: none !important;
+  }
+
+  /* Fallback to simple cross-fade */
+  ::view-transition-old(main-content) {
+    animation: fade-out var(--duration-fast) var(--ease-out-soft) both !important;
+  }
+
+  ::view-transition-new(main-content) {
+    animation: fade-in var(--duration-fast) var(--ease-out-soft) both !important;
+  }
+
+  /* Ensure the dock and orchestrator are explicitly visible and unaffected */
+  nav-orchestrator,
+  nav-dock {
+    display: flex !important;
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
