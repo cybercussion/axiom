@@ -21,9 +21,28 @@
   view-transition-name: main-content;
 }
 
-/* nav-orchestrator {
+/* Fixed chrome must NOT ride the root snapshot. A view transition captures the old
+   root — which includes the dock — and the root's old/new pseudos are animated, so
+   every navigation cross-faded the nav along with the page. The element's own
+   opacity stays 1 throughout, which is why no element-level test could see it:
+   the fade lives in the pseudo. Naming the nav gives it its own group, excluded
+   from the root, and nothing animates that group — so it simply stays put.
+   Reported downstream as "page transitions made the dock fade out"; the name was
+   written here already and commented out. */
+nav-orchestrator {
   view-transition-name: navigation;
-} */
+}
+
+/* Naming it is only half the fix: a named group gets the UA's DEFAULT animation,
+   which is a cross-fade — so the dock would simply fade on its own instead of
+   fading with the root. Fixed chrome should not animate at all. Suppressing both
+   pseudos leaves the snapshot painted and still for the whole transition. */
+::view-transition-group(navigation),
+::view-transition-old(navigation),
+::view-transition-new(navigation) {
+  animation: none;
+  mix-blend-mode: normal;
+}
 
 /*
  * 1. SLIDE FORWARD (Navigating deeper/forward)

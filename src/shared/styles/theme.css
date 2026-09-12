@@ -455,8 +455,13 @@ select {
 }
 
 .btn-fill:hover {
-  transform: translateY(-2px) scale(1.02);
-  filter: brightness(1.1);
+  /* Lift only — NO scale, and no filter on a text-bearing surface. Both force
+     Chrome to stretch the 1x glyph raster (blurry mid-hover) and re-rasterize on
+     settle, and this button carries a text-shadow, which makes it obvious. Same
+     reasoning as .glass-card:hover below; the brightness lift moves to the
+     gradient so the affordance survives without touching the glyphs. */
+  transform: translateY(-2px);
+  background: linear-gradient(135deg, hsl(var(--btn-hue), 85%, 65%) 0%, hsl(var(--btn-hue), 95%, 50%) 100%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -2px 0 rgba(0, 0, 0, 0.1), 0 15px 30px -5px var(--btn-glow), 0 0 20px var(--btn-glow);
 }
 
