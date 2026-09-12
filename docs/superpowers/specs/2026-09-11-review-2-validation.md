@@ -15,7 +15,7 @@ The two expensive items — cross-framework benchmarks and a full demo app — m
 | 1 | A contract per primitive: inputs, outputs, lifecycle, failure, cancellation, ordering, extension points, what's unsupported | `docs/contracts.md` + `types/` cover lifecycle and rules, not per-primitive failure/cancellation/ordering. The review's A/B scenario, answered from the code: A is aborted when B starts ✓; A's component resolving late is ignored ✓ (`b56bbb7`); B's API failing still commits B with its dataKey in `error` ✓; **A's API resolving late overwrites B's data ✗** — probe: `/item/1` (slow) then `/item/2` ends on `/item/2` showing item 1 | **Do** | S |
 | 2 | Invariant and fuzz tests | `mutate()`: property test added (`tests/core/state-fuzz.test.js`) — 50,000 random sequences of outcomes × settlement orders keep "initial + successes, in issue order", ~1 s; the pre-ledger code fails it on the first seed. Router: "an aborted fetch causes no state transition" **fails both ways** — a loader that ignores the signal overwrites the next page's data; one that honours it flashes `error`. Gateway: holds under `expect`; `auto` reinterprets by design | **Do** — fix query cancellation, add router invariants | S–M |
 | 3 | Formal threat model; "Axiom does not make your application secure" | SECURITY.md covers XSS, tokens, CSP and limits. New: `state.set('__proto__', …)` replaces the store's prototype (the global one is untouched); `define('constructor')` shadows a built-in. JSON `__proto__` in mutate payloads is inert. Router navigation is same-origin `pushState` only | **Do** — table + a null-prototype store | S |
-| 4 | Memory as the default token store | No BFF exists anywhere: Nexus (`daystra/services/nexus`) `refresh_google_token` takes the refresh token *from the browser*, and tender keeps it in localStorage. Memory by default without a BFF means every reload signs the user out. Nexus already has KV and D1 bound, so a BFF is buildable there. Reverses the 2026-09-05 decision | **Mark's call** | M, cross-repo |
+| 4 | Memory as the default token store | No BFF exists anywhere: the refresh worker takes the refresh token *from the browser*, and the projects keep it in localStorage. Memory by default without a BFF means every reload signs the user out. Nexus already has KV and D1 bound, so a BFF is buildable there. Reverses the 2026-09-05 decision | **Mark's call** | M, cross-repo |
 | 5 | Error boundary / failure containment | **Confirmed defect:** a page whose `setup()` or `render()` throws leaves its navigation half-committed — URL and host swapped, `transitioning` stuck `true`, no focus or scroll, an uncaught error. The shell survives; the next navigation recovers. Fix without a new class: BaseComponent always resolves `rendered`, emits a cancelable `axiom:component-error`, draws a fallback inside its own shadow root | **Do** | S |
 | 6 | First-class observability stream | Exists: `state.subscribe`, `router.onNavigation` (start/commit), `axiom:router-error`. Missing: navigation abort/error, mutation lifecycle, gateway request/response/error, auth login/refresh/logout | **Do, lite** — `axiom:*` events on `window` plus a small `observe()`; no hub | S–M |
 | 7 | Browser support matrix | The suite, run on three engines: Chromium 19/19, WebKit 18–19/19, Firefox 18–19/19. Real: WebKit intermittently reports `ResizeObserver loop completed with undelivered notifications` as an uncaught error. Test artifact, fixed: Firefox's ordinary-Back failure came from `theme.css` smooth scrolling. **Open:** the two scroll tests flake under parallel load (e.g. 833 where 1,200 was restored); instrumented probes restore exactly on all three engines, so the leading suspect is layout settling after the restore — unproven. Chromium alone, ×10:   2 failed   18 passed (8.4s)  | **Do** — engines in CI, fix ResizeObserver, root-cause the flake | S–M |
@@ -27,10 +27,10 @@ The two expensive items — cross-framework benchmarks and a full demo app — m
 
 | Item | Finding | Proposed |
 |---|---|---|
-| `/login` in the template | tender, daystra and scobot each have one; tender's is the simplest (Direct Google, optional Turnstile) | Reconcile a template `/login` from tender — also fixes the dock's dead link (F10). S |
-| Route announcements | `#a11y-announcer` is written by nothing in axiom **or daystra**. `announce-bus.js` is byte-identical in tender, scobot and new.cybercussion.com — and imported by nothing in any of them | Reconcile announce-bus into axiom and announce the page title on commit: the missing piece fleet-wide. S |
-| Refresh-token BFF | Not solved anywhere (row 4) | Build in `daystra/services/nexus`: refresh token held server-side in KV behind an HttpOnly cookie; client `tokenStore: 'bff'`. M |
-| Click-once guard | ev.cybercussion.com already had it — plus `rel="external"` as an explicit opt-out | Reconcile `rel="external"` into axiom. XS |
+| `/login` in the template | three downstream projects each have one; the simplest is Direct Google with an optional Turnstile check | Reconcile a template `/login` from the simplest downstream one — also fixes the dock's dead link (F10). S |
+| Route announcements | `#a11y-announcer` is written by nothing here **or downstream**. `announce-bus.js` is byte-identical in three projects — and imported by nothing in any of them | Reconcile announce-bus into axiom and announce the page title on commit: the missing piece fleet-wide. S |
+| Refresh-token BFF | Not solved anywhere (row 4) | Build it in the fleet's own service: refresh token held server-side in KV behind an HttpOnly cookie; client `tokenStore: 'bff'`. M |
+| Click-once guard | a downstream project already had it — plus `rel="external"` as an explicit opt-out | Reconcile `rel="external"` into axiom. XS |
 | GitHub protections | Public repo. On: secret scanning, push protection. Off: Dependabot alerts, Dependabot security updates, CodeQL, private vulnerability reporting | Turn on all four and add `dependabot.yml` (npm + github-actions; the actions still target deprecated Node 20). Needs Mark's OK |
 
 ## Fleet propagation
@@ -39,14 +39,8 @@ All six targets are Arc-tracked, with no git remotes. Each copy's core now diffe
 
 | Project | Deploy | Tests | App keys that move to `app-state.js` | Exposed to | Notes |
 |---|---|---|---|---|---|
-| tender.cybercussion.com | CF Pages + workers | 0 | sessionId | double nav, scroll race, notify sink, mutate | fewest app keys — start here |
-| new.cybercussion.com | CF Pages | 0 | audioLevel, captionsEnabled, autoplayEnabled, sessionId | all four | 11 self-routing components; assumed to be "cybercussion.com" |
-| scobot.cybercussion.com | workers | 0 | the above + language | double nav, scroll race, mutate | LTI session model stays local |
-| daystra | workers (Nexus lives here) | 10 | the above + guestId, activeStudentId, studentName | all four | the BFF work lands here too |
-| ev.cybercussion.com (`energy/`) | CF Pages + worker | 11 | to inventory | scroll race only | ahead of axiom: click-once guard, text-only toasts, its own mutate |
-| SCOBotPackager | Tauri binary | 8 | audioLevel, captionsEnabled, autoplayEnabled, sessionId | scroll race, mutate | ship = rebuild the binary; its CSP lives in the Tauri config, not the meta tool |
 
-Suggested order, lowest risk first: tender → new.cybercussion.com → scobot → daystra → ev → SCOBotPackager. specula gets an update once the order and approach are decided; making the core a versioned unit is still the fleet's decision.
+A per-project inventory (app keys, exposure, order of adoption) was measured and is kept with the fleet notes, outside this public repository. The fleet's reconcile is updated once the order and approach are decided; making the core a versioned unit is still the fleet's decision.
 
 ## If the answer is "defensibility"
 
@@ -70,10 +64,10 @@ Decisions (Mark, 2026-09-11): work the plan in order, pushing back where it isn'
 | "When NOT to use Axiom" (#9) | **Shipped** — README |
 | CodeQL + Dependabot | **On.** CodeQL's first three findings are fixed (`a791a69`); the one Dependabot alert is the documented browser-sync advisory, dismissed as accepted risk |
 | Benchmarks vs other frameworks (#8), Lab demo | **Pushed back** — they make Axiom more convincing, not more defensible; revisit once P1 is done |
-| Route announcements, `/login`, `rel="external"` | **Shipped** — each reconciled from the fleet (announce-bus, tender, ev) |
+| Route announcements, `/login`, `rel="external"` | **Shipped** — each reconciled from the fleet's copies |
 | Performance budgets (#8) | **Shipped** `1314916` — the core's shipped size (13 KB Brotli) and layout shift (CLS < 0.1, plus race invariants) fail the deploy; the state bench is reported, not gated. Found on the way: `/components` at CLS 1.09 live — two races, both fixed, each pinned by a test that fails on the previous code |
 | Observability events (#6) | **Shipped** `c1f87c7` — `axiom:navigation`, `axiom:request`, `axiom:mutation`, `axiom:auth`; every start ends exactly once; `observe()`; no headers, bodies or tokens. The core's budget rose to 14 KB to carry it |
 | Third review (2026-09-11, 9.5/10) — name the invariants | **Shipped** `8e8581d` — the review's own sequences, deterministic: `mutate()` A✓ B✗ C✓ and A✗ B✓ C✗ D✓ settling out of issue order; and navigate A, B, C resolving A, C, B — C commits, A and B do not, B's late resolution lands nothing (three engines, asserted on URL, data and the `axiom:navigation` record). The fuzz sweep now checks its own coverage: replaying the seeds must still produce those shapes (ok,fail,ok ×32; fail,ok,fail,ok ×17 of 2,000) |
 | Third review — make `tokenStore: 'memory'` the default | **Declined, again** (Mark, 2026-09-11). `auth.js` is a placeholder integration, not a security product, and it is documented as one. A memory default logs out exactly the users the fleet's real integrations serve: in-app browsers finish the OAuth redirect in a fresh tab (2026-09-05 auth spec). The option exists, the trade-off of each store is written down in SECURITY.md, and an app that wants memory passes one argument |
-| Next | Fleet propagation — re-borrow the core per project: tender → cybercussion.com → scobot → daystra → ev → SCOBotPackager |
+| Next | Fleet propagation — re-borrow the core per project; the order and per-project plans live with the fleet notes, outside this repository |
 

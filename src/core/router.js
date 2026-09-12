@@ -423,7 +423,7 @@ export const router = {
         // you to where you were. Restoring the destination's stale sessionStorage
         // offset on a push was the "navigate lands halfway down the page" bug:
         // clicking a link to a page you had scrolled earlier dropped you into the
-        // middle of it. Reconciled from daystra; axiom carried this one.
+        // middle of it. Reconciled from a downstream project; axiom carried this one.
         let targetY = 0;
         if (!push) {
           targetY = parseInt(sessionStorage.getItem(`scroll_${location.pathname}`) || '0', 10);
@@ -442,7 +442,7 @@ export const router = {
             // FIRST FOCUSABLE child and scrolls it into view — putting the user
             // mid-page on any route whose first tabbable element is below the
             // fold. Keep the focus for a11y; never let it move the viewport.
-            // Reconciled from daystra / scobot / tender; axiom carried this one.
+            // Reconciled from three downstream projects; axiom carried this one.
             if (feature) { feature.tabIndex = -1; feature.focus({ preventScroll: true }); }
             window.scrollTo({ top: targetY, behavior: 'instant' });
             // Where it landed and how tall the page was — a restore the page is too

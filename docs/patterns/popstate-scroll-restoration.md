@@ -20,7 +20,7 @@ this._saveScroll(location.pathname);
 On a **push** navigation that is correct — `location.pathname` is still the departing page.
 On a **popstate** it is not. The browser moves `location.pathname` to the destination
 *before* the handler runs, so this writes the departing page's `scrollY` under the
-**destination's** storage key. Going back from `/scobot` to `/` saves `/scobot`'s scroll
+**destination's** storage key. Going back from `/section` to `/` saves `/section`'s scroll
 under `scroll_/`, clobbering home's real position — and the restore two hundred lines later
 reads that freshly-clobbered value. The user lands wherever they happened to be on the page
 they just left, which is usually the top.
@@ -64,7 +64,7 @@ same-session refresh-restore target. "Nothing to save yet" is a real state, not 
 
 The save key comes from `_activePath` (i.e. `location.pathname`). The restore key is
 `push ? (base + cleanPath).replace('//','/') : location.pathname`. With `base = '/'` and
-`cleanPath` slash-normalized, `('/' + '/scobot').replace('//','/')` is `/scobot` — identical
+`cleanPath` slash-normalized, `('/' + '/section').replace('//','/')` is `/section` — identical
 to `location.pathname`. Both branches agree. If a project ever sets a non-root
 `config.BASE_PATH`, re-check this equality before assuming the fix holds.
 
@@ -82,18 +82,11 @@ history.back();
 Measured on cybercussion.com after the fix: scrolled to **747**, navigated away, `history.back()`
 → restored **747**. Pre-fix that restore was ~0.
 
-## Fleet status (2026-08-14 — update this table when you patch one)
+## Adoption status (2026-08-14)
 
-| Project | `_saveScroll` | fix applied |
-|---|---|---|
-| axiom (canonical) | yes | **yes** — this repo |
-| cybercussion.com | yes | **yes** — verified live |
-| daystra | yes | **NO** |
-| scobot-cybercussion-com | yes | **NO** |
-| tender-cybercussion-com | yes | **NO** |
-
-The three unpatched projects are **arc-tracked, not git** — apply via
-`arc intent declare` → edit in the worktree → `complete` → `merge`, not a commit.
+Fixed here, and verified live in one downstream project. Three further copies carry
+`_saveScroll` with the fix still unapplied; they are tracked outside this repository, so the
+fix lands there through their own history, not a commit here.
 
 ## Do NOT assume routers are identical across projects
 

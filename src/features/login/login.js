@@ -1,8 +1,8 @@
 /**
  * /login — the template's sign-in page.
  *
- * Reconciled from tender's login (Google, with an optional Turnstile check),
- * without tender's branding. Sign-in goes through src/core/auth.js, which is a
+ * Reconciled from a downstream project's login (Google, with an optional Turnstile
+ * check), without its branding. Sign-in goes through src/core/auth.js, which is a
  * PLACEHOLDER integration: the button appears only when axiom-config.js
  * configures a provider. With none configured the page says so, rather than
  * offering a button that cannot work.

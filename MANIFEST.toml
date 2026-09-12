@@ -16,7 +16,7 @@ pattern_doc = ""
 [[capabilities]]
 id = "canonical-runtime-core"
 tags = ["es6", "testing", "fleet"]
-claim = "CANONICAL fleet copy (2026-09-11; the reconcile reference for specula #11/#12 — holds all four router fix islands, the per-key mutate ledger, cancellable query and gateway, contained component failures, runtime events). The borrowable core is src/core/{router,state,gateway,logger,observe,announce,focus-walker}.js + src/shared/base-component.js, and it is app-free: page titles, the app name and the login path are router.init() options, and an app's state keys live in its own app-state.js via state.define(). App-owned, NOT borrowed: src/core/config.js (runtime config) and src/core/auth.js + auth-helpers.js (a placeholder). Contracts: docs/contracts.md; node + three-engine browser tests; size budget 14 KB Brotli. Borrow from HERE; do not fork-and-drift."
+claim = "CANONICAL fleet copy (2026-09-11; the fleet's reconcile reference — holds all four router fix islands, the per-key mutate ledger, cancellable query and gateway, contained component failures, runtime events). The borrowable core is src/core/{router,state,gateway,logger,observe,announce,focus-walker}.js + src/shared/base-component.js, and it is app-free: page titles, the app name and the login path are router.init() options, and an app's state keys live in its own app-state.js via state.define(). App-owned, NOT borrowed: src/core/config.js (runtime config) and src/core/auth.js + auth-helpers.js (a placeholder). Contracts: docs/contracts.md; node + three-engine browser tests; size budget 14 KB Brotli. Borrow from HERE; do not fork-and-drift."
 maturity = "shipped"
 entry_points = ["src/core/router.js", "src/core/state.js", "src/core/gateway.js", "src/core/observe.js", "src/core/announce.js", "src/shared/base-component.js", "docs/contracts.md", "CHANGELOG.md"]
 pattern_doc = "docs/contracts.md"
@@ -32,7 +32,7 @@ pattern_doc = ""
 [[capabilities]]
 id = "oauth-auth-gateway"
 tags = ["auth", "aws"]
-claim = "Dual OAuth2 code-flow + PKCE + state (Google direct via worker, legacy AWS Cognito). RECONCILED 2026-09-05 from tender/ev/scobot: persisted last-known-good profile (lean refreshed id_tokens), scheduled keep-alive + visibilitychange, single-flight refresh, session cleared ONLY on HTTP 401 / invalid_grant (worker contract in docs/auth-readme.md), no-referrer + sub-keyed avatar cache. Pure helpers node-tested. Turnstile CAPTCHA integration. Borrow from HERE; downstream pull notes in the readme."
+claim = "Dual OAuth2 code-flow + PKCE + state (Google direct via worker, legacy AWS Cognito). RECONCILED 2026-09-05 from three downstream projects: persisted last-known-good profile (lean refreshed id_tokens), scheduled keep-alive + visibilitychange, single-flight refresh, session cleared ONLY on HTTP 401 / invalid_grant (worker contract in docs/auth-readme.md), no-referrer + sub-keyed avatar cache. Pure helpers node-tested. Turnstile CAPTCHA integration. Borrow from HERE; downstream pull notes in the readme."
 maturity = "shipped"
 entry_points = ["src/core/auth.js", "src/core/auth-helpers.js", "src/core/gateway.js", "docs/auth-readme.md", "tools/auth-helpers.test.js"]
 pattern_doc = "docs/auth-readme.md"
@@ -64,7 +64,7 @@ pattern_doc = ""
 [[capabilities]]
 id = "production-minification-pipeline"
 tags = ["release", "testing"]
-claim = "CANONICAL fleet copy (2026-07-10, consolidated from tender/daystrom/new.cybercussion/STNG). Non-destructive build (src → dist): Terser + CSSO, ?v=BUILD_ID stamping of ALL six module surfaces (static/side-effect/dynamic imports, exact aliases like @state resolved to absolute paths, lazy-route path: values, index.html entry scripts + stylesheets + import-map values), two hard-fail guards (no-/src/-in-dist, alias-conflict/split-singleton), 13 unit tests (npm run test:tools). Borrow from HERE; do not fork-and-drift."
+claim = "CANONICAL fleet copy (2026-07-10, consolidated from four downstream projects). Non-destructive build (src → dist): Terser + CSSO, ?v=BUILD_ID stamping of ALL six module surfaces (static/side-effect/dynamic imports, exact aliases like @state resolved to absolute paths, lazy-route path: values, index.html entry scripts + stylesheets + import-map values), two hard-fail guards (no-/src/-in-dist, alias-conflict/split-singleton), 13 unit tests (npm run test:tools). Borrow from HERE; do not fork-and-drift."
 maturity = "shipped"
 entry_points = ["tools/minify.js", "tools/minify.test.js", "_headers", ".github/workflows/deploy.yml", "tools/templates/sw.js", "tools/check-pwa.js"]
 pattern_doc = "docs/patterns/stale-deploy-prevention.md"

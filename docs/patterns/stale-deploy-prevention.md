@@ -1,7 +1,7 @@
 # Stale-Deploy Prevention — the Axiom fleet pattern
 
-**Origin:** axiom (canonical). **Proven in:** tender.cybercussion.com, daystrom/daystra,
-new.cybercussion.com, STNG. Distilled 2026-07-10 from a cross-fleet audit after each
+**Origin:** axiom (canonical). **Proven in:** four downstream projects. Distilled
+2026-07-10 from a cross-fleet audit after each
 project had independently re-solved (and re-broken) module caching.
 
 The problem: a zero-build Axiom SPA ships an ES-module graph whose URLs are stable
@@ -31,17 +31,17 @@ failures: "old model, missing features", intermittent
 | 6 | index.html refs | entry `<script type="module">`, stylesheets, import-map *values* | `normalizeDistIndexHtml` |
 
 Miss any one and that surface caches forever. Historical misses: #4 was the last-found
-(new.cybercussion, cold-load race), #5 is invisible to import regexes (it's data, not
-syntax), #6's entry tag bit STNG ("old model, missing features").
+(cold-load race), #5 is invisible to import regexes (it's data, not
+syntax), #6's entry tag bit one project ("old model, missing features").
 
 ## Verified gotchas — do not re-learn these
 
 - **Resolve aliases to absolute paths; do NOT query-stamp the bare alias.**
   `"@core/x.js?v=ID"` relying on the import-map prefix **broke prod** on
-  new.cybercussion.com (2026-06-07): prefix maps with *relative* address values don't
+  One project (2026-06-07): prefix maps with *relative* address values don't
   resolve query-bearing specifiers. Absolute resolution bypasses the runtime import
   map entirely — the form that always worked. (Nuance: *absolute* prefix values do
-  resolve queries in practice — daystrom's live routes prove it — so this is a
+  resolve queries in practice — another's live routes prove it — so this is a
   robustness choice, not a hard browser limit. Make it anyway.)
 - **Trailing-slash import-map entries must stay bare.** Per the import-map spec a
   prefix value must end in `/` — never append `?v=` to `"@core/": "/core/"`.
@@ -50,40 +50,40 @@ syntax), #6's entry tag bit STNG ("old model, missing features").
   Consequence: with the required `/*` no-store catch-all, `immutable` rules on
   `/core/*` etc. are void **on Pages** — modules re-download per full page load.
   Acceptable for small graphs (~300 KB). Escapes: versioned network-first service
-  worker (daystrom) or Workers Assets + `max-age=0, must-revalidate` ETag 304s (tender).
+  worker, or Workers Assets + `max-age=0, must-revalidate` ETag 304s.
 - **`/*` must carry no-store anyway** — deep SPA-fallback routes (`/dashboard`) serve
   index.html but match only the catch-all; cached, they hold a stale import map while
   fresh `?v=` modules load → intermittent resolver errors that clear on hard refresh.
 - **CF Pages `_headers` globs don't recurse** — use path prefixes (`/core/*`), never
-  `/*.js` (daystrom, deploy-pages.js).
+  `/*.js` (see a deploy script's page rules).
 - **Split-singleton guard.** Importing the same file via `@state` *and*
   `@core/state.js` yields two module instances (one stamped, one not) — two state
   singletons. `assertNoAliasConflicts()` hard-fails the build; keep it.
 - **No `/src/` may survive into dist.** `assertNoSrcReferencesInDist()` hard-fails;
-  vendor `lib/` is exempt (three.js legitimately contains `/src/` in doc URLs — STNG).
+  vendor `lib/` is exempt (three.js legitimately contains `/src/` in doc URLs).
 - **No module-preload hints for aliased entries.** Preloading resolves bare
-  specifiers *before* the inline import map registers — an intermittent race (STNG,
+  specifiers *before* the inline import map registers — an intermittent race (
   axiom index.html). Only preload if the build has resolved aliases to absolute paths.
 - **Binary assets cache-bust by FILENAME, never query string.** Query strings confuse
   extension-based loader selection (GLTF/FBX). Convention: new bytes ⇒ new name
-  (`Intro-2.mp3`), long TTL on `/assets/*` (STNG, `asset-url.js`).
+  (`Intro-2.mp3`), long TTL on `/assets/*` (`asset-url.js`).
 - **Non-immutable hosts still need `must-revalidate` semantics.** If any router-level
-  dynamic import is NOT version-stamped, code must never be `immutable` (tender's
+  dynamic import is NOT version-stamped, code must never be `immutable` (one project's
   `_headers` note) — same URL would serve stale code after a deploy.
 - **Deploy through a keychain token wrapper** (`with-cf-token.sh` / deploy-script
   resolver): inherited `CLOUDFLARE_API_TOKEN` env vars go stale after rotation and
-  surface as wrangler auth errors 10000/10502 (tender, new.cybercussion).
+  surface as wrangler auth errors 10000/10502.
 - **Pages branch ≠ production domain.** A successful branch deploy can leave the apex
   domain on an older build if the project's Production branch differs — verify by
-  curling the live `?v=` token (daystrom, cloudflare-how-to.md).
+  curling the live `?v=` token (see the deploy how-to).
 
 ## Host decision table
 
 | Host | Policy | Repeat-visit caching |
 |------|--------|----------------------|
 | CF Pages, small graph, no PWA | `/*` no-store; accept module re-download | none (fine ≲300 KB) |
-| CF Pages + PWA | `/*` no-store + versioned network-first SW, `skipWaiting`, delete old caches, bypass runtime config | via SW (daystrom) |
-| Workers Assets (single Worker) | HTML no-store; code `public, max-age=0, must-revalidate` → ETag 304s | cheap 304s (tender) |
+| CF Pages + PWA | `/*` no-store + versioned network-first SW, `skipWaiting`, delete old caches, bypass runtime config | via SW |
+| Workers Assets (single Worker) | HTML no-store; code `public, max-age=0, must-revalidate` → ETag 304s | cheap 304s |
 | GitHub Pages | `_headers` is a no-op; rely on stamping + GH's default short TTL | GH defaults (axiom) |
 
 ## Borrowing checklist (new/updated project)

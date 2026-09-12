@@ -3,7 +3,7 @@
  * Lightweight OAuth2 code-flow + PKCE wrapper (Google direct via a worker that holds
  * the client secret, or legacy Cognito). Zero-dependency, zero-build.
  *
- * Reconciled 2026-09-05 from the live projects (tender/ev/scobot) — see
+ * Reconciled 2026-09-05 from three live downstream projects — see
  * docs/auth-readme.md for the storage keys, the worker contract and what each
  * downstream keeps local. Pure logic lives in auth-helpers.js (node-tested).
  */

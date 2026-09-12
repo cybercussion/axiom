@@ -37,4 +37,4 @@ Playwright devDep. Router: rapid A→B→C with A resolving last lands on C; pop
 Lifecycle, accessibility, compatibility matrix, no-SSR, core versioning + CHANGELOG. README links the ledger.
 
 **T11 — fleet notice**
-#axiom; #specula — T4 is the convergence mechanism behind their state.js panel.
+#axiom, and the fleet's reconcile channel — T4 is the convergence mechanism behind its state.js panel.

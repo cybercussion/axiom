@@ -8,13 +8,13 @@
 #      resolved import-map aliases (@state, @core/*, ...), lazy-route paths, entry
 #      <script> tags, and stylesheets. Fresh HTML + per-deploy URLs = no stale window.
 #
-# CF Pages gotcha (verified live 2026-06-08, new.cybercussion.com): Pages
+# CF Pages gotcha (verified live 2026-06-08 on a downstream project): Pages
 # CONCATENATES Cache-Control across ALL matching rules — the specific rule does NOT
 # override /* — and no-store wins the merge. So with the /* no-store below, the
 # immutable rules on /core etc. are voided on Pages and modules re-download per full
 # page load. That's the accepted trade for a small module graph with no service
 # worker. Alternatives when the graph gets big: a versioned network-first SW
-# (daystrom) or Workers Assets with max-age=0 + ETag 304s (tender).
+# or Workers Assets with max-age=0 + ETag 304s.
 
 # Security headers + no-store for ALL HTML. no-store on /* is REQUIRED: deep
 # SPA-fallback routes (e.g. /dashboard) serve index.html but match only this
@@ -48,7 +48,7 @@
   Cache-Control: public, max-age=31536000, immutable
 
 # Static media (models/textures/audio) — renamed-on-change BY FILENAME (never a
-# query string: queries confuse extension-based loader selection, see STNG's
+# query string: queries confuse extension-based loader selection, see a sibling's
 # asset-url.js), so cache long.
 /assets/*
   Cache-Control: public, max-age=604800, must-revalidate

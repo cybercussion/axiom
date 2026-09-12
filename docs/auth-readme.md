@@ -65,21 +65,23 @@ old "message contains 400/401" heuristic logged users out on worker cold starts.
 
 ## Why these exist (the reload bug, 2026-06/07)
 
-"Google auth doesn't survive a reload" had four causes, fixed separately in tender, ev and
-scobot and reconciled here on 2026-09-05: lean refreshed tokens blanking the profile,
+"Google auth doesn't survive a reload" had four causes, each found and fixed separately in
+a downstream project and reconciled here on 2026-09-05: lean refreshed tokens blanking the profile,
 a guard that only checked expiry with nothing refreshing proactively, transient refresh
 errors clearing the session, and avatar fetches 429'd by Referer / re-fetched on URL rotation.
 
 ## Pulling this into a downstream project
 
-Sync `src/core/auth.js` + `auth-helpers.js` wholesale, then re-apply what is yours:
+Sync `src/core/auth.js` + `auth-helpers.js` wholesale, then re-apply what is yours. What
+that means in practice, from the projects this file was reconciled from:
 
-- **scobot**: `sessionToken`/LTI `applySession`, `_installSession`, `_refreshScobotSession`,
-  the OIDC provider path (`/api/<tool>` dispatch, nonce). Its OIDC `state` handling is now
-  the template's default for every provider.
-- **tender**: `ensureShop()` after install; `/api` dispatch; `NAV_STYLE`.
-- **ev**: a different file (`ev_*` keys, `POST_AUTH_KEY` return path, `renderButton`). Nothing
-  to pull except the worker contract above, which it already follows (401-only).
-- **daystrom**: runs the March file unchanged — pull wholesale. Its nexus does not yet emit
-  `invalid_grant`; until it does, a dead refresh token keeps retrying until `expiresAt`, then
-  the next boot clears it (still strictly better than the old logout-on-cold-start).
+- **A provider-specific session model stays downstream** — an LTI or OIDC session token, its
+  install/refresh helpers, and any `/api/<tool>` dispatch. The OIDC `state` handling those
+  projects carried is now the template's default for every provider.
+- **Post-install app setup stays downstream** — anything your app does once a session exists
+  (provisioning a record, choosing a nav style).
+- **A project with its own key namespace and return path** has little to pull beyond the
+  worker contract above (401-only), which it likely already follows.
+- **A project still running an older copy** should pull wholesale. Note that a refresh
+  endpoint which never emits `invalid_grant` leaves a dead refresh token retrying until
+  `expiresAt`, and the next boot clears it — still strictly better than logout-on-cold-start.

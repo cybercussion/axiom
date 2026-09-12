@@ -2,8 +2,8 @@
  * Project Axiom: Announcer
  * A polite ARIA live region for screen-reader announcements.
  *
- * Reconciled from the fleet's shared/announce-bus.js — byte-identical in tender,
- * scobot and new.cybercussion.com, and imported by none of them, so nothing was
+ * Reconciled from the fleet's shared/announce-bus.js — byte-identical in three
+ * downstream projects, and imported by none of them, so nothing was
  * ever announced. Core owns it now because the router uses it: every route change
  * after the first is announced by the new page's title. It reuses
  * #a11y-announcer when the page declares one, so there is one live region.

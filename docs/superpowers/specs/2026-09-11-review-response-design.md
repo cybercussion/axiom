@@ -39,12 +39,12 @@ Found by verification, absent from the review:
 | F2 | Latent XSS sinks: `notify()` rendered HTML; dashboard error text; nav avatar/email attributes; inline handlers | Fixed `6564943` |
 | F3 | 404 recovery rewrote the URL out of the base path | Fixed `a6390fe` |
 | F4 | Lockfile ignored while CI gated on `npm ci`; the gates had never run | Fixed `bd43e52` |
-| F5 | Core copied ×8, one shared bug in all | Measured `698126b`; convergence mechanism `124b2c2`; the decision is the fleet's (specula) |
+| F5 | Core copied ×8, one shared bug in all | Measured `698126b`; convergence mechanism `124b2c2`; the decision is the fleet's |
 | F6 | Every nav click navigated twice — two history entries; Back took two presses | Fixed `dec76fb` — found by the browser suite |
 | F7 | A navigation superseded mid-commit still scrolled and saved — a fast Back lost its position | Fixed `b56bbb7` — found by the browser suite |
 | F8 | Router still carries app coupling (`ROUTE_TITLES`, the `/login` guard redirect) and dead code (an `env-config.js` lookup, `_scrollTimeout`) | **Fixed** `5e90a18` — titles are route config; `appName` and `loginPath` are init options; the dead code is gone |
 | F9 | `#a11y-announcer` is declared but never written — route changes are not announced to screen readers | Fixed — `@core/announce.js`, reconciled from the fleet's unused announce-bus; the router announces each committed route after the first |
-| F10 | The dock's Login link targets a feature that does not exist in axiom (404) | Fixed — a template `/login`, reconciled from tender; it says so when no provider is configured |
+| F10 | The dock's Login link targets a feature that does not exist in axiom (404) | Fixed — a template `/login`, reconciled from a downstream project; it says so when no provider is configured |
 | F11 | browser-sync carries 3 high advisories (dev-only); the obvious override silently kills live reload | Accepted, documented `39231a7` |
 
 ## §C4 — token storage, stated honestly
@@ -71,7 +71,7 @@ Eight projects run copies of `src/core/`. Axiom is a general framework in fact �
 | Accessibility contract | T10 — router focus, announcer, focus-walker |
 | Security model | T7 SECURITY.md |
 | Plugin architecture | Contested: ES modules + the importmap are the module system (C16) |
-| Versioning guarantees | T10 core semver + CHANGELOG; pairs with specula's `accept` |
+| Versioning guarantees | T10 core semver + CHANGELOG; pairs with the fleet's convergence decision |
 | Types | T8 |
 | Benchmarks | Deferred (§C14) |
 | Browser compatibility matrix | T10 |

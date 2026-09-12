@@ -2,7 +2,7 @@
 /**
  * tools/fleet-smoke.js — does this app still boot after a core re-borrow?
  *
- *   node tools/fleet-smoke.js --root ../tender.cybercussion.com [--routes /,/about,/login] [--port 4212]
+ *   node tools/fleet-smoke.js --root ../some-project [--routes /,/about,/login] [--port 4212]
  *
  * Serves the tree with tools/serve.js and visits each route in Chromium. For
  * each it reports the element that mounted, the document title, whether the

@@ -24,7 +24,7 @@ const TEXT_REWRITE_EXTENSIONS = new Set(['.html', '.json', '.txt', '.svg', '.xml
 // returning visitor pairs fresh entry code with stale deps. We CANNOT just append ?v= to the
 // alias and lean on the import map: prefix maps with RELATIVE address values do not resolve a
 // specifier that already carries a ?query — "Failed to resolve module specifier" broke prod on
-// new.cybercussion.com (docs/handoff-2026-06-07.md there). So the build resolves the alias to
+// a downstream project (see its handoff note). So the build resolves the alias to
 // its absolute path AND versions it: "@core/router.js" → "/core/router.js?v=ID" — the same form
 // as relative imports, which always worked, and zero runtime import-map dependency.
 const NAMESPACE_MAP = readNamespaceMap(path.join(ROOT_DIR, 'index.html'));

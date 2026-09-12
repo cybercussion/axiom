@@ -4,9 +4,9 @@
 
 ## Problem
 
-`src/core/auth.js` in axiom is the March 2026 daystra copy. Since then every live Axiom
+`src/core/auth.js` in axiom is a March 2026 copy. Since then every live Axiom
 project fixed "Google auth doesn't survive a reload" independently and differently
-(tender 06-19, ev 06-21, scobot 07-03) and none of it flowed back. Daystrom still runs the
+(three projects, 06-19 through 07-03) and none of it flowed back. One still runs the
 unfixed file. The symptom has four separate causes:
 
 1. A **refreshed Google id_token is lean** (no `name`/`picture`) → avatar and name blank after a refresh or a reload from a refreshed token.
@@ -18,7 +18,7 @@ Two gaps nobody closed: concurrent `getAccessToken()` calls race the refresh (no
 
 ## Non-goals (axiom stays semi-unopinionated)
 
-- No provider-specific session model (scobot's `sessionToken`/LTI, ev's `ev_*` keys stay downstream).
+- No provider-specific session model (an LTI session token, a project's own key namespace — both stay downstream).
 - No opinion on token storage (localStorage stays; HttpOnly cookies are a fleet/backend decision).
 - No CSP or header policy beyond the existing `_headers` template.
 - The showcase does not use auth; nothing here changes runtime behavior of axiom's own deploy.
