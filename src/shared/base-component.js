@@ -25,12 +25,19 @@ const HOST_DEFAULTS = ':host { display: block; contain: none; }'; // after the t
 let themeLoaded = false;
 const fillTheme = (css) => {
   themeSheet.replaceSync(`${css}\n${HOST_DEFAULTS}`);
-  themeLoaded = true;
+  // Empty text is not a theme. Leave `themeLoaded` false so a component still waits
+  // for the fetch rather than rendering against nothing but the :host defaults.
+  themeLoaded = Boolean(css);
 };
 const linkedTheme = () => {
   for (const sheet of document.styleSheets ?? []) {
     try {
       if (sheet.href && new URL(sheet.href).pathname === themeUrl.pathname) {
+        // A matched sheet with NO rules is not an answer: it is a sheet that has not
+        // parsed yet (a link the parser had not reached, or one that is not
+        // script-blocking). Returning its empty serialization would install a theme
+        // of nothing and suppress the fetch that would have worked.
+        if (sheet.cssRules.length === 0) return null;
         return [...sheet.cssRules].map((rule) => rule.cssText).join('\n');
       }
     } catch { /* a sheet this origin may not read: fall back to fetching */ }
