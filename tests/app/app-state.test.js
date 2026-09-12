@@ -4,6 +4,7 @@
  * Storage is seeded BEFORE app-state loads, the way a returning visitor's
  * browser would be: the split must not reset anyone's saved settings.
  */
+import { log } from '@core/logger.js';
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { state } from '@state';
@@ -37,5 +38,22 @@ describe('app-state', () => {
     state.set('user', null);
     assert.equal(state.get('sessionId'), null);
     assert.equal(localStorage.getItem('axiom-sessionId'), null);
+  });
+});
+
+describe('the guard and this app agree', () => {
+  // core/state.js warns on a read of a key nothing declared and nothing set. This
+  // app must not trip its own guard: every key it reads is declared right here.
+  test('nothing this app reads is undeclared', () => {
+    const original = log.warn;
+    const warnings = [];
+    log.warn = (...args) => warnings.push(args.join(' '));
+    try {
+      ['count', 'user', 'theme', 'sessionId', 'audioLevel', 'captionsEnabled', 'autoplayEnabled']
+        .forEach((k) => state.get(k));
+    } finally {
+      log.warn = original;
+    }
+    assert.deepEqual(warnings, [], 'declare it in src/app-state.js');
   });
 });

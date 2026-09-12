@@ -33,6 +33,12 @@ state.define('autoplayEnabled', {
 });
 state.define('sessionId', { initial: null, storage: local, storageKey: 'axiom-sessionId' });
 
+// Read before anything sets them: the counter's value, and the signed-in user
+// (auth sets it once a session exists). Declared here because this app reads
+// them — the rule the guard in core/state.js enforces.
+state.define('count', { initial: 0 });
+state.define('user', { initial: null });
+
 // Session context belongs to the signed-in user. When there stops being one —
 // logout, or a refresh token the provider rejected — whoever signs in next
 // starts clean. Auth announces the user; the application decides what follows.

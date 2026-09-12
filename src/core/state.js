@@ -80,9 +80,28 @@ const localOrNothing = () => { try { return globalThis.localStorage; } catch { r
 
 const announce = (key, value) => bus.dispatchEvent(new CustomEvent('update', { detail: { key, value } }));
 
+// A read of a key nothing declared and nothing ever set returns undefined, and a
+// `|| fallback` next to it swallows the fact. That is how adopting this file broke
+// a login flow across the fleet: the old copy carried `redirectAfterAuth` as a
+// side-effect branch in the set trap below — invisible to anyone diffing
+// declarations — and the app that still read it silently sent every login to '/'.
+// So say it once, in development only: production installs no check and the read
+// path stays a property lookup.
+const DEV = config.ENV !== 'production';
+const unknown = new Set();
+const warnUnknown = (key) => {
+  if (!DEV || typeof key !== 'string' || unknown.has(key)) return;
+  if (declared.has(key) || key in store) return;
+  unknown.add(key);
+  log.warn(`state: read of '${key}', which nothing declared and nothing has set — it is undefined. Declare it where your app lives: state.define('${key}', { initial: … }) in app-state.js.`);
+};
+
 export const state = {
   /** @type {StateData} */
   data: new Proxy(store, {
+    // Dev only: the same warning for `state.data.x`. In production this trap is
+    // absent entirely — `get` is the hottest path in the runtime.
+    ...(config.ENV !== 'production' ? { get(target, key) { warnUnknown(key); return target[key]; } } : {}),
     set(target, key, value) {
       if (target[key] === value) return true;
       target[key] = value;
@@ -101,6 +120,7 @@ export const state = {
   // Surgical Getter: Because state.data.theme is too many keystrokes
   /** @param {string} key @returns {any} */
   get(key) {
+    warnUnknown(key);
     return this.data[key];
   },
 
@@ -189,6 +209,11 @@ export const state = {
    * @returns {Promise<T>}
    */
   async query(key, fetcher, ttl = 30000, { signal } = {}) {
+    // A query's key is declared by the call itself — the route config names it as
+    // its dataKey — and its first read always precedes its first write. Register it
+    // before reading, or the guard below would tell every consumer to declare its
+    // fetched keys in app-state.js, which is the wrong advice.
+    declared.add(key);
     const aborted = () => new DOMException('The query was aborted', 'AbortError');
     if (signal?.aborted) throw aborted();
     const prior = this.get(key);

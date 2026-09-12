@@ -6,6 +6,7 @@ import { test, describe, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { state } from '@state';
+import { log } from '@core/logger.js';
 
 let n = 0;
 const k = (label) => `def_${label}_${n++}`;
@@ -104,5 +105,45 @@ describe('core/state.js is application-agnostic', () => {
     // why no two copies match. Core must stay a file no application has to edit.
     const src = readFileSync(new URL('../../src/core/state.js', import.meta.url), 'utf8');
     for (const key of APP_KEYS) assert.ok(!src.includes(key), `core/state.js mentions ${key}`);
+  });
+});
+
+describe('a read of an undeclared key says so, once', () => {
+  // The mechanism behind the fleet's post-adopt login regression: adopting this
+  // file drops keys that existed only as side-effect branches in the set trap,
+  // the read returns undefined, and a `|| fallback` beside it hides the drop.
+  let n = 0;
+  const freshKey = (label) => `guard_${label}_${n++}`;
+  const capture = (fn) => {
+    const original = log.warn;
+    const warnings = [];
+    log.warn = (...args) => warnings.push(args.join(' '));
+    try { fn(); } finally { log.warn = original; }
+    return warnings;
+  };
+
+  test('names the key, tells you where to declare it, and warns only once', () => {
+    const key = freshKey('never_declared');
+    const warnings = capture(() => {
+      assert.equal(state.get(key), undefined, 'the value is still undefined');
+      state.get(key);
+      void state.data[key];
+    });
+    assert.equal(warnings.length, 1, `warned once, not ${warnings.length} times`);
+    assert.match(warnings[0], new RegExp(key));
+    assert.match(warnings[0], /app-state\.js/);
+  });
+
+  test('silent for a declared key, and for one merely set', () => {
+    const declaredKey = freshKey('declared');
+    const setKey = freshKey('set_only');
+    state.define(declaredKey, { initial: 1 });
+    state.set(setKey, 'x');
+    const warnings = capture(() => {
+      assert.equal(state.get(declaredKey), 1);
+      assert.equal(state.get(setKey), 'x');
+      assert.equal(state.get('route'), null, 'a framework key in the store literal');
+    });
+    assert.deepEqual(warnings, []);
   });
 });
