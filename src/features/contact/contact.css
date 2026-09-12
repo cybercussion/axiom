@@ -19,7 +19,7 @@
 .map-overlay {
   position: fixed;
   inset: 0;
-  background: radial-gradient(circle at center, transparent 0%, var(--color-background) 100%);
+  background: radial-gradient(circle at center, transparent 0%, var(--color-bg) 100%);
   z-index: -1;
   pointer-events: none;
 } */

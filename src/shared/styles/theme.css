@@ -80,6 +80,7 @@
   /* Dock */
   --dock-bg: rgba(10, 10, 10, 0.8);
   --dock-border: rgba(255, 255, 255, 0.1);
+  --dock-fg: var(--color-foreground);
 
   /* Glass Card */
   --glass-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
@@ -170,6 +171,7 @@
   /* Dock */
   --dock-bg: rgba(255, 255, 255, 0.8);
   --dock-border: rgba(0, 0, 0, 0.1);
+  --dock-fg: var(--color-foreground);
 
   /* Glass Card */
   --glass-bg: rgba(255, 255, 255, 0.6);
