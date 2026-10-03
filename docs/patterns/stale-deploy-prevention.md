@@ -47,8 +47,8 @@ syntax), #6's entry tag bit one project ("old model, missing features").
   prefix value must end in `/` — never append `?v=` to `"@core/": "/core/"`.
 - **CF Pages CONCATENATES Cache-Control across matching rules** (verified live
   2026-06-08). The specific rule does not override `/*`; `no-store` wins the merge.
-  Consequence: with the required `/*` no-store catch-all, `immutable` rules on
-  `/core/*` etc. are void **on Pages** — modules re-download per full page load.
+  Consequence: with the required `/*` no-store catch-all, modules re-download per
+  full page load **on Pages**.
   Acceptable for small graphs (~300 KB). Escapes: versioned network-first service
   worker, or Workers Assets + `max-age=0, must-revalidate` ETag 304s.
 - **`/*` must carry no-store anyway** — deep SPA-fallback routes (`/dashboard`) serve
@@ -67,9 +67,17 @@ syntax), #6's entry tag bit one project ("old model, missing features").
 - **Binary assets cache-bust by FILENAME, never query string.** Query strings confuse
   extension-based loader selection (GLTF/FBX). Convention: new bytes ⇒ new name
   (`Intro-2.mp3`), long TTL on `/assets/*` (`asset-url.js`).
-- **Non-immutable hosts still need `must-revalidate` semantics.** If any router-level
-  dynamic import is NOT version-stamped, code must never be `immutable` (one project's
-  `_headers` note) — same URL would serve stale code after a deploy.
+- **Code is never `immutable`, even fully `?v=`-stamped.** Cloudflare serves by path
+  and ignores the query, so during a deploy's propagation window a browser can get
+  OLD bytes for a NEW url; `immutable` pins them for a year and the app runs two
+  module graphs (daystra login outage, 2026-09-12). Code gets
+  `public, max-age=0, must-revalidate`; `tools/headers.test.js` guards the template.
+  The same holds, more obviously, when a dynamic import is NOT stamped.
+- **Zone Browser Cache TTL must be "Respect Existing Headers" (0).** Measured on
+  daystra.com 2026-10-03: with a non-zero zone TTL the edge silently rewrites
+  `no-cache` in `_headers` to `max-age=<TTL>`, so revalidating code is cached for
+  hours anyway. Check: `curl -sI 'https://<host>/core/router.js?v=x' | grep -i cache-control`
+  must echo the `_headers` rule verbatim.
 - **Deploy through a keychain token wrapper** (`with-cf-token.sh` / deploy-script
   resolver): inherited `CLOUDFLARE_API_TOKEN` env vars go stale after rotation and
   surface as wrangler auth errors 10000/10502.

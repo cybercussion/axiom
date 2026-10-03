@@ -10,11 +10,11 @@
 #
 # CF Pages gotcha (verified live 2026-06-08 on a downstream project): Pages
 # CONCATENATES Cache-Control across ALL matching rules — the specific rule does NOT
-# override /* — and no-store wins the merge. So with the /* no-store below, the
-# immutable rules on /core etc. are voided on Pages and modules re-download per full
-# page load. That's the accepted trade for a small module graph with no service
-# worker. Alternatives when the graph gets big: a versioned network-first SW
-# or Workers Assets with max-age=0 + ETag 304s.
+# override /* — and no-store wins the merge. So with the /* no-store below, modules
+# re-download per full page load on Pages. That's the accepted trade for a small
+# module graph with no service worker. Alternatives when the graph gets big: a
+# versioned network-first SW, or Workers Assets, where the code rules below give
+# ETag 304s.
 
 # Security headers + no-store for ALL HTML. no-store on /* is REQUIRED: deep
 # SPA-fallback routes (e.g. /dashboard) serve index.html but match only this
@@ -32,20 +32,22 @@
 /index.html
   Cache-Control: no-store, must-revalidate
 
-# Code — every URL is ?v=-stamped per deploy, so immutable is CORRECT wherever
-# per-path rules actually override the catch-all (e.g. Workers Assets). On CF
-# Pages the /* no-store concatenation wins instead (see header note) — these
-# rules then cost nothing and document intent.
+# Code — revalidate every load (cheap 304 via ETag). NEVER immutable: modules are
+# versioned by QUERY, and Cloudflare serves by path, ignoring it — mid-deploy a
+# browser can get OLD bytes for a NEW ?v= url, and immutable pins them for a year:
+# two module graphs, two auth singletons (daystra's 2026-09-12 login outage).
+# On CF Pages the /* no-store concatenation wins anyway (see header note).
+# Guarded by tools/headers.test.js.
 /app.js
-  Cache-Control: public, max-age=31536000, immutable
+  Cache-Control: public, max-age=0, must-revalidate
 /app-routes.js
-  Cache-Control: public, max-age=31536000, immutable
+  Cache-Control: public, max-age=0, must-revalidate
 /core/*
-  Cache-Control: public, max-age=31536000, immutable
+  Cache-Control: public, max-age=0, must-revalidate
 /shared/*
-  Cache-Control: public, max-age=31536000, immutable
+  Cache-Control: public, max-age=0, must-revalidate
 /features/*
-  Cache-Control: public, max-age=31536000, immutable
+  Cache-Control: public, max-age=0, must-revalidate
 
 # Static media (models/textures/audio) — renamed-on-change BY FILENAME (never a
 # query string: queries confuse extension-based loader selection, see a sibling's
