@@ -96,6 +96,21 @@ test('an unknown path renders the 404 page', async ({ page }) => {
   await expect(page.locator('#app-container > not-found-ui')).toBeAttached();
 });
 
+test("the 404 fallback takes the not-found route's title, cold and in-app", async ({ page }) => {
+  // The fallback swapped not-found in without running the title code, so a cold
+  // load kept index.html's <title> and an in-app miss kept the previous page's
+  // (relayed from tender, #axiom seq 103).
+  await page.goto('/dashboard');
+  await settled(page, 'dashboard-ui');
+  await navigateInPage(page, ['/no-such-page']);
+  await expect(page.locator('#app-container > not-found-ui')).toBeAttached();
+  await expect.poll(() => page.title()).toBe('Not Found — Axiom');
+
+  await page.goto('/definitely/not/here');
+  await expect(page.locator('#app-container > not-found-ui')).toBeAttached();
+  await expect.poll(() => page.title()).toBe('Not Found — Axiom');
+});
+
 test('rapid navigation lands on the last route with no unhandled rejection (bd68e2f)', async ({ page }) => {
   const problems = watch(page);
   await page.goto('/');

@@ -116,6 +116,19 @@ export const router = {
     }
   },
 
+  /**
+   * Document title: the route's `title`, a sub-view when the URL has one (so
+   * history entries differ), and the app's name — all three the app's to set.
+   * @param {{ title?: string }} config @param {string} slug @param {string} [subView]
+   * @returns {string}
+   */
+  _titleFor(config, slug, subView = '') {
+    const heading = subView
+      ? [subView.charAt(0).toUpperCase() + subView.slice(1).replace(/-/g, ' '), config.title || slug]
+      : (config.title ? [config.title] : []);
+    return [...heading, this.appName].filter(Boolean).join(' — ') || config.title || slug;
+  },
+
   /** @param {string} slug @returns {number} */
   getDepth(slug) {
     return this.depths[slug] ?? this.depths['default'] ?? 1;
@@ -380,13 +393,7 @@ export const router = {
         state.set('query', queryObject);
         state.set('params', params);
 
-        // Document title: the route's `title`, a sub-view when the URL has one (so
-        // history entries differ), and the app's name — all three the app's to set.
-        const subView = params.view || pathSegments[1] || '';
-        const heading = subView
-          ? [subView.charAt(0).toUpperCase() + subView.slice(1).replace(/-/g, ' '), config.title || slug]
-          : (config.title ? [config.title] : []);
-        document.title = [...heading, this.appName].filter(Boolean).join(' — ') || config.title || slug;
+        document.title = this._titleFor(config, slug, params.view || pathSegments[1] || '');
 
         // Emit a navigation "commit" signal after state is updated,
         // providing a unique event even when slug stays the same.
@@ -486,6 +493,9 @@ export const router = {
           try {
             await import('@features/not-found/not-found.js');
             state.set('route', 'not-found');
+            // This swap bypasses performUpdate, so it sets the title itself — else a
+            // cold load keeps index.html's and an in-app miss the previous page's.
+            document.title = this._titleFor(this.routes['not-found'] || {}, 'not-found');
 
             // Update the URL so the user knows they are lost. BASE-AWARE: a
             // bare '/not-found' resolves against the DOMAIN root, so on the
