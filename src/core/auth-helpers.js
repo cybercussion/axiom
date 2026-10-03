@@ -96,3 +96,16 @@ export function refreshDelayMs(expiresAt, now = Date.now(), lead = 5 * 60 * 1000
   if (typeof expiresAt !== 'number' || Number.isNaN(expiresAt)) return null;
   return Math.min(Math.max(expiresAt - now - lead, SOON_MS), TIMER_MAX_MS);
 }
+
+/**
+ * Is this location the OAuth provider returning a code? Only on the redirect path:
+ * an app route that uses a `code` query param (e.g. /join?code=ABC123) is not a
+ * callback, and treating it as one failed sign-in and skipped session hydration.
+ */
+export function isOAuthCallback(loc, redirectUri) {
+  if (!new URLSearchParams(loc.search || '').get('code')) return false;
+  let cbPath = '/';
+  try { if (redirectUri) cbPath = new URL(redirectUri).pathname; } catch { /* root */ }
+  const norm = (p) => (p.length > 1 ? p.replace(/\/+$/, '') : p) || '/';
+  return norm(loc.pathname || '/') === norm(cbPath);
+}

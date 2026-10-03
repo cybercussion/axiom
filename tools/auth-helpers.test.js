@@ -2,8 +2,29 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildAuthorizeUrl, generateCodeVerifier, generateCodeChallenge, base64UrlEncode,
-  hydrateProfile, normalizeAvatarUrl, isRefreshRejected, refreshDelayMs
+  hydrateProfile, normalizeAvatarUrl, isRefreshRejected, refreshDelayMs, isOAuthCallback
 } from '../src/core/auth-helpers.js';
+
+// Relayed from scobot (Arc intent 47): only the redirect path's ?code= is a
+// callback — /join?code=ABC123 is an app route.
+test('isOAuthCallback: ?code= on the redirect path (root) is a callback', () => {
+  const R = 'https://app.example';
+  assert.equal(isOAuthCallback({ pathname: '/', search: '?code=abc&scope=email' }, R), true);
+  assert.equal(isOAuthCallback({ pathname: '/join', search: '?code=ABC123' }, R), false);
+  assert.equal(isOAuthCallback({ pathname: '/', search: '' }, R), false);
+  assert.equal(isOAuthCallback({ pathname: '/', search: '?redeem=X' }, R), false);
+});
+
+test('isOAuthCallback: honors a redirect URI with a path, either trailing slash', () => {
+  assert.equal(isOAuthCallback({ pathname: '/auth/callback', search: '?code=a' }, 'https://x.test/auth/callback/'), true);
+  assert.equal(isOAuthCallback({ pathname: '/auth/callback/', search: '?code=a' }, 'https://x.test/auth/callback'), true);
+  assert.equal(isOAuthCallback({ pathname: '/join', search: '?code=a' }, 'https://x.test/auth/callback'), false);
+});
+
+test('isOAuthCallback: a missing or unparsable redirect URI falls back to root', () => {
+  assert.equal(isOAuthCallback({ pathname: '/', search: '?code=a' }, undefined), true);
+  assert.equal(isOAuthCallback({ pathname: '/join', search: '?code=a' }, 'not a url'), false);
+});
 
 test('buildAuthorizeUrl carries PKCE + state and merges provider extras', () => {
   const url = new URL(buildAuthorizeUrl({

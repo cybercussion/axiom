@@ -45,3 +45,9 @@ export function isRefreshRejected(err: any): boolean;
  * [SOON, setTimeout max]. null when there is no usable expiry (nothing to schedule).
  */
 export function refreshDelayMs(expiresAt: any, now?: number, lead?: number): number | null;
+/**
+ * Is this location the OAuth provider returning a code? Only on the redirect path:
+ * an app route that uses a `code` query param (e.g. /join?code=ABC123) is not a
+ * callback, and treating it as one failed sign-in and skipped session hydration.
+ */
+export function isOAuthCallback(loc: any, redirectUri: any): boolean;

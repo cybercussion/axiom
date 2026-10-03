@@ -13,7 +13,7 @@ import { log } from '@core/logger.js';
 import { emit, reason } from '@core/observe.js';
 import {
   buildAuthorizeUrl, generateCodeVerifier, generateCodeChallenge,
-  hydrateProfile, normalizeAvatarUrl, isRefreshRejected, refreshDelayMs
+  hydrateProfile, normalizeAvatarUrl, isRefreshRejected, refreshDelayMs, isOAuthCallback
 } from '@core/auth-helpers.js';
 
 const STORAGE_KEY = 'axiom_auth';              // token bundle
@@ -94,11 +94,10 @@ export const auth = {
     // Choosing a shorter-lived store must actually retire the long-lived copy:
     // identity left in localStorage by an earlier session would outlive it.
     if (this._store !== localStorage) for (const k of IDENTITY_KEYS) localStorage.removeItem(k);
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
-
-    if (code) {
-      await this._handleCallback(code, params.get('state'));
+    // Only the redirect path's ?code= is a callback; an app route may use `code` too.
+    if (isOAuthCallback(window.location, this._getConfig().REDIRECT_URI)) {
+      const params = new URLSearchParams(window.location.search);
+      await this._handleCallback(params.get('code'), params.get('state'));
       // Clean URL
       window.history.replaceState({}, '', window.location.pathname);
       return;
