@@ -6,6 +6,7 @@ import { state } from '@state';
 import { log } from '@core/logger.js';
 import { config } from '@core/config.js';
 import { auth } from '@core/auth.js';
+import { saveRedirect, takeRedirect } from '@core/auth-redirect.js';
 import { announce } from '@core/announce.js';
 import { emit, elapsed, reason } from '@core/observe.js';
 
@@ -102,10 +103,13 @@ export const router = {
     this._lastIndex = history.state?.index ?? 0;
 
     // Post-Auth Redirect Logic
-    const pendingRedirect = localStorage.getItem('axiom_auth_redirect');
-    if (pendingRedirect && auth.isAuthenticated()) {
+    // Resumed only on a sign-in landing and while fresh (auth-redirect.js) — a
+    // destination saved by an abandoned sign-in must not hijack a later deep link.
+    const pendingRedirect = auth.isAuthenticated()
+      ? takeRedirect(localStorage, location.pathname, Date.now(), undefined, this.base, [this.loginPath])
+      : null;
+    if (pendingRedirect) {
       log.info(`Auth sequence complete. Resuming destination: ${pendingRedirect}`);
-      localStorage.removeItem('axiom_auth_redirect');
       this.navigate(pendingRedirect, true);
     } else {
       this.navigate(`${location.pathname}${location.search}${location.hash}`, false);
@@ -332,8 +336,14 @@ export const router = {
           if (!isAllowed) {
             log.warn(`Access Denied for [${slug}]. Redirecting to login.`);
 
-            // Save the intended destination for a post-login jump
-            localStorage.setItem('axiom_auth_redirect', path);
+            // Save the intended destination for a post-login jump — only when signed
+            // out. A signed-in user failing a role guard (e.g. /admin) has no sign-in
+            // ahead of them, so a saved path would just ambush their next visit.
+            // Save the NORMALIZED path: nav links use relative hrefs (href="dashboard"),
+            // and only a leading-slash app path is ever resumed.
+            if (!auth.isAuthenticated()) {
+              saveRedirect(localStorage, `${cleanPath || '/'}${queryPart}${hashPart}`);
+            }
             state.notify('Authentication Required', 'warning');
 
             // Redirect to login

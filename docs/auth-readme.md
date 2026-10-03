@@ -38,7 +38,12 @@ old "message contains 400/401" heuristic logged users out on worker cold starts.
 
 - `auth.init()` **before** `router.init()`: completes a `?code=&state=` callback, or restores
   from storage and refreshes if inside the 10-minute window. A transient refresh failure
-  on a still-valid token keeps the session.
+  on a still-valid token keeps the session. Only a `?code=` on the `REDIRECT_URI` path is a
+  callback (`isOAuthCallback`), so an app route may use `code` itself (`/join?code=ABC123`).
+- A guard that fails while signed OUT saves the destination; `router.init()` resumes it only
+  on a sign-in landing (`/`, `/login`, `/home`, the router's `loginPath`) within 30 minutes,
+  and always clears it (`src/core/auth-redirect.js`). An abandoned sign-in cannot hijack a
+  later deep link, and a signed-in user failing a role guard saves nothing.
 - `checkAndRefresh()` / `getAccessToken()` / `getIdToken()`: called by the gateway on every
   request; concurrent callers share one in-flight refresh.
 - Keep-alive: one timer at the leading edge of the refresh window (re-armed on every token
@@ -57,6 +62,7 @@ old "message contains 400/401" heuristic logged users out on worker cold starts.
 |---|---|---|
 | `axiom_auth` | token bundle `{ accessToken, idToken, refreshToken, expiresAt, admin?, role?, tier? }` | logout / rejection |
 | `axiom_pkce_verifier`, `axiom_oauth_state` | held across the provider redirect (localStorage on purpose: some in-app browsers finish the redirect in a fresh tab) | callback (one-shot) |
+| `axiom_auth_redirect` | `{ path, at }` — where a signed-out visitor was going (normalized, same-origin) | the next authenticated boot, resumed or not |
 | `axiom_auth_provider` | `google` \| `cognito` — routes refresh | never (harmless) |
 | `axiom_profile` | last-known-good `sub/email/name/picture` — a refreshed Google id_token omits name + picture | logout / rejection |
 | `axiom-avatar` | `{ key: sub, url, data }` data-URL cache; fetched `no-referrer`, size pinned to `=s96-c` | logout / rejection |
