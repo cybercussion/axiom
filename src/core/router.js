@@ -496,6 +496,9 @@ export const router = {
             // This swap bypasses performUpdate, so it sets the title itself — else a
             // cold load keeps index.html's and an in-app miss the previous page's.
             document.title = this._titleFor(this.routes['not-found'] || {}, 'not-found');
+            // And announces it, by performUpdate's rule: every route change but the first load.
+            if (this._announced) announce(document.title);
+            this._announced = true;
 
             // Update the URL so the user knows they are lost. BASE-AWARE: a
             // bare '/not-found' resolves against the DOMAIN root, so on the

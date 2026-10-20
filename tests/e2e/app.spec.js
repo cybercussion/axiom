@@ -111,6 +111,20 @@ test("the 404 fallback takes the not-found route's title, cold and in-app", asyn
   await expect.poll(() => page.title()).toBe('Not Found — Axiom');
 });
 
+test('the 404 fallback is announced like any route change; a cold 404 is not', async ({ page }) => {
+  // The fallback bypasses performUpdate, which is where route changes are announced.
+  const announced = () => page.evaluate(() => document.getElementById('a11y-announcer').textContent);
+  await page.goto('/dashboard');
+  await settled(page, 'dashboard-ui');
+  await navigateInPage(page, ['/no-such-page']);
+  await expect(page.locator('#app-container > not-found-ui')).toBeAttached();
+  await expect.poll(announced).toBe('Not Found — Axiom');
+
+  await page.goto('/definitely/not/here');
+  await expect(page.locator('#app-container > not-found-ui')).toBeAttached();
+  expect(await announced()).toBe('');
+});
+
 test('rapid navigation lands on the last route with no unhandled rejection (bd68e2f)', async ({ page }) => {
   const problems = watch(page);
   await page.goto('/');
