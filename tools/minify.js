@@ -192,6 +192,72 @@ export function stampRoutePaths(code, buildId = BUILD_ID, namespaceMap = NAMESPA
   );
 }
 
+// Static imports of one built (terser-normalised) module: `import"x"`, `import{a}from"x"`,
+// `import*as a from"x"`, `export{a}from"x"`, `export*from"x"`. Dynamic `import("x")` is excluded —
+// those load on demand and are not part of the page's startup graph.
+export function staticImports(code) {
+  const out = [];
+  for (const m of code.matchAll(/(?<![\w$.])(?:import|export)\s*(?:[\w$*{},\s]*?\bfrom\s*)?(["'])([^"'\n]+)\1/g)) out.push(m[2]);
+  return out;
+}
+
+// Breadth-first static closure from entry URLs. read(pathname) returns the module source; every
+// specifier is resolved against its importer ("./x.js?v=1" from "/a/b.js" becomes "/a/x.js?v=1").
+// A BARE specifier throws, mapped or not: Cloudflare re-emits modulepreload links as a `Link:`
+// response header, so Chrome resolves a preloaded module's imports before the import map exists and
+// caches the failure per URL (proven on daystra.com, 2026-08-27; axiom-framework skill item 11).
+export function moduleClosure(entries, read) {
+  const base = 'https://dist.invalid/';
+  const seen = new Set(), queue = [...entries];
+  while (queue.length) {
+    const url = queue.shift();
+    if (seen.has(url)) continue;
+    seen.add(url);
+    for (const spec of staticImports(read(new URL(url, base).pathname))) {
+      if (/^[a-z][a-z\d+.-]*:/i.test(spec)) continue; // a full URL to another host: not ours to preload
+      if (!/^(\.{1,2})?\//.test(spec)) {
+        throw new Error(`modulepreload: bare specifier "${spec}" in ${url} — a preloaded module cannot depend on the import map. Resolve the alias at build time (withVersion), or keep the module out of the startup graph.`);
+      }
+      const r = new URL(spec, new URL(url, base));
+      queue.push(r.pathname + r.search);
+    }
+  }
+  return [...seen];
+}
+
+// Insert one <link rel=modulepreload> per URL before the first module <script>. Refuses when the
+// import map does not come first — a cheap check for hosts that leave the HTML alone. It is not
+// what makes preload safe on Cloudflare; moduleClosure's bare-specifier refusal is.
+export function injectModulePreload(html, urls) {
+  const at = html.search(/<script\s+type="module"/i);
+  if (at < 0) throw new Error('modulepreload: index.html has no module <script> to preload for');
+  const map = html.search(/<script\s+type="importmap"/i);
+  if (map > at) throw new Error('modulepreload: the import map must precede the first module <script>');
+  if (!urls.length) return html;
+  const links = urls.map((u) => `<link rel="modulepreload" href="${u}">`).join('\n  ');
+  return html.replace(/(\n\s*)(<script\s+type="module")/i, `$1${links}$1$2`);
+}
+
+// The browser discovers a module's imports only when that module arrives, so the startup graph
+// loads as sequential round trips (6 for the template itself, 12 in WakeTrace). Listing the whole
+// startup closure — the entry scripts plus the default route's module — as <link rel=modulepreload>
+// fetches it in one. Caching is untouched: modules stay versioned by ?v=, never immutable.
+async function emitModulePreload() {
+  const indexPath = path.join(DIST_DIR, 'index.html');
+  const html = fs.readFileSync(indexPath, 'utf8');
+  const scripts = [...html.matchAll(/<script\s+type="module"\s+src="([^"]+)"/gi)].map((m) => m[1]);
+  const { ROUTES, DEFAULT_ROUTE } = await import(pathToFileURL(path.join(DIST_DIR, 'app-routes.js')).href);
+  const entries = [...scripts, ROUTES?.[DEFAULT_ROUTE]?.path].filter(Boolean);
+  const read = (pathname) => {
+    const file = path.join(DIST_DIR, decodeURIComponent(pathname));
+    if (!file.startsWith(DIST_DIR + path.sep) || !fs.existsSync(file)) throw new Error(`modulepreload: ${pathname} is imported but not in dist`);
+    return fs.readFileSync(file, 'utf8');
+  };
+  const urls = moduleClosure(entries, read).filter((u) => !scripts.includes(u)); // the entry <script>s already fetch at parse time
+  fs.writeFileSync(indexPath, injectModulePreload(html, urls), 'utf8');
+  console.log(`Module preload: ${urls.length} modules listed in index.html`);
+}
+
 async function main() {
   console.log('\x1b[1m\x1b[36m⚡ Axiom Build System ⚡\x1b[0m\n');
 
@@ -219,6 +285,7 @@ async function main() {
   await processDir(SRC_DIR, DIST_DIR);
   assertNoSrcReferencesInDist();
   assertNoAliasConflicts();
+  await emitModulePreload(); // before the id guard, so it checks the preload URLs too
   assertSingleCacheBustId();
 
   printNutritionFacts();

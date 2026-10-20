@@ -61,9 +61,16 @@ syntax), #6's entry tag bit one project ("old model, missing features").
   singletons. `assertNoAliasConflicts()` hard-fails the build; keep it.
 - **No `/src/` may survive into dist.** `assertNoSrcReferencesInDist()` hard-fails;
   vendor `lib/` is exempt (three.js legitimately contains `/src/` in doc URLs).
-- **No module-preload hints for aliased entries.** Preloading resolves bare
-  specifiers *before* the inline import map registers — an intermittent race (
-  axiom index.html). Only preload if the build has resolved aliases to absolute paths.
+- **Module-preload hints are the build's, and never carry a bare specifier.**
+  Without them the startup graph loads as one round trip per import depth (6 for
+  the template, 12 in WakeTrace). `emitModulePreload()` lists the static closure of
+  the entry scripts plus the default route, after `processDir` and before
+  `assertSingleCacheBustId` (so the preload URLs share the one id). It throws on any
+  bare specifier in that closure, even one the import map would resolve: Cloudflare
+  re-emits `<link rel="modulepreload">` as a `Link:` response header, so Chrome
+  resolves a preloaded module's imports *before* the inline map registers and caches
+  the failure per URL (proven on daystra.com, 2026-08-27; axiom-framework skill
+  item 11). Check yours: `curl -sI https://<host>/ | grep -i '^link:'`.
 - **Binary assets cache-bust by FILENAME, never query string.** Query strings confuse
   extension-based loader selection (GLTF/FBX). Convention: new bytes ⇒ new name
   (`Intro-2.mp3`), long TTL on `/assets/*` (`asset-url.js`).

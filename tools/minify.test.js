@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { stampImports, stampRoutePaths, withVersion, readNamespaceMap, readExactAliasMap } from './minify.js';
+import { stampImports, stampRoutePaths, withVersion, readNamespaceMap, readExactAliasMap, staticImports, moduleClosure, injectModulePreload } from './minify.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Alias → absolute dist target. Prefix maps with relative address values won't resolve a
@@ -102,4 +102,48 @@ test('readExactAliasMap maps exact aliases like @state to absolute dist paths, e
   const map = readExactAliasMap(path.join(__dirname, '..', 'index.html'));
   assert.equal(map['@state'], '/core/state.js');
   assert.ok(!('@core/' in map));
+});
+
+// modulepreload: the startup graph is the STATIC import closure; dynamic import() loads on demand.
+// Ported from WakeTrace (#axiom seq 107), where it took the startup graph from 12 waves to 1.
+test('staticImports reads every static form terser emits and skips dynamic import()', () => {
+  const code = 'import"./a.js?v=1";import{b as c}from"/core/b.js?v=1";import*as d from"../d.js?v=1";'
+    + 'export{e}from"./e.js?v=1";export*from"./f.js?v=1";const g=()=>import("./lazy.js?v=1");x.import("no");';
+  assert.deepEqual(staticImports(code), ['./a.js?v=1', '/core/b.js?v=1', '../d.js?v=1', './e.js?v=1', './f.js?v=1']);
+});
+
+test('moduleClosure resolves specifiers against their importer and visits each module once', () => {
+  const files = {
+    '/app.js': 'import"./x/a.js?v=1";import{b}from"/core/b.js?v=1"',
+    '/x/a.js': 'import{b}from"../core/b.js?v=1";const l=()=>import("./lazy.js?v=1")',
+    '/core/b.js': 'export const b=1',
+  };
+  const read = (p) => { if (!(p in files)) throw new Error(`missing ${p}`); return files[p]; };
+  assert.deepEqual(moduleClosure(['/app.js?v=1'], read), ['/app.js?v=1', '/x/a.js?v=1', '/core/b.js?v=1']);
+});
+
+test('moduleClosure refuses a bare specifier, even one the import map would resolve', () => {
+  // Cloudflare re-emits modulepreload as a Link: header, so the browser resolves a preloaded
+  // module's imports before the map exists (axiom-framework skill item 11). Mapped is not enough.
+  const files = { '/app.js': 'import{r}from"/core/router.js?v=1"', '/core/router.js': 'import{state}from"@state"' };
+  assert.throws(() => moduleClosure(['/app.js'], (p) => files[p]), /bare specifier "@state" in \/core\/router\.js\?v=1/);
+  assert.throws(() => moduleClosure(['/app.js'], () => 'import"three"'), /cannot depend on the import map/);
+});
+
+test('moduleClosure skips a full URL to another host', () => {
+  const files = { '/app.js': 'import"https://cdn.example/x.js";import"./a.js"', '/a.js': '' };
+  assert.deepEqual(moduleClosure(['/app.js'], (p) => files[p]), ['/app.js', '/a.js']);
+});
+
+test('injectModulePreload puts the links after the import map, before the first module script', () => {
+  const html = '<head>\n  <script type="importmap">{}</script>\n</head>\n<body>\n  <script type="module" src="/app.js?v=1"></script>\n</body>';
+  const out = injectModulePreload(html, ['/core/a.js?v=1', '/core/b.js?v=1']);
+  const map = out.indexOf('type="importmap"'), first = out.indexOf('rel="modulepreload"'), entry = out.indexOf('type="module"');
+  assert.ok(map < first && first < entry, out);
+  assert.equal(out.match(/rel="modulepreload"/g).length, 2);
+});
+
+test('injectModulePreload refuses when a module script precedes the import map (the resolver race)', () => {
+  const html = '<script type="module" src="/app.js?v=1"></script>\n<script type="importmap">{}</script>';
+  assert.throws(() => injectModulePreload(html, ['/core/a.js?v=1']), /import map must precede/);
 });
