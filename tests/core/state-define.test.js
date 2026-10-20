@@ -146,4 +146,13 @@ describe('a read of an undeclared key says so, once', () => {
     });
     assert.deepEqual(warnings, []);
   });
+
+  test("silent for 'transitioning': a framework key, read by route-progress before the first navigation", () => {
+    // Found in WakeTrace (#axiom seq 107): the router sets it, but <route-progress>
+    // reads it on connect, so every dev load warned the APP to declare a core key.
+    const warnings = capture(() => {
+      assert.equal(state.get('transitioning'), false);
+    });
+    assert.deepEqual(warnings, []);
+  });
 });

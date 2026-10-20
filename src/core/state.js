@@ -45,7 +45,7 @@ const applyPayload = (base, payload) => {
  *   navigation: import('./router.js').Navigation|null,
  *   navStyle: string,
  *   transition: { type: string, direction: string },
- *   transitioning?: boolean,
+ *   transitioning: boolean,
  *   notifications: Notification[],
  *   theme?: string,
  *   user?: Object|null,
@@ -63,6 +63,7 @@ const store = Object.assign(Object.create(null), {
   navigation: null,
   navStyle: config.NAV_STYLE,
   transition: { type: 'fade', direction: 'forward' },
+  transitioning: false,
   notifications: []
 });
 

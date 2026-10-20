@@ -116,7 +116,7 @@ export type StateData = {
         type: string;
         direction: string;
     };
-    transitioning?: boolean;
+    transitioning: boolean;
     notifications: Notification[];
     theme?: string;
     user?: Object | null;
