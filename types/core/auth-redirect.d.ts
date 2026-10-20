@@ -18,7 +18,7 @@ export function takeRedirect(storage: any, pathname: any, now?: number, ttlMs?: 
  * (OAuth returns to the root; the login feature then routes to /home) and only
  * while it is fresh. Without both checks, an abandoned sign-in left a destination
  * in storage that hijacked the user's NEXT visit, including a deep link opened
- * days later. Reconciled from scobot (Arc intent 48).
+ * days later. Reconciled from a downstream project.
  */
 export const REDIRECT_KEY: "axiom_auth_redirect";
 export const REDIRECT_TTL_MS: number;

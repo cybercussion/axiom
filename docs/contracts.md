@@ -150,4 +150,4 @@ Why the layout budget exists: `/components` measured CLS 1.09 on the live site, 
 
 ## Versioning
 
-The core contract is `types/` plus this page. The policy: removing or narrowing anything in either is a **major** change, an addition is **minor**, a fix is **patch**, and every change is recorded in [CHANGELOG.md](../CHANGELOG.md) — breaking ones called out for the projects that copy the core. Release numbering waits on the fleet's decision to make the core a versioned unit (specula `accept`); until then changes accumulate under *Unreleased*. `package.json`'s version (1.0.42) versions the showcase site, not the core.
+The core contract is `types/` plus this page. The policy: removing or narrowing anything in either is a **major** change, an addition is **minor**, a fix is **patch**, and every change is recorded in [CHANGELOG.md](../CHANGELOG.md) — breaking ones called out for the projects that copy the core. Release numbering waits on the fleet's decision to make the core a versioned unit; until then changes accumulate under *Unreleased*. `package.json`'s version (1.0.42) versions the showcase site, not the core.

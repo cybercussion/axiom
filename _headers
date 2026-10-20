@@ -35,7 +35,7 @@
 # Code — revalidate every load (cheap 304 via ETag). NEVER immutable: modules are
 # versioned by QUERY, and Cloudflare serves by path, ignoring it — mid-deploy a
 # browser can get OLD bytes for a NEW ?v= url, and immutable pins them for a year:
-# two module graphs, two auth singletons (daystra's 2026-09-12 login outage).
+# two module graphs, two auth singletons (a downstream login outage, 2026-09-12).
 # On CF Pages the /* no-store concatenation wins anyway (see header note).
 # Guarded by tools/headers.test.js.
 /app.js

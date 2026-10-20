@@ -205,7 +205,7 @@ export function staticImports(code) {
 // specifier is resolved against its importer ("./x.js?v=1" from "/a/b.js" becomes "/a/x.js?v=1").
 // A BARE specifier throws, mapped or not: Cloudflare re-emits modulepreload links as a `Link:`
 // response header, so Chrome resolves a preloaded module's imports before the import map exists and
-// caches the failure per URL (proven on daystra.com, 2026-08-27; axiom-framework skill item 11).
+// caches the failure per URL (proven on a downstream deploy, 2026-08-27).
 export function moduleClosure(entries, read) {
   const base = 'https://dist.invalid/';
   const seen = new Set(), queue = [...entries];
@@ -239,7 +239,7 @@ export function injectModulePreload(html, urls) {
 }
 
 // The browser discovers a module's imports only when that module arrives, so the startup graph
-// loads as sequential round trips (6 for the template itself, 12 in WakeTrace). Listing the whole
+// loads as sequential round trips (6 for the template itself, 12 in a downstream project). Listing the whole
 // startup closure — the entry scripts plus the default route's module — as <link rel=modulepreload>
 // fetches it in one. Caching is untouched: modules stay versioned by ?v=, never immutable.
 async function emitModulePreload() {

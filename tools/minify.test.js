@@ -105,7 +105,7 @@ test('readExactAliasMap maps exact aliases like @state to absolute dist paths, e
 });
 
 // modulepreload: the startup graph is the STATIC import closure; dynamic import() loads on demand.
-// Ported from WakeTrace (#axiom seq 107), where it took the startup graph from 12 waves to 1.
+// Ported from a downstream project, where it took the startup graph from 12 waves to 1.
 test('staticImports reads every static form terser emits and skips dynamic import()', () => {
   const code = 'import"./a.js?v=1";import{b as c}from"/core/b.js?v=1";import*as d from"../d.js?v=1";'
     + 'export{e}from"./e.js?v=1";export*from"./f.js?v=1";const g=()=>import("./lazy.js?v=1");x.import("no");';
@@ -124,7 +124,7 @@ test('moduleClosure resolves specifiers against their importer and visits each m
 
 test('moduleClosure refuses a bare specifier, even one the import map would resolve', () => {
   // Cloudflare re-emits modulepreload as a Link: header, so the browser resolves a preloaded
-  // module's imports before the map exists (axiom-framework skill item 11). Mapped is not enough.
+  // module's imports before the map exists. Mapped is not enough.
   const files = { '/app.js': 'import{r}from"/core/router.js?v=1"', '/core/router.js': 'import{state}from"@state"' };
   assert.throws(() => moduleClosure(['/app.js'], (p) => files[p]), /bare specifier "@state" in \/core\/router\.js\?v=1/);
   assert.throws(() => moduleClosure(['/app.js'], () => 'import"three"'), /cannot depend on the import map/);

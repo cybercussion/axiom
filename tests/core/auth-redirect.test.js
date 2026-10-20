@@ -4,8 +4,8 @@
  * A saved destination is resumed only when the app has just landed from
  * sign-in, and only while fresh. Without both checks an abandoned sign-in
  * left a destination in storage that hijacked the user's NEXT visit —
- * including a deep link opened days later. Relayed from scobot (Arc intent
- * 48, docs/handoffs/2026-10-03-axiom-auth-relay.md in that repo).
+ * including a deep link opened days later. Relayed from a
+ * downstream project.
  */
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';

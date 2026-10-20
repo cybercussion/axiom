@@ -5,7 +5,7 @@ import {
   hydrateProfile, normalizeAvatarUrl, isRefreshRejected, refreshDelayMs, isOAuthCallback
 } from '../src/core/auth-helpers.js';
 
-// Relayed from scobot (Arc intent 47): only the redirect path's ?code= is a
+// Relayed from a downstream project: only the redirect path's ?code= is a
 // callback — /join?code=ABC123 is an app route.
 test('isOAuthCallback: ?code= on the redirect path (root) is a callback', () => {
   const R = 'https://app.example';

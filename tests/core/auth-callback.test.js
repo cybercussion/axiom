@@ -1,8 +1,8 @@
 /**
  * auth.init only treats ?code= as an OAuth callback on the redirect path.
  *
- * Relayed from scobot (Arc intent 47): an app route that uses a `code` query
- * param (scobot's /join?code=ABC123) was handed to _handleCallback, failed with
+ * Relayed from a downstream project: an app route that uses a `code` query
+ * param (a classroom link, /join?code=ABC123) was handed to _handleCallback, failed with
  * "Login session expired" (no PKCE verifier), had its query stripped, and init
  * returned BEFORE hydrating the stored session — a signed-in user looked
  * signed out.

@@ -4,8 +4,7 @@
  * Modules are versioned by QUERY (?v=BUILD_ID), and Cloudflare serves files by
  * path, ignoring the query. During a deploy's propagation window a browser can
  * receive OLD bytes for a NEW url; `immutable` pins them for a year, and the app
- * runs two module graphs — daystra's 2026-09-12 login outage (relayed on
- * #scobot.cybercussion.com seq 18). Code therefore revalidates (ETag 304s), as
+ * runs two module graphs — a downstream login outage on 2026-09-12. Code therefore revalidates (ETag 304s), as
  * docs/patterns/stale-deploy-prevention.md prescribes for Workers Assets.
  */
 import { test } from 'node:test';

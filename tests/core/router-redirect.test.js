@@ -2,7 +2,7 @@
  * Router ↔ saved sign-in destination.
  *
  * The guard saves where a signed-out visitor was going; router.init resumes it
- * after sign-in. Three defects relayed from scobot (Arc intent 48):
+ * after sign-in. Three defects relayed from a downstream project:
  *  - nav links use RELATIVE hrefs (nav-sidebar href="dashboard"); saving the raw
  *    href meant the resume's leading-slash check dropped it,
  *  - a signed-in user failing a role guard re-saved the path, ambushing their

@@ -63,25 +63,24 @@ syntax), #6's entry tag bit one project ("old model, missing features").
   vendor `lib/` is exempt (three.js legitimately contains `/src/` in doc URLs).
 - **Module-preload hints are the build's, and never carry a bare specifier.**
   Without them the startup graph loads as one round trip per import depth (6 for
-  the template, 12 in WakeTrace). `emitModulePreload()` lists the static closure of
+  the template, 12 in a downstream project). `emitModulePreload()` lists the static closure of
   the entry scripts plus the default route, after `processDir` and before
   `assertSingleCacheBustId` (so the preload URLs share the one id). It throws on any
   bare specifier in that closure, even one the import map would resolve: Cloudflare
   re-emits `<link rel="modulepreload">` as a `Link:` response header, so Chrome
   resolves a preloaded module's imports *before* the inline map registers and caches
-  the failure per URL (proven on daystra.com, 2026-08-27; axiom-framework skill
-  item 11). Check yours: `curl -sI https://<host>/ | grep -i '^link:'`.
+  the failure per URL (proven on a downstream deploy, 2026-08-27). Check yours: `curl -sI https://<host>/ | grep -i '^link:'`.
 - **Binary assets cache-bust by FILENAME, never query string.** Query strings confuse
   extension-based loader selection (GLTF/FBX). Convention: new bytes ⇒ new name
   (`Intro-2.mp3`), long TTL on `/assets/*` (`asset-url.js`).
 - **Code is never `immutable`, even fully `?v=`-stamped.** Cloudflare serves by path
   and ignores the query, so during a deploy's propagation window a browser can get
   OLD bytes for a NEW url; `immutable` pins them for a year and the app runs two
-  module graphs (daystra login outage, 2026-09-12). Code gets
+  module graphs (a downstream login outage, 2026-09-12). Code gets
   `public, max-age=0, must-revalidate`; `tools/headers.test.js` guards the template.
   The same holds, more obviously, when a dynamic import is NOT stamped.
 - **Zone Browser Cache TTL must be "Respect Existing Headers" (0).** Measured on
-  daystra.com 2026-10-03: with a non-zero zone TTL the edge silently rewrites
+  a downstream zone, 2026-10-03: with a non-zero zone TTL the edge silently rewrites
   `no-cache` in `_headers` to `max-age=<TTL>`, so revalidating code is cached for
   hours anyway. Check: `curl -sI 'https://<host>/core/router.js?v=x' | grep -i cache-control`
   must echo the `_headers` rule verbatim.

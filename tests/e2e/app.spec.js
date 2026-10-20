@@ -99,7 +99,7 @@ test('an unknown path renders the 404 page', async ({ page }) => {
 test("the 404 fallback takes the not-found route's title, cold and in-app", async ({ page }) => {
   // The fallback swapped not-found in without running the title code, so a cold
   // load kept index.html's <title> and an in-app miss kept the previous page's
-  // (relayed from tender, #axiom seq 103).
+  // (relayed from a downstream project).
   await page.goto('/dashboard');
   await settled(page, 'dashboard-ui');
   await navigateInPage(page, ['/no-such-page']);
