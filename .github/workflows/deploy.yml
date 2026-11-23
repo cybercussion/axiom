@@ -19,7 +19,11 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+    # Pinned, not ubuntu-latest: when latest moved to 26.04 (2026-11), WebKit's
+    # navigation-race e2e tests failed 3 of 4 runs there and passed 2 of 2 on 24.04,
+    # with either lockfile (bisect, 2026-11-23). Unpin once those tests are robust
+    # on 26.04; if 24.04 starts failing them too, the image was not the cause.
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
